@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -153,11 +152,13 @@ export const useDashboardData = () => {
           let clientName = 'Cliente não especificado';
           const title = item.title || 'Sem título';
           
-          // Fixed: Properly check for clients being null before accessing its properties
+          // Complete null-safe check for clients
           if (item.clients !== null && item.clients !== undefined) {
-            // Now TypeScript knows clients is not null at this point
-            if (typeof item.clients === 'object' && 'name' in item.clients) {
-              clientName = item.clients.name || clientName;
+            // Type assertion to help TypeScript understand item.clients is not null here
+            const clients = item.clients as { name?: string };
+            // Now access the name property safely
+            if (typeof clients === 'object' && 'name' in clients) {
+              clientName = clients.name || clientName;
             }
           }
           
