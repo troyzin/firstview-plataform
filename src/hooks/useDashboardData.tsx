@@ -15,20 +15,27 @@ export const useDashboardData = () => {
     isMounted.current = true;
     
     const fetchData = async () => {
-      if (!isMounted.current) return;
-      
-      setIsLoading(true);
       try {
-        await fetchProductionsCount();
-        await fetchTodayProductions();
-        await fetchTopProductions();
+        // Initialize with defaults first to prevent undefined values
+        if (isMounted.current) {
+          setTopProductions([]);
+          setTodayProductions([]);
+          setProductionsCount(0);
+        }
+        
+        // Only attempt to fetch data if component is still mounted
+        if (isMounted.current) {
+          await fetchProductionsCount();
+          await fetchTodayProductions();
+          await fetchTopProductions();
+        }
       } catch (error) {
         console.error("Error fetching data:", error);
         if (isMounted.current) {
           setError(error instanceof Error ? error : new Error("Unknown error occurred"));
         }
       } finally {
-        // Make sure we always set loading to false, even if data is empty or errors occurred
+        // Always ensure loading state is set to false when done
         if (isMounted.current) {
           setIsLoading(false);
         }
@@ -106,6 +113,10 @@ export const useDashboardData = () => {
       }
     } catch (err) {
       console.error("Exception in fetchTodayProductions:", err);
+      // Ensure we set empty array even on error
+      if (isMounted.current) {
+        setTodayProductions([]);
+      }
     }
   };
 
@@ -129,29 +140,36 @@ export const useDashboardData = () => {
       
       if (error) {
         console.error("Error fetching top productions:", error);
+        // Set empty array on error
+        if (isMounted.current) {
+          setTopProductions([]);
+        }
         return;
       }
       
       if (isMounted.current && data) {
-        const formattedData = data.map((item) => {
-          // Safely handle client name with proper type checking
+        const formattedData = data.map(item => {
+          // Default values
           let clientName = 'Cliente não especificado';
-          
-          // Check if clients exists and has a name property that's not null or undefined
-          if (item.clients && typeof item.clients === 'object' && item.clients.name) {
-            clientName = item.clients.name;
-          }
-          
-          // Handle case where title might be null or undefined
           const title = item.title || 'Sem título';
           
-          // Generate initials only if title is not empty
-          const initials = title
-            .split(' ')
-            .slice(0, 2)
-            .map(word => word?.[0] || '')
-            .join('')
-            .toUpperCase();
+          // Safely check client name
+          if (item.clients) {
+            if (typeof item.clients === 'object' && item.clients !== null && 'name' in item.clients) {
+              clientName = item.clients.name || clientName;
+            }
+          }
+          
+          // Generate initials from title
+          let initials = '';
+          if (title) {
+            initials = title
+              .split(' ')
+              .slice(0, 2)
+              .map(word => word?.[0] || '')
+              .join('')
+              .toUpperCase();
+          }
           
           return {
             name: title,
@@ -162,13 +180,13 @@ export const useDashboardData = () => {
         
         setTopProductions(formattedData);
       } else if (isMounted.current) {
-        // If no data, set empty array
+        // Set empty array when no data
         setTopProductions([]);
       }
     } catch (err) {
       console.error("Exception in fetchTopProductions:", err);
       if (isMounted.current) {
-        // Make sure we set a default empty array even on error
+        // Ensure we set default empty array on error
         setTopProductions([]);
       }
     }
