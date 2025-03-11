@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { Plus, Filter, Search, Calendar as CalendarIcon, Info } from "lucide-react";
+import { Plus, Filter, Search, Calendar as CalendarIcon, Info, MapPin, FileText } from "lucide-react";
 import MainLayout from "../components/layout/MainLayout";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -319,7 +319,7 @@ const Productions = () => {
                 <h4 className="text-sm font-medium text-gray-400 mb-1">Briefing</h4>
                 {selectedProduction.briefingFile ? (
                   <p className="text-white flex items-center">
-                    <Clipboard className="h-4 w-4 mr-2" />
+                    <FileText className="h-4 w-4 mr-2" />
                     {selectedProduction.briefingFile}
                   </p>
                 ) : (
