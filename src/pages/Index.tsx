@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import StatCard from "@/components/dashboard/StatCard";
@@ -52,13 +51,7 @@ const Dashboard = () => {
       
       const { data, error } = await supabase
         .from('productions')
-        .select(`
-          *,
-          client:client_id(
-            id,
-            name
-          )
-        `)
+        .select('*, clients(id, name)')
         .gte('start_date', today.toISOString())
         .lt('start_date', tomorrow.toISOString());
       
@@ -104,15 +97,7 @@ const Dashboard = () => {
     const fetchTopProductions = async () => {
       const { data, error } = await supabase
         .from('productions')
-        .select(`
-          id,
-          title,
-          client_id,
-          client:client_id(
-            id,
-            name
-          )
-        `)
+        .select('id, title, client_id, clients(id, name)')
         .order('created_at', { ascending: false })
         .limit(5);
       
@@ -122,7 +107,8 @@ const Dashboard = () => {
       }
       
       const formattedData = (data || []).map((item) => {
-        const clientName = item.client?.name || 'Cliente não especificado';
+        const clientObj = item.clients && item.clients.length > 0 ? item.clients[0] : null;
+        const clientName = clientObj?.name || 'Cliente não especificado';
         const initials = item.title.split(' ').slice(0, 2).map(word => word[0]).join('').toUpperCase();
         
         return {
@@ -213,7 +199,9 @@ const Dashboard = () => {
                       <div>
                         <h4 className="font-medium">{production.title}</h4>
                         <p className="text-sm text-gray-400">
-                          {production.client?.name || 'Cliente não especificado'}
+                          {production.clients && production.clients.length > 0 
+                            ? production.clients[0].name 
+                            : 'Cliente não especificado'}
                         </p>
                       </div>
                       {production.start_date && (
