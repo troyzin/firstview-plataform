@@ -1,3 +1,4 @@
+
 import {
   createBrowserRouter,
   RouterProvider,
@@ -17,6 +18,8 @@ const Equipment = lazy(() => import("./pages/Equipment"));
 const Clients = lazy(() => import("./pages/Clients"));
 const Team = lazy(() => import("./pages/Team"));
 const Reports = lazy(() => import("./pages/Reports"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Edits = lazy(() => import("./pages/Edits"));
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   const { user, loading } = useAuth();
@@ -103,7 +106,7 @@ const router = createBrowserRouter([
     path: "/profile",
     element: (
       <ProtectedRoute>
-        <lazy(() => import("./pages/Profile")) />
+        <Profile />
       </ProtectedRoute>
     ),
   },
@@ -111,7 +114,7 @@ const router = createBrowserRouter([
     path: "/edits",
     element: (
       <ProtectedRoute>
-        <lazy(() => import("./pages/Edits")) />
+        <Edits />
       </ProtectedRoute>
     ),
   },

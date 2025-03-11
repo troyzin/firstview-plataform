@@ -2,9 +2,7 @@
 import React, { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import StatCard from "@/components/dashboard/StatCard";
-import WorkloadCard from "@/components/dashboard/WorkloadCard";
 import DeadlineCard from "@/components/dashboard/DeadlineCard";
-import KanbanBoard from "@/components/kanban/KanbanBoard";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -16,6 +14,8 @@ import { FilterIcon, PlusIcon } from "lucide-react";
 import ProductionModal from "@/components/productions/ProductionModal";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 const Dashboard = () => {
   const [filter, setFilter] = useState("all");
@@ -49,12 +49,14 @@ const Dashboard = () => {
     const fetchTodayProductions = async () => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
       
       const { data, error } = await supabase
         .from('productions')
-        .select('*')
+        .select('*, clients(name)')
         .gte('start_date', today.toISOString())
-        .lt('start_date', new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString());
+        .lt('start_date', tomorrow.toISOString());
       
       if (error) {
         console.error("Error fetching today's productions:", error);
@@ -92,7 +94,7 @@ const Dashboard = () => {
     },
   ];
 
-  // Fetch top productions for the workload card
+  // Fetch top productions for the ranking card
   const [topProductions, setTopProductions] = useState([]);
   
   useEffect(() => {
@@ -108,14 +110,12 @@ const Dashboard = () => {
         return;
       }
       
-      // Format the data for the WorkloadCard
+      // Format the data for the ranking
       const formattedData = data.map((item, index) => {
         const initials = item.title.split(' ').slice(0, 2).map(word => word[0]).join('').toUpperCase();
         return {
           name: item.title,
           initials,
-          current: 1,  // Placeholder value
-          max: 1,      // Placeholder value
           client: item.clients?.name || 'Cliente não especificado'
         };
       });
@@ -128,6 +128,12 @@ const Dashboard = () => {
 
   const handleAddProduction = () => {
     navigate('/productions');
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return format(date, "HH:mm", { locale: ptBR });
   };
 
   return (
@@ -191,8 +197,23 @@ const Dashboard = () => {
               <div className="grid grid-cols-1 gap-4">
                 {todayProductions.map((production: any) => (
                   <div key={production.id} className="bg-gray-800 p-4 rounded-lg">
-                    <h4 className="font-medium">{production.title}</h4>
-                    <p className="text-sm text-gray-400">{production.description || 'Sem descrição'}</p>
+                    <div className="flex justify-between">
+                      <div>
+                        <h4 className="font-medium">{production.title}</h4>
+                        <p className="text-sm text-gray-400">
+                          {production.clients?.name || 'Cliente não especificado'}
+                        </p>
+                      </div>
+                      {production.start_date && (
+                        <div className="text-sm text-gray-300">
+                          {formatDate(production.start_date)}
+                          {production.end_date && ` - ${formatDate(production.end_date)}`}
+                        </div>
+                      )}
+                    </div>
+                    {production.description && (
+                      <p className="text-sm text-gray-400 mt-2">{production.description}</p>
+                    )}
                   </div>
                 ))}
               </div>
