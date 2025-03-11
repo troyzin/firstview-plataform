@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import {
   Bell,
@@ -15,7 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import Sidebar from "./Sidebar";
+import { Sidebar } from "@/components/ui/sidebar"; // Updated import path to use the shadcn/ui sidebar
 import { useAuth } from "../../contexts/AuthContext";
 import { useToast } from "../../hooks/use-toast";
 import { useNavigate } from "react-router-dom";
