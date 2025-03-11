@@ -46,15 +46,23 @@ const equipmentSchema = z.object({
   notes: z.string().optional(),
 });
 
-const EquipmentModal = ({ isOpen, onClose, equipment }) => {
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+type EquipmentFormValues = z.infer<typeof equipmentSchema>;
+
+interface EquipmentModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  equipment: any | null;
+}
+
+const EquipmentModal: React.FC<EquipmentModalProps> = ({ isOpen, onClose, equipment }) => {
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   
   const queryClient = useQueryClient();
 
   // Set up form with default values
-  const form = useForm({
+  const form = useForm<EquipmentFormValues>({
     resolver: zodResolver(equipmentSchema),
     defaultValues: {
       name: "",
@@ -93,8 +101,8 @@ const EquipmentModal = ({ isOpen, onClose, equipment }) => {
   }, [equipment, form]);
 
   // Handle image selection
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (!file) return;
     
     if (file.size > 5 * 1024 * 1024) {
@@ -106,7 +114,7 @@ const EquipmentModal = ({ isOpen, onClose, equipment }) => {
     
     const reader = new FileReader();
     reader.onloadend = () => {
-      setImagePreview(reader.result);
+      setImagePreview(reader.result as string);
     };
     reader.readAsDataURL(file);
   };
@@ -118,22 +126,14 @@ const EquipmentModal = ({ isOpen, onClose, equipment }) => {
   };
 
   // Upload image to Supabase Storage
-  const uploadImage = async (file, equipmentId) => {
+  const uploadImage = async (file: File, equipmentId: string): Promise<string | null> => {
     if (!file) return null;
     
     const fileExt = file.name.split('.').pop();
     const fileName = `${equipmentId}-${Math.random().toString(36).substring(2)}.${fileExt}`;
     const filePath = `${fileName}`;
     
-    // First, create the storage bucket if it doesn't exist
-    const { error: storageError } = await supabase
-      .storage
-      .createBucket('equipment-images', {
-        public: true,
-        fileSizeLimit: 5 * 1024 * 1024,
-      })
-      .catch(() => ({ error: null })); // Ignore error if bucket already exists
-      
+    // Upload to the storage bucket
     const { data, error } = await supabase
       .storage
       .from('equipment-images')
@@ -157,7 +157,7 @@ const EquipmentModal = ({ isOpen, onClose, equipment }) => {
 
   // Save equipment mutation
   const saveEquipment = useMutation({
-    mutationFn: async (formData) => {
+    mutationFn: async (formData: EquipmentFormValues) => {
       let imageUrl = equipment?.image_url || null;
       let equipmentId = equipment?.id || null;
       
@@ -191,17 +191,19 @@ const EquipmentModal = ({ isOpen, onClose, equipment }) => {
       }
       
       // If there's a new image, upload it
-      if (imageFile) {
+      if (imageFile && equipmentId) {
         setIsUploading(true);
         imageUrl = await uploadImage(imageFile, equipmentId);
         
         // Update the equipment with the image URL
-        const { error } = await supabase
-          .from('equipment')
-          .update({ image_url: imageUrl })
-          .eq('id', equipmentId);
-        
-        if (error) throw error;
+        if (imageUrl) {
+          const { error } = await supabase
+            .from('equipment')
+            .update({ image_url: imageUrl })
+            .eq('id', equipmentId);
+          
+          if (error) throw error;
+        }
       }
       
       return { ...formData, id: equipmentId, image_url: imageUrl };
@@ -224,10 +226,10 @@ const EquipmentModal = ({ isOpen, onClose, equipment }) => {
   });
 
   // Form submission handler
-  const onSubmit = async (data) => {
+  const onSubmit = async (data: EquipmentFormValues) => {
     try {
       saveEquipment.mutate(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       toast.error(`Erro ao salvar: ${error.message}`);
     }
@@ -412,7 +414,11 @@ const EquipmentModal = ({ isOpen, onClose, equipment }) => {
                     Arraste ou clique para selecionar uma imagem
                   </p>
                   <label htmlFor="image-upload">
-                    <Button type="button" variant="secondary">
+                    <Button 
+                      type="button" 
+                      variant="secondary"
+                      className="bg-[#333333] hover:bg-[#444444] text-white"
+                    >
                       <Upload className="h-4 w-4 mr-2" />
                       Selecionar Imagem
                     </Button>
@@ -437,7 +443,7 @@ const EquipmentModal = ({ isOpen, onClose, equipment }) => {
                   <FormControl>
                     <Textarea
                       placeholder="Observações adicionais"
-                      className="resize-none"
+                      className="resize-none bg-[#1e1e1e] border-[#333333]"
                       {...field}
                     />
                   </FormControl>
@@ -451,12 +457,14 @@ const EquipmentModal = ({ isOpen, onClose, equipment }) => {
                 variant="ghost" 
                 onClick={onClose}
                 disabled={saveEquipment.isPending || isUploading}
+                className="text-white hover:text-white hover:bg-[#333333]"
               >
                 Cancelar
               </Button>
               <Button 
                 type="submit" 
                 disabled={saveEquipment.isPending || isUploading}
+                className="bg-[#ff3335] hover:bg-[#cc292b] text-white"
               >
                 {saveEquipment.isPending || isUploading ? (
                   "Salvando..."

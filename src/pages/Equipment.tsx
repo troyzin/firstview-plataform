@@ -84,7 +84,11 @@ export default function Equipment() {
     <div className="p-4 md:p-8 w-full bg-[#000000] min-h-screen">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold text-white">Equipamentos</h1>
-        <Button variant="default" onClick={handleAddNew}>
+        <Button 
+          variant="default" 
+          onClick={handleAddNew}
+          className="bg-[#ff3335] hover:bg-[#cc292b] text-white"
+        >
           <PlusCircle className="mr-2 h-4 w-4" />
           Adicionar Equipamento
         </Button>
