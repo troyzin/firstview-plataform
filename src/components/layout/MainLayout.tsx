@@ -54,7 +54,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
               <img 
                 src="/logo.png" 
                 alt="Logo da empresa" 
-                className="w-8 h-8 object-contain" 
+                className="w-15 h-auto object-contain" 
               />
             </div>
           )}
