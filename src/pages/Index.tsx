@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import StatCard from "@/components/dashboard/StatCard";
@@ -25,7 +24,6 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Fetch total productions for the current month
     const fetchProductionsCount = async () => {
       const now = new Date();
       const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -45,7 +43,6 @@ const Dashboard = () => {
       setProductionsCount(count || 0);
     };
 
-    // Fetch today's productions
     const fetchTodayProductions = async () => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -94,7 +91,6 @@ const Dashboard = () => {
     },
   ];
 
-  // Fetch top productions for the ranking card
   const [topProductions, setTopProductions] = useState([]);
   
   useEffect(() => {
@@ -110,15 +106,15 @@ const Dashboard = () => {
         return;
       }
       
-      // Format the data for the ranking
-      const formattedData = data.map((item, index) => {
+      const formattedData = data?.map((item, index) => {
+        const client = item.clients?.name || 'Cliente não especificado';
         const initials = item.title.split(' ').slice(0, 2).map(word => word[0]).join('').toUpperCase();
         return {
           name: item.title,
           initials,
-          client: item.clients?.name || 'Cliente não especificado'
+          client
         };
-      });
+      }) || [];
       
       setTopProductions(formattedData);
     };
@@ -276,7 +272,6 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Modal para nova produção */}
       <ProductionModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "../integrations/supabase/client";
@@ -19,7 +18,6 @@ const Auth = () => {
   const location = useLocation();
   const { user, loading: authLoading } = useAuth();
   
-  // Redirect if user is already authenticated
   useEffect(() => {
     if (user && !authLoading) {
       console.log('[AUTH PAGE] User already authenticated, redirecting');
@@ -80,7 +78,6 @@ const Auth = () => {
     }
   };
 
-  // Show loading state while auth is initializing
   if (authLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center p-4">
@@ -90,8 +87,6 @@ const Auth = () => {
     );
   }
 
-  // If user is authenticated, they will be redirected by the useEffect above
-  // This is the login/signup form
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4">
       <div className="bg-[#141414] p-8 rounded-lg shadow-lg w-full max-w-md border border-gray-800">

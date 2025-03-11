@@ -1,15 +1,14 @@
-
 import {
   createBrowserRouter,
   RouterProvider,
   Navigate,
 } from "react-router-dom";
-import { Auth } from "./pages/Auth";
-import { Login } from "./pages/Login";
-import { NotFound } from "./pages/NotFound";
+import Auth from "./pages/Auth";
+import Login from "./pages/Login";
+import NotFound from "./pages/NotFound";
 import { useAuth } from "./contexts/AuthContext";
 import { lazy, Suspense } from "react";
-import { Loading } from "./components/Loading";
+import Loading from "./components/Loading";
 
 const Index = lazy(() => import("./pages/Index"));
 const Dashboard = lazy(() => import("./pages/Index"));
