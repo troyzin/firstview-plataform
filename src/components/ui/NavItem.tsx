@@ -25,7 +25,6 @@ const NavItem = ({
   // Renderiza o ícone com base no tipo (string ou componente)
   const renderIcon = () => {
     if (typeof icon === "string") {
-      // Add !important to ensure styles are applied
       return (
         <span 
           className="material-symbols-outlined" 
@@ -44,8 +43,8 @@ const NavItem = ({
     <Link
       to={to}
       className={cn(
-        "relative flex items-center hover:text-red-500 transition-colors",
-        isActive ? "text-red-500" : "text-white"
+        "relative flex items-center hover:text-[#ff3335] transition-colors",
+        isActive ? "text-[#ff3335]" : "text-white"
       )}
       onClick={onClick}
     >
@@ -55,7 +54,7 @@ const NavItem = ({
       {notificationCount && notificationCount > 0 && (
         <Badge 
           variant="destructive" 
-          className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center"
+          className="absolute -top-1 -right-1 bg-[#ff3335] text-white text-xs rounded-full w-4 h-4 flex items-center justify-center"
         >
           {notificationCount > 9 ? "9+" : notificationCount}
         </Badge>

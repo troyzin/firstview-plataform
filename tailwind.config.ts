@@ -64,11 +64,11 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				produflow: {
-					red: '#ea384c',
+					red: '#ff3335',
 					dark: '#000000',
 					gray: {
-						800: '#1a1a1a',
-						900: '#121212'
+						800: '#141414',
+						900: '#0a0a0a'
 					}
 				}
 			},

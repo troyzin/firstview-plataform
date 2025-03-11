@@ -1,4 +1,3 @@
-
 import React, { ReactNode, useState } from "react";
 import { Menu, Bell, Settings } from "lucide-react";
 import { useLocation } from "react-router-dom";
@@ -44,7 +43,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
     <div className="bg-black text-white font-sans min-h-screen flex">
       {/* Sidebar */}
       <aside 
-        className={`bg-gray-900 border-r border-gray-800 transition-all duration-300 flex flex-col ${
+        className={`bg-[#141414] border-r border-gray-800 transition-all duration-300 flex flex-col ${
           sidebarCollapsed ? "w-16" : "w-64"
         }`}
       >
@@ -52,13 +51,11 @@ const MainLayout = ({ children }: MainLayoutProps) => {
         <div className="p-4 border-b border-gray-800 flex items-center justify-between">
           {!sidebarCollapsed && (
             <div className="flex items-center space-x-2">
-              {/* Logo atualizada aqui */}
               <img 
                 src="/logo.png" 
                 alt="Logo da empresa" 
                 className="w-8 h-8 object-contain" 
               />
-              <h1 className="text-xl font-bold">First View</h1>
             </div>
           )}
           {sidebarCollapsed && (
@@ -142,8 +139,8 @@ const MainLayout = ({ children }: MainLayoutProps) => {
                   href="#"
                   className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-800/70 text-sm group transition-all duration-200"
                 >
-                  <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                  <span className="group-hover:text-red-400">Campanha Nova Marca</span>
+                  <div className="w-2 h-2 rounded-full bg-[#ff3335]"></div>
+                  <span className="group-hover:text-[#ff3335]">Campanha Nova Marca</span>
                 </a>
               </li>
               <li>
@@ -180,7 +177,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
               <Bell size={20} />
               <Badge 
                 variant="destructive" 
-                className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center"
+                className="absolute -top-1 -right-1 bg-[#ff3335] text-white text-xs rounded-full w-4 h-4 flex items-center justify-center"
               >
                 3
               </Badge>
@@ -192,7 +189,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
             </Button>
             
             <div className="flex items-center space-x-2">
-              <Avatar className="w-8 h-8 bg-red-600 hover:bg-red-700 transition-colors">
+              <Avatar className="w-8 h-8 bg-[#ff3335] hover:bg-[#ff3335]/80 transition-colors">
                 <AvatarFallback>JS</AvatarFallback>
               </Avatar>
               <span className="text-sm font-medium">João Silva</span>

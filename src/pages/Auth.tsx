@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../integrations/supabase/client";
@@ -98,17 +97,15 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4">
-      <div className="bg-gray-900 p-8 rounded-lg shadow-lg w-full max-w-md">
+      <div className="bg-[#141414] p-8 rounded-lg shadow-lg w-full max-w-md border border-gray-800">
         <div className="mb-8 text-center">
-          {/* Logo adicionada aqui */}
           <div className="flex justify-center mb-6">
             <img 
               src="/logo.png" 
               alt="Logo da empresa" 
-              className="h-16 w-auto"
+              className="h-20 w-auto"
             />
           </div>
-          <h1 className="text-3xl font-bold mb-2">First View Platform</h1>
           <p className="text-gray-400">
             {isSignUp
               ? "Crie sua conta para gerenciar seus recursos"
@@ -129,7 +126,7 @@ const Auth = () => {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   required={isSignUp}
-                  className="pl-10"
+                  className="pl-10 bg-black border-gray-800 focus-visible:ring-[#ff3335] focus-visible:ring-offset-black"
                 />
               </div>
             </div>
@@ -146,7 +143,7 @@ const Auth = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="pl-10"
+                className="pl-10 bg-black border-gray-800 focus-visible:ring-[#ff3335] focus-visible:ring-offset-black"
               />
             </div>
           </div>
@@ -162,13 +159,13 @@ const Auth = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="pl-10"
+                className="pl-10 bg-black border-gray-800 focus-visible:ring-[#ff3335] focus-visible:ring-offset-black"
                 minLength={6}
               />
             </div>
             {!isSignUp && (
               <div className="text-right">
-                <a href="#" className="text-sm text-red-500 hover:underline">
+                <a href="#" className="text-sm text-[#ff3335] hover:underline">
                   Esqueceu sua senha?
                 </a>
               </div>
@@ -177,7 +174,7 @@ const Auth = () => {
 
           <Button
             type="submit"
-            className="w-full bg-red-600 hover:bg-red-700"
+            className="w-full bg-[#ff3335] hover:bg-[#ff3335]/90 text-white gap-2"
             disabled={loading}
           >
             {loading ? (
@@ -197,7 +194,7 @@ const Auth = () => {
             <button
               type="button"
               onClick={() => setIsSignUp(!isSignUp)}
-              className="ml-2 text-red-500 hover:underline"
+              className="ml-2 text-[#ff3335] hover:underline"
             >
               {isSignUp ? "Faça login" : "Cadastre-se"}
             </button>

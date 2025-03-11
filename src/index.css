@@ -14,41 +14,41 @@
     --background: 0 0% 0%;
     --foreground: 0 0% 100%;
 
-    --card: 0 0% 7%;
+    --card: 0 0% 8%;
     --card-foreground: 0 0% 100%;
 
-    --popover: 0 0% 7%;
+    --popover: 0 0% 8%;
     --popover-foreground: 0 0% 100%;
 
-    --primary: 355 84% 57%;
+    --primary: 355 100% 60%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 10% 12%;
+    --secondary: 0 0% 8%;
     --secondary-foreground: 0 0% 100%;
 
     --muted: 0 0% 15%;
     --muted-foreground: 0 0% 63.9%;
 
-    --accent: 355 84% 57%;
+    --accent: 355 100% 60%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 355 100% 60%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 0 0% 20%;
     --input: 0 0% 15%;
-    --ring: 355 84% 57%;
+    --ring: 355 100% 60%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 3%;
+    --sidebar-background: 0 0% 8%;
     --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 355 84% 57%;
+    --sidebar-primary: 355 100% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 0 0% 8%;
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 0 0% 15%;
-    --sidebar-ring: 355 84% 57%;
+    --sidebar-ring: 355 100% 60%;
   }
 }
 
@@ -111,11 +111,11 @@
   }
   
   .nav-item {
-    @apply hover:text-produflow-red transition-colors;
+    @apply hover:text-[#ff3335] transition-colors;
   }
   
   .btn-primary {
-    @apply bg-produflow-red hover:bg-red-700 text-white transition-colors;
+    @apply bg-[#ff3335] hover:bg-[#ff3335]/80 text-white transition-colors;
   }
   
   .glass-card {
