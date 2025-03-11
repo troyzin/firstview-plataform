@@ -106,7 +106,7 @@ const EquipmentModal: React.FC<EquipmentModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-gray-900 border border-gray-800 text-white sm:max-w-[600px]">
+      <DialogContent className="bg-[#000000] border border-[#141414] text-white sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl">
             {equipment?.id ? "Editar Equipamento" : "Novo Equipamento"}
