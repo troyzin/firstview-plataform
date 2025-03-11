@@ -44,6 +44,10 @@ const Header = () => {
     }
   };
 
+  const handleCloseSidebar = () => {
+    setIsSidebarOpen(false);
+  };
+
   return (
     <header className="border-b border-gray-800 bg-black px-6 py-3">
       <div className="flex items-center justify-between">
@@ -60,7 +64,16 @@ const Header = () => {
               </button>
             </SheetTrigger>
             <SheetContent side="left" className="bg-gray-900 text-white w-64">
-              <Sidebar onClose={() => setIsSidebarOpen(false)} />
+              {/* Instead of passing onClose prop, we can use a SidebarWrapper component */}
+              <div className="flex flex-col h-full">
+                <Sidebar />
+                <button 
+                  onClick={handleCloseSidebar}
+                  className="mt-auto mb-4 text-sm text-gray-400 hover:text-white self-end px-4"
+                >
+                  Fechar menu
+                </button>
+              </div>
             </SheetContent>
           </Sheet>
 
