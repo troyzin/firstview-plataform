@@ -1,7 +1,8 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import { toast } from "sonner";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -12,12 +13,21 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children, 
   requiredRoles = [] 
 }) => {
-  const { user, loading, hasPermission } = useAuth();
+  const { user, profile, loading, hasPermission } = useAuth();
   const location = useLocation();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      toast.error("Você precisa estar logado para acessar essa página");
+    } else if (!loading && user && requiredRoles.length > 0 && !hasPermission(requiredRoles)) {
+      toast.error("Você não tem permissão para acessar essa página");
+    }
+  }, [loading, user, requiredRoles, hasPermission]);
 
   console.log('ProtectedRoute:', { 
     path: location.pathname,
-    user: user?.id,
+    userId: user?.id,
+    profileRole: profile?.role,
     loading,
     requiredRoles,
     hasPermission: requiredRoles.length > 0 ? hasPermission(requiredRoles) : 'N/A'
@@ -41,7 +51,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // Check role-based access if roles are specified
   if (requiredRoles.length > 0 && !hasPermission(requiredRoles)) {
     console.log('Access denied, redirecting to /');
-    // Redirect to dashboard with access denied message
     return <Navigate to="/" replace />;
   }
 

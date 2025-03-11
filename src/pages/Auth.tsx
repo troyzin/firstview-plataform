@@ -1,12 +1,10 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "../integrations/supabase/client";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Mail, Lock, User, ArrowRight } from "lucide-react";
-import { useToast } from "../hooks/use-toast";
 import { toast } from "sonner";
 
 const Auth = () => {
@@ -17,34 +15,36 @@ const Auth = () => {
   const [fullName, setFullName] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
-  const { toast: uiToast } = useToast();
   const [checkingSession, setCheckingSession] = useState(true);
+  const [sessionChecked, setSessionChecked] = useState(false);
 
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        setCheckingSession(true);
-        const { data } = await supabase.auth.getSession();
-        console.log('Auth page - session check:', data.session?.user?.id || 'No session');
-        
-        if (data.session) {
-          // Obtenha a origem do redirecionamento se existir
-          const from = location.state?.from?.pathname || '/';
-          navigate(from, { replace: true });
-        }
-      } catch (error) {
-        console.error('Erro ao verificar sessão:', error);
-      } finally {
-        setCheckingSession(false);
+  const checkSession = useCallback(async () => {
+    try {
+      setCheckingSession(true);
+      const { data } = await supabase.auth.getSession();
+      console.log('Auth page - session check:', data.session?.user?.id || 'No session');
+      
+      if (data.session) {
+        const from = location.state?.from?.pathname || '/';
+        navigate(from, { replace: true });
       }
-    };
-    
-    checkSession();
+    } catch (error) {
+      console.error('Erro ao verificar sessão:', error);
+    } finally {
+      setCheckingSession(false);
+      setSessionChecked(true);
+    }
+  }, [navigate, location]);
+  
+  useEffect(() => {
+    if (!sessionChecked) {
+      checkSession();
+    }
     
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('Auth page - auth state changed:', event, session?.user?.id);
-        if (session) {
+        if (event === 'SIGNED_IN' && session) {
           const from = location.state?.from?.pathname || '/';
           navigate(from, { replace: true });
         }
@@ -54,7 +54,7 @@ const Auth = () => {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [navigate, location]);
+  }, [checkSession, navigate, location, sessionChecked]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();

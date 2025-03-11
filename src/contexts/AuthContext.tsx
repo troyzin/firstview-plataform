@@ -41,10 +41,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetchingProfile, setFetchingProfile] = useState(false);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   const fetchProfile = async (userId: string) => {
+    if (!userId) return null;
+    
     try {
       setFetchingProfile(true);
+      console.log('Fetching profile for user:', userId);
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -52,13 +57,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (error) {
-        console.error('Erro ao buscar perfil de usuário:', error);
+        console.error('Error fetching user profile:', error);
         return null;
       }
 
+      console.log('Profile fetched successfully:', data);
       return data;
     } catch (error) {
-      console.error('Erro ao buscar perfil de usuário:', error);
+      console.error('Error fetching user profile:', error);
       return null;
     } finally {
       setFetchingProfile(false);
@@ -66,22 +72,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    let mounted = true;
+    
     // Get initial session
     const getInitialSession = async () => {
       try {
+        console.log('Getting initial session...');
+        setLoading(true);
+        
         const { data } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+        
+        console.log('Initial session:', data.session?.user?.id || 'No session');
         setSession(data.session);
-        setUser(data.session?.user ?? null);
         
         if (data.session?.user) {
+          setUser(data.session.user);
           const profileData = await fetchProfile(data.session.user.id);
-          setProfile(profileData);
+          if (mounted) {
+            setProfile(profileData);
+          }
         }
       } catch (error) {
-        console.error('Erro na autenticação inicial:', error);
+        console.error('Error in initial authentication:', error);
         toast.error("Erro ao carregar dados do usuário");
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+          setInitialLoadComplete(true);
+          console.log('Initial load complete');
+        }
       }
     };
 
@@ -89,14 +110,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Listen for auth changes
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.id);
-        setSession(session);
-        setUser(session?.user ?? null);
+      async (event, newSession) => {
+        console.log('Auth state changed:', event, newSession?.user?.id);
         
-        if (session?.user) {
-          const profileData = await fetchProfile(session.user.id);
-          setProfile(profileData);
+        if (!mounted) return;
+        
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
+        
+        if (newSession?.user) {
+          const profileData = await fetchProfile(newSession.user.id);
+          if (mounted) {
+            setProfile(profileData);
+          }
         } else {
           setProfile(null);
         }
@@ -106,17 +132,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     return () => {
+      mounted = false;
       authListener.subscription.unsubscribe();
     };
   }, []);
 
   const signOut = async () => {
-    setLoading(true);
     try {
+      setLoading(true);
       await supabase.auth.signOut();
       toast.success("Logout realizado com sucesso");
     } catch (error) {
-      console.error('Erro ao fazer logout:', error);
+      console.error('Error logging out:', error);
       toast.error("Erro ao fazer logout");
     } finally {
       setLoading(false);
@@ -147,10 +174,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   console.log('Auth context value:', { 
-    user: user?.id, 
-    profile: profile?.role, 
+    userId: user?.id, 
+    profileRole: profile?.role, 
     loading, 
-    fetchingProfile 
+    fetchingProfile,
+    initialLoadComplete
   });
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
