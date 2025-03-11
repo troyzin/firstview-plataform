@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const useDashboardData = () => {
@@ -8,12 +8,14 @@ export const useDashboardData = () => {
   const [topProductions, setTopProductions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const isMounted = useRef(true);
 
   useEffect(() => {
-    let isMounted = true;
+    // Set the ref to true when the component mounts
+    isMounted.current = true;
     
     const fetchData = async () => {
-      if (!isMounted) return;
+      if (!isMounted.current) return;
       
       setIsLoading(true);
       try {
@@ -22,11 +24,11 @@ export const useDashboardData = () => {
         await fetchTopProductions();
       } catch (error) {
         console.error("Error fetching data:", error);
-        if (isMounted) {
+        if (isMounted.current) {
           setError(error instanceof Error ? error : new Error("Unknown error occurred"));
         }
       } finally {
-        if (isMounted) {
+        if (isMounted.current) {
           setIsLoading(false);
         }
       }
@@ -34,13 +36,15 @@ export const useDashboardData = () => {
 
     fetchData();
     
-    // Cleanup function to prevent state updates after unmounting
+    // Clean up function that sets isMounted to false when the component unmounts
     return () => {
-      isMounted = false;
+      isMounted.current = false;
     };
-  }, []);
+  }, []); // Empty dependency array so it only runs once
 
   const fetchProductionsCount = async () => {
+    if (!isMounted.current) return;
+    
     const now = new Date();
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -56,10 +60,14 @@ export const useDashboardData = () => {
       return;
     }
     
-    setProductionsCount(count || 0);
+    if (isMounted.current) {
+      setProductionsCount(count || 0);
+    }
   };
 
   const fetchTodayProductions = async () => {
+    if (!isMounted.current) return;
+    
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
@@ -87,10 +95,14 @@ export const useDashboardData = () => {
       return;
     }
     
-    setTodayProductions(data || []);
+    if (isMounted.current) {
+      setTodayProductions(data || []);
+    }
   };
 
   const fetchTopProductions = async () => {
+    if (!isMounted.current) return;
+    
     const { data, error } = await supabase
       .from('productions')
       .select(`
@@ -110,26 +122,33 @@ export const useDashboardData = () => {
       return;
     }
     
-    const formattedData = (data || []).map((item) => {
-      // Safely handle client name
-      let clientName = 'Cliente não especificado';
+    if (isMounted.current) {
+      const formattedData = (data || []).map((item) => {
+        // Safely handle client name
+        let clientName = 'Cliente não especificado';
+        
+        // Properly check if clients exists and has the expected properties
+        if (item.clients && typeof item.clients === 'object') {
+          // Use optional chaining and nullish coalescing to safely access name
+          clientName = item.clients?.name || clientName;
+        }
+        
+        const initials = item.title
+          .split(' ')
+          .slice(0, 2)
+          .map(word => word[0])
+          .join('')
+          .toUpperCase();
+        
+        return {
+          name: item.title,
+          initials,
+          client: clientName
+        };
+      });
       
-      // Properly check if clients exists and has the expected properties
-      if (item.clients && typeof item.clients === 'object') {
-        // Use optional chaining and nullish coalescing to safely access name
-        clientName = (item.clients as any)?.name || clientName;
-      }
-      
-      const initials = item.title.split(' ').slice(0, 2).map(word => word[0]).join('').toUpperCase();
-      
-      return {
-        name: item.title,
-        initials,
-        client: clientName
-      };
-    });
-    
-    setTopProductions(formattedData);
+      setTopProductions(formattedData);
+    }
   };
 
   return {
