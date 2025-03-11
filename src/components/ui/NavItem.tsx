@@ -25,7 +25,15 @@ const NavItem = ({
   // Renderiza o ícone com base no tipo (string ou componente)
   const renderIcon = () => {
     if (typeof icon === "string") {
-      return <span className="material-symbols-outlined">{icon}</span>;
+      // Add !important to ensure styles are applied
+      return (
+        <span 
+          className="material-symbols-outlined" 
+          style={{ fontFamily: "'Material Symbols Outlined' !important" }}
+        >
+          {icon}
+        </span>
+      );
     } else {
       const Icon = icon;
       return <Icon size={24} />;
