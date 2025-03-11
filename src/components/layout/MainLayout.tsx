@@ -28,6 +28,8 @@ const MainLayout = ({ children }: MainLayoutProps) => {
         return "Relatórios";
       case "/team":
         return "Equipe";
+      case "/equipment":
+        return "Equipamentos";
       case "/settings":
         return "Configurações";
       default:
@@ -85,6 +87,14 @@ const MainLayout = ({ children }: MainLayoutProps) => {
                 icon="view_kanban" 
                 label={sidebarCollapsed ? undefined : "Produções"} 
                 isActive={isActiveRoute("/productions")}
+              />
+            </li>
+            <li>
+              <NavItem 
+                to="/equipment" 
+                icon="videocam" 
+                label={sidebarCollapsed ? undefined : "Equipamentos"} 
+                isActive={isActiveRoute("/equipment")}
               />
             </li>
             <li>
