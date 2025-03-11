@@ -8,13 +8,19 @@ type WorkloadItem = {
   initials: string;
   current: number;
   max: number;
+  currentLoad?: number;
+  maxLoad?: number;
 };
 
 type WorkloadCardProps = {
   workloads: WorkloadItem[];
+  members?: WorkloadItem[];
 };
 
-const WorkloadCard = ({ workloads }: WorkloadCardProps) => {
+const WorkloadCard = ({ workloads, members }: WorkloadCardProps) => {
+  // Use members prop if provided, otherwise use workloads
+  const items = members || workloads;
+
   const getProgressColor = (current: number, max: number) => {
     const percentage = (current / max) * 100;
     if (percentage < 50) return "bg-green-500";
@@ -36,21 +42,27 @@ const WorkloadCard = ({ workloads }: WorkloadCardProps) => {
         <MoreVertical className="w-5 h-5 cursor-pointer hover:text-red-500 transition-colors" />
       </h3>
       <div className="space-y-4">
-        {workloads.map((item, index) => (
-          <div key={index}>
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-sm">{item.name} ({item.initials})</span>
-              <span className={`text-xs ${getTextColor(item.current, item.max)}`}>
-                {item.current}/{item.max}
-              </span>
+        {items.map((item, index) => {
+          // Handle both current/max and currentLoad/maxLoad properties
+          const current = item.current || item.currentLoad || 0;
+          const max = item.max || item.maxLoad || 1;
+          
+          return (
+            <div key={index}>
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-sm">{item.name} ({item.initials})</span>
+                <span className={`text-xs ${getTextColor(current, max)}`}>
+                  {current}/{max}
+                </span>
+              </div>
+              <Progress 
+                value={(current / max) * 100} 
+                className="h-2 bg-gray-800"
+                color={getProgressColor(current, max)}
+              />
             </div>
-            <Progress 
-              value={(item.current / item.max) * 100} 
-              className="h-2 bg-gray-800"
-              color={getProgressColor(item.current, item.max)}
-            />
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

@@ -6,7 +6,7 @@ export type KanbanCardType = {
   title: string;
   description: string;
   dueDate: string;
-  priority: "urgent" | "normal" | "low" | "priority";
+  priority: "urgent" | "normal" | "low" | "priority" | "high" | "completed";
   assignees: Array<{
     initials: string;
     color: string;
@@ -15,26 +15,33 @@ export type KanbanCardType = {
 
 type KanbanCardProps = {
   card: KanbanCardType;
+  onClick?: () => void;
 };
 
-const KanbanCard: React.FC<KanbanCardProps> = ({ card }) => {
+const KanbanCard: React.FC<KanbanCardProps> = ({ card, onClick }) => {
   const getPriorityClasses = (priority: string) => {
     switch (priority) {
       case "urgent":
         return "bg-yellow-500/20 text-yellow-400";
       case "priority":
+      case "high":
         return "bg-red-500/20 text-red-400";
       case "normal":
         return "bg-green-500/20 text-green-400";
       case "low":
         return "bg-blue-500/20 text-blue-400";
+      case "completed":
+        return "bg-green-500/20 text-green-400";
       default:
         return "bg-gray-500/20 text-gray-400";
     }
   };
 
   return (
-    <div className="bg-gray-900 p-3 rounded-lg hover:shadow-md transition-all cursor-pointer transform hover:-translate-y-1">
+    <div 
+      className="bg-gray-900 p-3 rounded-lg hover:shadow-md transition-all cursor-pointer transform hover:-translate-y-1"
+      onClick={onClick}
+    >
       <div className="flex justify-between items-start">
         <h5 className="font-medium">{card.title}</h5>
         <span className={`text-xs px-2 py-1 rounded-full ${getPriorityClasses(card.priority)}`}>

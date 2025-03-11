@@ -2,8 +2,22 @@
 import React from "react";
 import KanbanCard, { KanbanCardType } from "./KanbanCard";
 
+// Define the KanbanColumn type for export
+export type KanbanColumn = {
+  id: string;
+  title: string;
+  count: number;
+  color: string;
+  items: KanbanCardType[];
+};
+
+type KanbanBoardProps = {
+  columns?: KanbanColumn[];
+  onCardClick?: (itemId: string) => void;
+};
+
 // Simulação de dados para o quadro Kanban
-const kanbanData = {
+const defaultKanbanData = {
   production: {
     title: "Produção",
     borderColor: "border-red-600",
@@ -93,29 +107,65 @@ const kanbanData = {
   },
 };
 
-const KanbanBoard = () => {
+const KanbanBoard = ({ columns, onCardClick }: KanbanBoardProps) => {
+  // If columns are provided, use them; otherwise, use the default data
+  const renderColumns = () => {
+    if (columns) {
+      return columns.map((column) => (
+        <div
+          key={column.id}
+          className={`flex-shrink-0 w-80 bg-gray-800 rounded-lg p-4 border-t-2 border-${column.color}`}
+        >
+          <h4 className="font-medium flex items-center justify-between">
+            <span>{column.title}</span>
+            <span className={`bg-${column.color}/20 text-${column.color} text-xs px-2 py-1 rounded-full`}>
+              {column.count}
+            </span>
+          </h4>
+          
+          <div className="mt-4 space-y-3">
+            {column.items.map((item) => (
+              <KanbanCard 
+                key={item.id} 
+                card={item} 
+                onClick={() => onCardClick && onCardClick(item.id)} 
+              />
+            ))}
+          </div>
+        </div>
+      ));
+    } else {
+      // Use default data
+      return Object.entries(defaultKanbanData).map(([key, column]) => (
+        <div
+          key={key}
+          className={`flex-shrink-0 w-80 bg-gray-800 rounded-lg p-4 border-t-2 ${column.borderColor}`}
+        >
+          <h4 className="font-medium flex items-center justify-between">
+            <span>{column.title}</span>
+            <span className={`${column.bgColor} ${column.textColor} text-xs px-2 py-1 rounded-full`}>
+              {column.count}
+            </span>
+          </h4>
+          
+          <div className="mt-4 space-y-3">
+            {column.cards.map((card) => (
+              <KanbanCard 
+                key={card.id} 
+                card={card as KanbanCardType} 
+                onClick={() => onCardClick && onCardClick(card.id)}
+              />
+            ))}
+          </div>
+        </div>
+      ));
+    }
+  };
+
   return (
     <div className="overflow-hidden overflow-x-auto">
       <div className="flex space-x-4 pb-4">
-        {Object.entries(kanbanData).map(([key, column]) => (
-          <div
-            key={key}
-            className={`flex-shrink-0 w-80 bg-gray-800 rounded-lg p-4 border-t-2 ${column.borderColor}`}
-          >
-            <h4 className="font-medium flex items-center justify-between">
-              <span>{column.title}</span>
-              <span className={`${column.bgColor} ${column.textColor} text-xs px-2 py-1 rounded-full`}>
-                {column.count}
-              </span>
-            </h4>
-            
-            <div className="mt-4 space-y-3">
-              {column.cards.map((card) => (
-                <KanbanCard key={card.id} card={card as KanbanCardType} />
-              ))}
-            </div>
-          </div>
-        ))}
+        {renderColumns()}
       </div>
     </div>
   );
