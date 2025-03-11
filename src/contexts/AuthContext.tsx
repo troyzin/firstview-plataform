@@ -41,7 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Função simplificada para buscar o perfil do usuário
+  // Função para buscar o perfil do usuário
   const fetchProfile = useCallback(async (userId: string) => {
     if (!userId) return null;
     
@@ -62,26 +62,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('[AUTH] Profile fetched successfully:', data);
       return data;
     } catch (error) {
-      console.error('[AUTH] Error fetching user profile:', error);
+      console.error('[AUTH] Error in fetchProfile:', error);
       return null;
     }
   }, []);
 
-  // Este useEffect só é executado uma vez na montagem do componente
+  // Inicializar autenticação
   useEffect(() => {
     let mounted = true;
     
     const initializeAuth = async () => {
       try {
         console.log('[AUTH] Initializing auth...');
-        setLoading(true);
         
         // Obter sessão inicial
-        const { data: sessionData } = await supabase.auth.getSession();
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
         
         if (!mounted) return;
         
-        const currentSession = sessionData.session;
         console.log('[AUTH] Initial session:', currentSession?.user?.id || 'No session');
         
         if (currentSession?.user) {
@@ -101,17 +99,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } catch (error) {
         console.error('[AUTH] Error in authentication initialization:', error);
-        toast.error("Erro ao carregar dados do usuário");
       } finally {
         if (mounted) {
           setLoading(false);
-          console.log('[AUTH] Auth initialization complete');
+          console.log('[AUTH] Auth initialization complete, loading set to false');
         }
       }
     };
-
-    // Inicializar autenticação
-    initializeAuth();
 
     // Configurar listener para mudanças de estado de autenticação
     const { data: authListener } = supabase.auth.onAuthStateChange(
@@ -120,22 +114,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (!mounted) return;
         
-        // Atualizar estado com a nova sessão
-        setSession(newSession);
-        setUser(newSession?.user ?? null);
-        
         if (newSession?.user) {
+          setSession(newSession);
+          setUser(newSession.user);
+          
           const profileData = await fetchProfile(newSession.user.id);
           if (mounted) {
             setProfile(profileData);
           }
         } else {
+          setSession(null);
+          setUser(null);
           setProfile(null);
         }
         
         setLoading(false);
+        console.log('[AUTH] Auth state change complete, loading set to false');
       }
     );
+
+    // Inicializar autenticação
+    initializeAuth();
 
     // Limpeza ao desmontar
     return () => {
