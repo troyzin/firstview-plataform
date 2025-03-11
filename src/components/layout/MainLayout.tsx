@@ -1,6 +1,6 @@
 
 import React, { ReactNode, useState } from "react";
-import { Menu, Bell, User } from "lucide-react";
+import { Menu, Bell, Settings } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import NavItem from "../ui/NavItem";
 import { Avatar, AvatarFallback } from "../ui/avatar";
@@ -124,14 +124,6 @@ const MainLayout = ({ children }: MainLayoutProps) => {
                 isActive={isActiveRoute("/team")}
               />
             </li>
-            <li>
-              <NavItem 
-                to="/settings" 
-                icon="settings" 
-                label={sidebarCollapsed ? undefined : "Configurações"} 
-                isActive={isActiveRoute("/settings")}
-              />
-            </li>
           </ul>
         </nav>
 
@@ -187,6 +179,11 @@ const MainLayout = ({ children }: MainLayoutProps) => {
               >
                 3
               </Badge>
+            </Button>
+            
+            {/* Botão de configurações movido para o cabeçalho */}
+            <Button variant="ghost" size="icon" className="hover:bg-gray-800">
+              <Settings size={20} />
             </Button>
             
             <div className="flex items-center space-x-2">
