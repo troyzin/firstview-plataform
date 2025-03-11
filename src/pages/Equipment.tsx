@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { Plus, Search, Filter, Package, Calendar, LogOut, CheckCircle, AlertTriangle, ShoppingCart, History, Clock, Users, Edit, Trash2 } from "lucide-react";
+import { Plus, Search, Filter, Package, Calendar, LogOut, CheckCircle, AlertTriangle, ShoppingCart, History, Users, Edit, Trash2, MoreVertical } from "lucide-react";
 import MainLayout from "../components/layout/MainLayout";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -60,6 +60,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import EquipmentModal from "@/components/equipment/EquipmentModal";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMobile } from "@/hooks/use-mobile";
 
 // Tipo de equipamento
 type Equipment = {
@@ -128,6 +129,7 @@ const fetchEquipments = async (): Promise<Equipment[]> => {
 
 const Equipment = () => {
   const queryClient = useQueryClient();
+  const isMobile = useMobile();
   
   // Consulta para buscar equipamentos
   const { data: equipments = [], isLoading, isError, refetch } = useQuery({
@@ -136,7 +138,6 @@ const Equipment = () => {
   });
 
   // Estados
-  const [usageRecords, setUsageRecords] = useState<UsageRecord[]>([]);
   const [historyEvents, setHistoryEvents] = useState<HistoryEvent[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -145,75 +146,19 @@ const Equipment = () => {
   
   // Estados para modais
   const [isNewEquipmentModalOpen, setIsNewEquipmentModalOpen] = useState(false);
-  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
-  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
-  const [isKitCheckoutModalOpen, setIsKitCheckoutModalOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
   const [equipmentToEdit, setEquipmentToEdit] = useState<Equipment | null>(null);
   
-  // Estado para o kit de equipamentos
-  const [kitEquipments, setKitEquipments] = useState<{id: string; quantity: number}[]>([]);
-  
-  // Estados para agendamento
-  const [scheduleData, setScheduleData] = useState({
-    startDate: new Date(),
-    endDate: new Date(new Date().setDate(new Date().getDate() + 1)),
-    productionId: "",
-    responsibleName: "João Silva", // Nome do usuário logado
-    notes: "",
-    personalUse: false,
-  });
-  
-  // Efeito para adicionar UsageRecords e HistoryEvents
+  // Efeito para adicionar HistoryEvents
   useEffect(() => {
-    setUsageRecords([
-      {
-        id: "u1",
-        equipmentId: "e2",
-        equipmentName: "DJI Ronin 4D",
-        startDate: new Date(),
-        endDate: new Date(new Date().setDate(new Date().getDate() + 3)),
-        productionId: "1",
-        productionName: "Campanha de Marketing - Verão 2023",
-        responsibleName: "João Silva",
-        status: "in_progress",
-        notes: "Utilizar com cuidado em locais com areia."
-      },
-      {
-        id: "u2",
-        equipmentId: "e1",
-        equipmentName: "Canon EOS R5",
-        startDate: new Date(new Date().setDate(new Date().getDate() + 1)),
-        endDate: new Date(new Date().setDate(new Date().getDate() + 5)),
-        productionId: "2",
-        productionName: "Vídeo Institucional",
-        responsibleName: "João Silva",
-        status: "scheduled",
-        notes: "Reservar baterias extras."
-      },
-      {
-        id: "u3",
-        equipmentId: "e5",
-        equipmentName: "Kit Iluminação Aputure 300d",
-        startDate: new Date(new Date().setDate(new Date().getDate() - 5)),
-        endDate: new Date(new Date().setDate(new Date().getDate() - 2)),
-        productionId: "3",
-        productionName: "Ensaio Fotográfico Produto",
-        responsibleName: "João Silva",
-        status: "returned",
-        notes: "Devolvido em perfeito estado.",
-        returnedDate: new Date(new Date().setDate(new Date().getDate() - 2))
-      }
-    ]);
-
     setHistoryEvents([
       {
         id: "h1",
         equipmentId: "e2",
         equipmentName: "DJI Ronin 4D",
         eventType: "checkout",
-        date: new Date(),
+        date: new Date(2023, 2, 10, 23, 47), // 10/03/2023 23:47
         responsibleName: "João Silva",
         productionName: "Campanha de Marketing - Verão 2023",
         notes: "Retirada para uso externo"
@@ -222,27 +167,66 @@ const Equipment = () => {
         id: "h2",
         equipmentId: "e1",
         equipmentName: "Canon EOS R5",
-        eventType: "schedule",
-        date: new Date(new Date().setDate(new Date().getDate() - 1)),
+        eventType: "checkout",
+        date: new Date(2023, 2, 10, 23, 56), // 10/03/2023 23:56
         responsibleName: "João Silva",
         productionName: "Vídeo Institucional"
       },
       {
         id: "h3",
+        equipmentId: "e1",
+        equipmentName: "Canon EOS R5",
+        eventType: "return",
+        date: new Date(2023, 2, 10, 23, 56), // 10/03/2023 23:56
+        responsibleName: "João Silva",
+        productionName: "Vídeo Institucional",
+        notes: "Equipamento devolvido"
+      },
+      {
+        id: "h4",
+        equipmentId: "e2",
+        equipmentName: "DJI Ronin 4D",
+        eventType: "return",
+        date: new Date(2023, 2, 10, 23, 56), // 10/03/2023 23:56
+        responsibleName: "João Silva",
+        productionName: "Campanha de Marketing - Verão 2023",
+        notes: "Equipamento devolvido"
+      },
+      {
+        id: "h5",
+        equipmentId: "e1",
+        equipmentName: "Canon EOS R5",
+        eventType: "return",
+        date: new Date(2023, 2, 10, 23, 56), // 10/03/2023 23:56
+        responsibleName: "João Silva",
+        productionName: "Vídeo Institucional",
+        notes: "Equipamento devolvido"
+      },
+      {
+        id: "h6",
+        equipmentId: "e1",
+        equipmentName: "Canon EOS R5",
+        eventType: "schedule",
+        date: new Date(2023, 2, 9, 23, 47), // 09/03/2023 23:47
+        responsibleName: "João Silva",
+        productionName: "Vídeo Institucional"
+      },
+      {
+        id: "h7",
         equipmentId: "e5",
         equipmentName: "Kit Iluminação Aputure 300d",
         eventType: "return",
-        date: new Date(new Date().setDate(new Date().getDate() - 2)),
+        date: new Date(2023, 2, 8, 23, 47), // 08/03/2023 23:47
         responsibleName: "João Silva",
         productionName: "Ensaio Fotográfico Produto",
         notes: "Devolvido em perfeito estado"
       },
       {
-        id: "h4",
+        id: "h8",
         equipmentId: "e3",
         equipmentName: "Sony Alpha a7S III",
         eventType: "maintenance",
-        date: new Date(new Date().setDate(new Date().getDate() - 7)),
+        date: new Date(2023, 2, 3, 23, 47), // 03/03/2023 23:47
         responsibleName: "Técnico Externo",
         notes: "Enviado para reparo do visor eletrônico"
       }
@@ -271,15 +255,6 @@ const Equipment = () => {
     const matchesType = typeFilter === "all" || equipment.category === typeFilter;
     
     return matchesSearch && matchesStatus && matchesType;
-  });
-  
-  // Filtragem de registros
-  const filteredRecords = usageRecords.filter((record) => {
-    const matchesSearch = searchTerm === "" || 
-      record.equipmentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (record.productionName && record.productionName.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    return matchesSearch;
   });
   
   // Filtragem de eventos de histórico
@@ -332,52 +307,6 @@ const Equipment = () => {
     }
   };
   
-  const openScheduleModal = (equipment: Equipment) => {
-    setSelectedEquipment(equipment);
-    setIsScheduleModalOpen(true);
-  };
-  
-  const openCheckoutModal = (equipment: Equipment) => {
-    setSelectedEquipment(equipment);
-    setIsCheckoutModalOpen(true);
-  };
-  
-  const addToKit = (equipment: Equipment) => {
-    const existing = kitEquipments.find(item => item.id === equipment.id);
-    if (existing) {
-      // Atualiza a quantidade se já estiver no kit
-      setKitEquipments(
-        kitEquipments.map(item => 
-          item.id === equipment.id 
-            ? { ...item, quantity: item.quantity + 1 } 
-            : item
-        )
-      );
-    } else {
-      // Adiciona ao kit se for novo
-      setKitEquipments([...kitEquipments, { id: equipment.id, quantity: 1 }]);
-    }
-  };
-  
-  const removeFromKit = (equipmentId: string) => {
-    setKitEquipments(kitEquipments.filter(item => item.id !== equipmentId));
-  };
-  
-  const updateKitItemQuantity = (equipmentId: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeFromKit(equipmentId);
-      return;
-    }
-    
-    setKitEquipments(
-      kitEquipments.map(item => 
-        item.id === equipmentId 
-          ? { ...item, quantity } 
-          : item
-      )
-    );
-  };
-  
   // Função para renderizar o status com as cores corretas
   const renderStatus = (status: string) => {
     switch (status) {
@@ -387,22 +316,6 @@ const Equipment = () => {
         return <Badge className="bg-blue-600">Em Uso</Badge>;
       case "manutenção":
         return <Badge className="bg-yellow-600">Manutenção</Badge>;
-      default:
-        return <Badge>Desconhecido</Badge>;
-    }
-  };
-  
-  // Função para renderizar o status de registro com as cores corretas
-  const renderRecordStatus = (status: UsageRecord["status"]) => {
-    switch (status) {
-      case "scheduled":
-        return <Badge className="bg-purple-600">Agendado</Badge>;
-      case "in_progress":
-        return <Badge className="bg-blue-600">Em Uso</Badge>;
-      case "returned":
-        return <Badge className="bg-green-600">Devolvido</Badge>;
-      case "overdue":
-        return <Badge className="bg-red-600">Atrasado</Badge>;
       default:
         return <Badge>Desconhecido</Badge>;
     }
@@ -441,30 +354,30 @@ const Equipment = () => {
   return (
     <MainLayout>
       <div className="flex flex-col h-full">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-4">
+        <div className="flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
+          <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
             <h1 className="text-2xl font-bold">Equipamentos</h1>
             
-            <div className="flex items-center bg-gray-800 rounded-md px-3 py-2">
+            <div className="flex items-center bg-[#141414] rounded-md px-3 py-2 w-full md:w-auto">
               <Search className="h-5 w-5 text-gray-400 mr-2" />
               <Input
                 placeholder="Buscar equipamentos..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 w-60"
+                className="bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full md:w-60"
               />
             </div>
             
-            <Button variant="outline" className="bg-gray-800 border-gray-700">
+            <Button variant="outline" className="bg-[#141414] border-gray-700 w-full md:w-auto">
               <Filter className="h-4 w-4 mr-2" />
               Filtros
             </Button>
           </div>
           
-          <div className="flex space-x-3">
+          <div className="flex space-x-3 w-full md:w-auto">
             <Button 
-              onClick={() => setIsKitCheckoutModalOpen(true)} 
-              className="bg-[#141414] hover:bg-[#1f1f1f]"
+              variant="secondary"
+              className="w-full md:w-auto"
             >
               <ShoppingCart className="h-4 w-4 mr-2" />
               Retirar KIT
@@ -474,7 +387,7 @@ const Equipment = () => {
                 setEquipmentToEdit(null);
                 setIsNewEquipmentModalOpen(true);
               }} 
-              className="bg-[#ff3335] hover:bg-red-700"
+              className="bg-[#ff3335] hover:bg-red-700 w-full md:w-auto"
             >
               <Plus className="h-4 w-4 mr-2" />
               Novo Equipamento
@@ -483,7 +396,7 @@ const Equipment = () => {
         </div>
         
         {/* Dashboard de Status */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-[#141414] rounded-lg p-4 flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm">Total de Equipamentos</p>
@@ -520,80 +433,83 @@ const Equipment = () => {
         {/* Lista de equipamentos em uso e disponíveis */}
         <div className="mb-6">
           <h2 className="text-lg font-medium mb-3">Status de Disponibilidade</h2>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Tabela de equipamentos em uso */}
             <div className="bg-[#141414] rounded-lg p-4">
               <h3 className="text-md font-medium mb-2 text-blue-400">Equipamentos em Uso</h3>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Equipamento</TableHead>
-                    <TableHead className="text-right">Quantidade</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {equipments
-                    .filter(e => e.status === "em uso")
-                    .map(equipment => (
-                      <TableRow key={`in-use-${equipment.id}`}>
-                        <TableCell>{equipment.name}</TableCell>
-                        <TableCell className="text-right">{equipment.quantity}</TableCell>
-                      </TableRow>
-                    ))}
-                  {equipments.filter(e => e.status === "em uso").length === 0 && (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={2} className="text-center text-gray-500">
-                        Nenhum equipamento em uso
-                      </TableCell>
+                      <TableHead>Equipamento</TableHead>
+                      <TableHead className="text-right">Quantidade</TableHead>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {equipments
+                      .filter(e => e.status === "em uso")
+                      .map(equipment => (
+                        <TableRow key={`in-use-${equipment.id}`}>
+                          <TableCell>{equipment.name}</TableCell>
+                          <TableCell className="text-right">{equipment.quantity}</TableCell>
+                        </TableRow>
+                      ))}
+                    {equipments.filter(e => e.status === "em uso").length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={2} className="text-center text-gray-500">
+                          Nenhum equipamento em uso
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
             
             {/* Tabela de equipamentos disponíveis */}
             <div className="bg-[#141414] rounded-lg p-4">
               <h3 className="text-md font-medium mb-2 text-green-400">Equipamentos Disponíveis</h3>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Equipamento</TableHead>
-                    <TableHead className="text-right">Quantidade</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {equipments
-                    .filter(e => e.status === "disponível")
-                    .map(equipment => (
-                      <TableRow key={`available-${equipment.id}`}>
-                        <TableCell>{equipment.name}</TableCell>
-                        <TableCell className="text-right">{equipment.quantity}</TableCell>
-                      </TableRow>
-                    ))}
-                  {equipments.filter(e => e.status === "disponível").length === 0 && (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={2} className="text-center text-gray-500">
-                        Nenhum equipamento disponível
-                      </TableCell>
+                      <TableHead>Equipamento</TableHead>
+                      <TableHead className="text-right">Quantidade</TableHead>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {equipments
+                      .filter(e => e.status === "disponível")
+                      .map(equipment => (
+                        <TableRow key={`available-${equipment.id}`}>
+                          <TableCell>{equipment.name}</TableCell>
+                          <TableCell className="text-right">{equipment.quantity}</TableCell>
+                        </TableRow>
+                      ))}
+                    {equipments.filter(e => e.status === "disponível").length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={2} className="text-center text-gray-500">
+                          Nenhum equipamento disponível
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
           </div>
         </div>
         
         <Tabs defaultValue="inventory" value={currentTab} onValueChange={setCurrentTab} className="w-full">
-          <TabsList className="mb-4">
+          <TabsList className="mb-4 flex overflow-x-auto md:flex-nowrap">
             <TabsTrigger value="inventory">Inventário</TabsTrigger>
-            <TabsTrigger value="schedule">Agendamentos</TabsTrigger>
             <TabsTrigger value="history">Histórico</TabsTrigger>
           </TabsList>
           
           <TabsContent value="inventory" className="space-y-4">
-            <div className="flex space-x-4 mb-4">
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 mb-4">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[180px] bg-[#141414] border-gray-700">
+                <SelectTrigger className="w-full sm:w-[180px] bg-[#141414] border-gray-700">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent className="bg-[#141414] border-gray-700">
@@ -605,7 +521,7 @@ const Equipment = () => {
               </Select>
               
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-[180px] bg-[#141414] border-gray-700">
+                <SelectTrigger className="w-full sm:w-[180px] bg-[#141414] border-gray-700">
                   <SelectValue placeholder="Tipo" />
                 </SelectTrigger>
                 <SelectContent className="bg-[#141414] border-gray-700">
@@ -651,8 +567,19 @@ const Equipment = () => {
                   filteredEquipments.map((equipment) => (
                     <div 
                       key={equipment.id}
-                      className="bg-[#141414] border border-gray-700 rounded-lg overflow-hidden hover:border-gray-600 transition-all"
+                      className="bg-[#141414] border border-gray-700 rounded-lg overflow-hidden hover:border-gray-600 transition-all relative"
                     >
+                      <div className="absolute top-2 right-2 z-10">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 rounded-full bg-black/40 hover:bg-black/60"
+                          onClick={() => handleEditEquipment(equipment)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </div>
+
                       <div className="h-40 bg-gray-700 flex items-center justify-center">
                         {equipment.image_url ? (
                           <img 
@@ -697,67 +624,25 @@ const Equipment = () => {
                           {renderEquipmentType(equipment.category)}
                         </p>
                         
-                        <div className="flex space-x-2">
-                          {/* Botão de editar */}
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="flex-1 border-gray-600"
-                            onClick={() => handleEditEquipment(equipment)}
-                          >
-                            <Edit className="h-4 w-4 mr-1" />
-                            Editar
-                          </Button>
-
-                          {/* Botão de excluir */}
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="flex-1 border-gray-600 hover:bg-red-900/20 hover:text-red-400 hover:border-red-800"
-                            onClick={() => {
-                              setSelectedEquipment(equipment);
-                              setIsDeleteConfirmOpen(true);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Excluir
-                          </Button>
-                        </div>
-
-                        <div className="flex space-x-2 mt-2">
-                          {equipment.status === "disponível" && (
-                            <>
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="flex-1 border-gray-600"
-                                onClick={() => openScheduleModal(equipment)}
-                              >
-                                <Calendar className="h-4 w-4 mr-1" />
-                                Agendar
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                className="flex-1 bg-[#ff3335] hover:bg-red-700"
-                                onClick={() => openCheckoutModal(equipment)}
-                              >
-                                <LogOut className="h-4 w-4 mr-1" />
-                                Retirar
-                              </Button>
-                            </>
-                          )}
-                          {equipment.status === "disponível" && (
+                        {equipment.status === "disponível" && (
+                          <div className="flex space-x-2">
                             <Button 
                               variant="outline" 
                               size="sm" 
-                              className="flex-1 bg-[#141414] hover:bg-[#1f1f1f] text-white border-gray-600"
-                              onClick={() => addToKit(equipment)}
+                              className="flex-1 border-gray-600"
                             >
-                              <ShoppingCart className="h-4 w-4 mr-1" />
-                              Kit
+                              <Calendar className="h-4 w-4 mr-1" />
+                              Agendar
                             </Button>
-                          )}
-                        </div>
+                            <Button 
+                              size="sm" 
+                              className="flex-1 bg-[#ff3335] hover:bg-red-700"
+                            >
+                              <LogOut className="h-4 w-4 mr-1" />
+                              Retirar
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))
@@ -766,135 +651,49 @@ const Equipment = () => {
             )}
           </TabsContent>
           
-          <TabsContent value="schedule" className="space-y-4">
-            {filteredRecords.length === 0 ? (
-              <div className="bg-[#141414] rounded-lg p-8 text-center">
-                <Calendar className="h-12 w-12 mx-auto text-gray-500 mb-4" />
-                <h3 className="text-xl font-medium text-gray-300 mb-2">Nenhum agendamento encontrado</h3>
-                <p className="text-gray-400 max-w-md mx-auto">
-                  {searchTerm ? 
-                    `Não encontramos agendamentos com o termo "${searchTerm}"` : 
-                    "Não há agendamentos registrados no sistema"}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {filteredRecords.map((record) => (
-                  <div 
-                    key={record.id}
-                    className="bg-[#141414] border border-gray-700 rounded-lg p-4 hover:border-gray-600 transition-all"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-medium">{record.equipmentName}</h3>
-                        {record.productionName ? (
-                          <p className="text-gray-400">
-                            <span className="text-gray-500">Produção:</span> {record.productionName}
-                          </p>
-                        ) : (
-                          <p className="text-yellow-500 text-sm">Uso pessoal</p>
-                        )}
-                      </div>
-                      <div>{renderRecordStatus(record.status)}</div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                      <div>
-                        <p className="text-sm text-gray-400">
-                          <span className="font-medium">Responsável: </span>
-                          {record.responsibleName}
-                        </p>
-                        <p className="text-sm text-gray-400">
-                          <span className="font-medium">Data Retirada: </span>
-                          {format(new Date(record.startDate), "dd/MM/yyyy", { locale: ptBR })}
-                        </p>
-                        
-                        {record.status === "returned" ? (
-                          <>
-                            <p className="text-sm text-gray-400">
-                              <span className="font-medium">Data Prevista: </span>
-                              {format(new Date(record.endDate), "dd/MM/yyyy", { locale: ptBR })}
-                            </p>
-                            <p className="text-sm text-green-400">
-                              <span className="font-medium">Devolvido em: </span>
-                              {record.returnedDate && format(new Date(record.returnedDate), "dd/MM/yyyy", { locale: ptBR })}
-                            </p>
-                          </>
-                        ) : (
-                          <p className="text-sm text-gray-400">
-                            <span className="font-medium">Data Prevista: </span>
-                            {format(new Date(record.endDate), "dd/MM/yyyy", { locale: ptBR })}
-                          </p>
-                        )}
-                      </div>
-                      
-                      {record.notes && (
-                        <div>
-                          <p className="text-sm text-gray-400">
-                            <span className="font-medium">Observações: </span>
-                            {record.notes}
+          <TabsContent value="history" className="space-y-4">
+            <div className="overflow-x-auto">
+              <Table className="bg-[#141414] rounded-lg">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Equipamento</TableHead>
+                    <TableHead>Evento</TableHead>
+                    <TableHead>Responsável</TableHead>
+                    <TableHead>Produção</TableHead>
+                    <TableHead>Observações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredHistoryEvents.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-gray-500 py-8">
+                        <div className="flex flex-col items-center justify-center">
+                          <History className="h-12 w-12 text-gray-500 mb-4" />
+                          <h3 className="text-xl font-medium text-gray-300 mb-2">Nenhum histórico encontrado</h3>
+                          <p className="text-gray-400 max-w-md">
+                            {searchTerm ? 
+                              `Não encontramos registros com o termo "${searchTerm}"` : 
+                              "Não há eventos registrados no histórico"}
                           </p>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="history" className="space-y-4">
-            {filteredHistoryEvents.length === 0 ? (
-              <div className="bg-[#141414] rounded-lg p-8 text-center">
-                <History className="h-12 w-12 mx-auto text-gray-500 mb-4" />
-                <h3 className="text-xl font-medium text-gray-300 mb-2">Nenhum histórico encontrado</h3>
-                <p className="text-gray-400 max-w-md mx-auto">
-                  {searchTerm ? 
-                    `Não encontramos registros com o termo "${searchTerm}"` : 
-                    "Não há eventos registrados no histórico"}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {filteredHistoryEvents.map((event) => (
-                  <div 
-                    key={event.id}
-                    className="bg-[#141414] border border-gray-700 rounded-lg p-4 hover:border-gray-600 transition-all"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-medium">{event.equipmentName}</h3>
-                        {event.productionName && (
-                          <p className="text-gray-400">
-                            <span className="text-gray-500">Produção:</span> {event.productionName}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        {renderEventType(event.eventType)}
-                        <span className="text-gray-400 text-sm">
-                          {format(new Date(event.date), "dd/MM/yyyy", { locale: ptBR })}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-2">
-                      <p className="text-sm text-gray-400">
-                        <span className="font-medium">Responsável: </span>
-                        {event.responsibleName}
-                      </p>
-                      
-                      {event.notes && (
-                        <p className="text-sm text-gray-400 mt-1">
-                          <span className="font-medium">Observações: </span>
-                          {event.notes}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredHistoryEvents.map((event) => (
+                      <TableRow key={event.id}>
+                        <TableCell>{format(new Date(event.date), "dd/MM/yyyy HH:mm", { locale: ptBR })}</TableCell>
+                        <TableCell>{event.equipmentName}</TableCell>
+                        <TableCell>{renderEventType(event.eventType)}</TableCell>
+                        <TableCell>{event.responsibleName}</TableCell>
+                        <TableCell>{event.productionName || "-"}</TableCell>
+                        <TableCell>{event.notes || "-"}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
@@ -909,7 +708,7 @@ const Equipment = () => {
       
       {/* Modal de confirmação de exclusão */}
       <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
-        <AlertDialogContent className="bg-gray-900 border border-gray-800 text-white">
+        <AlertDialogContent className="bg-[#000000] border border-[#141414] text-white">
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmação de Exclusão</AlertDialogTitle>
             <AlertDialogDescription className="text-gray-400">
