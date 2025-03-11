@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import StatCard from "@/components/dashboard/StatCard";
 import DeadlineCard from "@/components/dashboard/DeadlineCard";
@@ -11,13 +11,14 @@ import ProductionsRanking from "@/components/dashboard/ProductionsRanking";
 import { useDashboardData } from "@/hooks/useDashboardData";
 
 const Dashboard = () => {
-  const [filter, setFilter] = React.useState("all");
-  const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [filter, setFilter] = useState("all");
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { 
     productionsCount, 
     todayProductions, 
     topProductions, 
-    isLoading 
+    isLoading,
+    error 
   } = useDashboardData();
   const navigate = useNavigate();
 
@@ -53,12 +54,40 @@ const Dashboard = () => {
     setFilter(newFilter);
   };
 
-  if (isLoading) {
+  // Add a timeout to prevent infinite loading states
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+  
+  React.useEffect(() => {
+    // If still loading after 10 seconds, show the dashboard anyway
+    const timer = setTimeout(() => {
+      if (isLoading) {
+        setLoadingTimeout(true);
+      }
+    }, 10000);
+    
+    return () => clearTimeout(timer);
+  }, [isLoading]);
+
+  // Either timed out or finished loading
+  if (isLoading && !loadingTimeout) {
     return (
       <MainLayout>
         <div className="flex justify-center items-center h-full py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-600 mr-2"></div>
           <p>Carregando...</p>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // Show error state if there was an error
+  if (error && !loadingTimeout) {
+    return (
+      <MainLayout>
+        <div className="flex flex-col justify-center items-center h-full py-12 text-center">
+          <div className="text-red-600 text-2xl mb-2">⚠️</div>
+          <p className="text-lg font-medium mb-2">Não foi possível carregar os dados</p>
+          <p className="text-sm text-gray-500">{error.message}</p>
         </div>
       </MainLayout>
     );
