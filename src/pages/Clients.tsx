@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -26,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 type Client = {
   id: string;
@@ -38,7 +38,6 @@ type Client = {
   productionsCount: number;
 };
 
-// Dados iniciais de exemplo
 const initialClients: Client[] = [
   {
     id: "1",
@@ -73,12 +72,15 @@ const initialClients: Client[] = [
 ];
 
 const ClientsPage = () => {
+  const { hasAction } = useAuth();
+  const canAddClient = hasAction('add_client');
+  const canEditClient = hasAction('edit_client');
+  
   const [clients, setClients] = useState<Client[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   
-  // Form states
   const [clientName, setClientName] = useState("");
   const [company, setCompany] = useState("");
   const [email, setEmail] = useState("");
@@ -87,7 +89,6 @@ const ClientsPage = () => {
   const [notes, setNotes] = useState("");
 
   useEffect(() => {
-    // Carregar clientes do localStorage ou usar os dados iniciais
     const savedClients = localStorage.getItem("clients");
     if (savedClients) {
       setClients(JSON.parse(savedClients));
@@ -96,14 +97,12 @@ const ClientsPage = () => {
     }
   }, []);
 
-  // Salvar clientes no localStorage sempre que mudar
   useEffect(() => {
     if (clients.length > 0) {
       localStorage.setItem("clients", JSON.stringify(clients));
     }
   }, [clients]);
 
-  // Configurar o formulário ao editar um cliente
   useEffect(() => {
     if (editingClient) {
       setClientName(editingClient.name);
@@ -144,11 +143,9 @@ const ClientsPage = () => {
     };
 
     if (editingClient) {
-      // Atualizar cliente existente
       setClients(clients.map(c => c.id === clientData.id ? clientData : c));
       toast.success("Cliente atualizado com sucesso!");
     } else {
-      // Adicionar novo cliente
       setClients([...clients, clientData]);
       toast.success("Cliente adicionado com sucesso!");
     }
@@ -178,16 +175,18 @@ const ClientsPage = () => {
     <MainLayout>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold">Clientes</h2>
-        <Button 
-          className="bg-red-600 hover:bg-red-700" 
-          onClick={() => {
-            setEditingClient(null);
-            setIsModalOpen(true);
-          }}
-        >
-          <PlusIcon className="mr-2 h-4 w-4" />
-          Novo Cliente
-        </Button>
+        {canAddClient && (
+          <Button 
+            className="bg-red-600 hover:bg-red-700" 
+            onClick={() => {
+              setEditingClient(null);
+              setIsModalOpen(true);
+            }}
+          >
+            <PlusIcon className="mr-2 h-4 w-4" />
+            Novo Cliente
+          </Button>
+        )}
       </div>
 
       <div className="bg-gray-900 p-4 rounded-lg mb-6">
@@ -208,16 +207,18 @@ const ClientsPage = () => {
             <UserIcon className="mx-auto h-12 w-12 text-gray-600 mb-4" />
             <h3 className="text-lg font-medium text-gray-400 mb-2">Nenhum cliente encontrado</h3>
             <p className="text-gray-500 mb-6">Adicione um novo cliente para começar</p>
-            <Button 
-              className="bg-red-600 hover:bg-red-700"
-              onClick={() => {
-                setEditingClient(null);
-                setIsModalOpen(true);
-              }}
-            >
-              <PlusIcon className="mr-2 h-4 w-4" />
-              Novo Cliente
-            </Button>
+            {canAddClient && (
+              <Button 
+                className="bg-red-600 hover:bg-red-700"
+                onClick={() => {
+                  setEditingClient(null);
+                  setIsModalOpen(true);
+                }}
+              >
+                <PlusIcon className="mr-2 h-4 w-4" />
+                Novo Cliente
+              </Button>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -232,7 +233,7 @@ const ClientsPage = () => {
               </thead>
               <tbody className="divide-y divide-gray-800">
                 {filteredClients.map(client => (
-                  <tr key={client.id} className="hover:bg-gray-800/50 cursor-pointer" onClick={() => openEditModal(client)}>
+                  <tr key={client.id} className="hover:bg-gray-800/50 cursor-pointer" onClick={() => canEditClient ? openEditModal(client) : null}>
                     <td className="p-4">
                       <div className="font-medium">{client.name}</div>
                       <div className="text-sm text-gray-400">{client.company}</div>
@@ -256,29 +257,31 @@ const ClientsPage = () => {
                       </div>
                     </td>
                     <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700">
-                          <DropdownMenuItem 
-                            className="hover:bg-gray-700 cursor-pointer"
-                            onClick={() => openEditModal(client)}
-                          >
-                            <Edit className="mr-2 h-4 w-4" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            className="hover:bg-gray-700 cursor-pointer text-red-400 hover:text-red-300"
-                            onClick={() => handleDeleteClient(client.id)}
-                          >
-                            <Trash className="mr-2 h-4 w-4" />
-                            Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      {canEditClient && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700">
+                            <DropdownMenuItem 
+                              className="hover:bg-gray-700 cursor-pointer"
+                              onClick={() => openEditModal(client)}
+                            >
+                              <Edit className="mr-2 h-4 w-4" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="hover:bg-gray-700 cursor-pointer text-red-400 hover:text-red-300"
+                              onClick={() => handleDeleteClient(client.id)}
+                            >
+                              <Trash className="mr-2 h-4 w-4" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -288,7 +291,6 @@ const ClientsPage = () => {
         )}
       </div>
 
-      {/* Modal para adicionar/editar cliente */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="bg-gray-900 border border-gray-800 text-white">
           <DialogHeader>

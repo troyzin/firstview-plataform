@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import { ptBR } from "date-fns/locale";
 import { Input } from "@/components/ui/input";
 import ProductionModal from "@/components/productions/ProductionModal";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 type TeamMember = {
   id: string;
@@ -29,7 +29,6 @@ type Production = {
   createdAt: Date;
 };
 
-// Exemplo de produções (simulando dados do banco)
 const initialProductions: Production[] = [
   {
     id: "1",
@@ -83,17 +82,18 @@ const initialProductions: Production[] = [
 ];
 
 const Productions = () => {
+  const { hasAction } = useAuth();
+  const canAddProduction = hasAction('add_production');
+  
   const [productions, setProductions] = useState<Production[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduction, setEditingProduction] = useState<Production | null>(null);
 
   useEffect(() => {
-    // Carregar produções do localStorage ou usar os dados iniciais
     const savedProductions = localStorage.getItem("productions");
     if (savedProductions) {
       const parsed = JSON.parse(savedProductions);
-      // Convertendo strings de data de volta para objetos Date
       const productions = parsed.map((prod: any) => ({
         ...prod,
         date: new Date(prod.date),
@@ -105,7 +105,6 @@ const Productions = () => {
     }
   }, []);
 
-  // Salvar produções no localStorage sempre que mudar
   useEffect(() => {
     if (productions.length > 0) {
       localStorage.setItem("productions", JSON.stringify(productions));
@@ -114,13 +113,11 @@ const Productions = () => {
 
   const handleAddProduction = (production: Production) => {
     if (editingProduction) {
-      // Atualizando produção existente
       setProductions(productions.map(p => 
         p.id === production.id ? production : p
       ));
       toast.success("Produção atualizada com sucesso!");
     } else {
-      // Adicionando nova produção
       setProductions([...productions, production]);
       toast.success("Produção criada com sucesso!");
     }
@@ -145,7 +142,6 @@ const Productions = () => {
     production.client.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Agrupar produções por data
   const groupProductionsByDate = (productions: Production[]) => {
     const groups: { [key: string]: Production[] } = {};
     
@@ -157,7 +153,6 @@ const Productions = () => {
       groups[dateKey].push(production);
     });
     
-    // Ordenar as datas
     return Object.keys(groups)
       .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
       .map(dateKey => ({
@@ -168,7 +163,6 @@ const Productions = () => {
 
   const groupedProductions = groupProductionsByDate(filteredProductions);
 
-  // Função para formatar a data no estilo "Segunda-feira, 20 de Dezembro"
   const formatDateHeader = (date: Date) => {
     const today = new Date();
     const tomorrow = new Date();
@@ -187,13 +181,15 @@ const Productions = () => {
     <MainLayout>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold">Produções</h2>
-        <Button className="bg-red-600 hover:bg-red-700" onClick={() => {
-          setEditingProduction(null);
-          setIsModalOpen(true);
-        }}>
-          <PlusIcon className="mr-2 h-4 w-4" />
-          Nova Produção
-        </Button>
+        {canAddProduction && (
+          <Button className="bg-red-600 hover:bg-red-700" onClick={() => {
+            setEditingProduction(null);
+            setIsModalOpen(true);
+          }}>
+            <PlusIcon className="mr-2 h-4 w-4" />
+            Nova Produção
+          </Button>
+        )}
       </div>
 
       <div className="bg-gray-900 p-4 rounded-lg mb-6">
@@ -214,16 +210,18 @@ const Productions = () => {
             <ClipboardCheck className="mx-auto h-12 w-12 text-gray-600 mb-4" />
             <h3 className="text-lg font-medium text-gray-400 mb-2">Nenhuma produção encontrada</h3>
             <p className="text-gray-500 mb-6">Crie uma nova produção para começar</p>
-            <Button 
-              className="bg-red-600 hover:bg-red-700"
-              onClick={() => {
-                setEditingProduction(null);
-                setIsModalOpen(true);
-              }}
-            >
-              <PlusIcon className="mr-2 h-4 w-4" />
-              Nova Produção
-            </Button>
+            {canAddProduction && (
+              <Button 
+                className="bg-red-600 hover:bg-red-700"
+                onClick={() => {
+                  setEditingProduction(null);
+                  setIsModalOpen(true);
+                }}
+              >
+                <PlusIcon className="mr-2 h-4 w-4" />
+                Nova Produção
+              </Button>
+            )}
           </div>
         ) : (
           groupedProductions.map(group => (

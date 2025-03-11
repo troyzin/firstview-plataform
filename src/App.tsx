@@ -34,31 +34,31 @@ const App = () => (
             } />
             
             <Route path="/productions" element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredActions={['view_productions']}>
                 <Productions />
               </ProtectedRoute>
             } />
             
             <Route path="/reports" element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredActions={['view_reports']}>
                 <Reports />
               </ProtectedRoute>
             } />
             
             <Route path="/team" element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredActions={['view_team']}>
                 <Team />
               </ProtectedRoute>
             } />
             
             <Route path="/equipment" element={
-              <ProtectedRoute requiredRoles={['master']}>
+              <ProtectedRoute requiredActions={['view_equipment']}>
                 <Equipment />
               </ProtectedRoute>
             } />
             
             <Route path="/clients" element={
-              <ProtectedRoute requiredRoles={['admin', 'master']}>
+              <ProtectedRoute requiredActions={['view_clients']}>
                 <Clients />
               </ProtectedRoute>
             } />

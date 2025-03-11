@@ -7,13 +7,15 @@ import { toast } from "sonner";
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requiredRoles?: string[];
+  requiredActions?: string[];
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
   children, 
-  requiredRoles = [] 
+  requiredRoles = [],
+  requiredActions = []
 }) => {
-  const { user, profile, loading, hasPermission } = useAuth();
+  const { user, profile, loading, hasPermission, hasAction } = useAuth();
   const location = useLocation();
 
   console.log('[PROTECTED] Route check:', { 
@@ -21,7 +23,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     userId: user?.id,
     profileRole: profile?.role,
     loading,
-    requiredRoles
+    requiredRoles,
+    requiredActions
   });
 
   // Show loading state
@@ -43,8 +46,15 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Check role-based permissions if specified
   if (requiredRoles.length > 0 && !hasPermission(requiredRoles)) {
-    console.log('[PROTECTED] Access denied, redirecting to /');
+    console.log('[PROTECTED] Role access denied, redirecting to /');
     toast.error("Você não tem permissão para acessar essa página");
+    return <Navigate to="/" replace />;
+  }
+
+  // Check action-based permissions if specified
+  if (requiredActions.length > 0 && !requiredActions.every(action => hasAction(action))) {
+    console.log('[PROTECTED] Action access denied, redirecting to /');
+    toast.error("Você não tem permissão para realizar esta ação");
     return <Navigate to="/" replace />;
   }
 

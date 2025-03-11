@@ -11,6 +11,44 @@ interface Profile {
   role: string | null;
 }
 
+// Define permissions by role
+const ROLE_PERMISSIONS = {
+  user: [
+    'view_productions', 
+    'view_clients', 
+    'view_equipment', 
+    'view_reports', 
+    'view_team'
+  ],
+  admin: [
+    'view_productions', 
+    'view_clients', 
+    'view_equipment', 
+    'view_reports', 
+    'view_team',
+    'add_production', 
+    'edit_production', 
+    'cancel_production', 
+    'add_client', 
+    'edit_client'
+  ],
+  master: [
+    'view_productions', 
+    'view_clients', 
+    'view_equipment', 
+    'view_reports', 
+    'view_team',
+    'add_production', 
+    'edit_production', 
+    'cancel_production', 
+    'add_client', 
+    'edit_client',
+    'add_equipment',
+    'edit_equipment',
+    'remove_equipment'
+  ],
+};
+
 interface AuthContextProps {
   session: Session | null;
   user: User | null;
@@ -20,6 +58,7 @@ interface AuthContextProps {
   isAdmin: boolean;
   isMaster: boolean;
   hasPermission: (requiredRole: string[]) => boolean;
+  hasAction: (action: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextProps>({
@@ -31,6 +70,7 @@ const AuthContext = createContext<AuthContextProps>({
   isAdmin: false,
   isMaster: false,
   hasPermission: () => false,
+  hasAction: () => false,
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -167,6 +207,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return requiredRoles.includes(profile.role);
   }, [profile]);
 
+  // Action-based permission check
+  const hasAction = useCallback((action: string) => {
+    if (!profile?.role) return false;
+    const role = profile.role as keyof typeof ROLE_PERMISSIONS;
+    return ROLE_PERMISSIONS[role]?.includes(action) || false;
+  }, [profile]);
+
   // Auth context value
   const value = {
     session,
@@ -177,6 +224,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isAdmin,
     isMaster,
     hasPermission,
+    hasAction,
   };
 
   console.log('[AUTH] Context state:', { 
