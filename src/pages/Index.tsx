@@ -16,57 +16,104 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import Loading from "@/components/Loading";
 
 const Dashboard = () => {
   const [filter, setFilter] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [productionsCount, setProductionsCount] = useState(0);
   const [todayProductions, setTodayProductions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [topProductions, setTopProductions] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchProductionsCount = async () => {
-      const now = new Date();
-      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-      
-      const { count, error } = await supabase
-        .from('productions')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', firstDayOfMonth.toISOString())
-        .lte('created_at', lastDayOfMonth.toISOString());
-      
-      if (error) {
-        console.error("Error fetching productions count:", error);
-        return;
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        await fetchProductionsCount();
+        await fetchTodayProductions();
+        await fetchTopProductions();
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setIsLoading(false);
       }
-      
-      setProductionsCount(count || 0);
     };
 
-    const fetchTodayProductions = async () => {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      
-      const { data, error } = await supabase
-        .from('productions')
-        .select('*, clients(id, name)')
-        .gte('start_date', today.toISOString())
-        .lt('start_date', tomorrow.toISOString());
-      
-      if (error) {
-        console.error("Error fetching today's productions:", error);
-        return;
-      }
-      
-      setTodayProductions(data || []);
-    };
-
-    fetchProductionsCount();
-    fetchTodayProductions();
+    fetchData();
   }, []);
+
+  const fetchProductionsCount = async () => {
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    
+    const { count, error } = await supabase
+      .from('productions')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', firstDayOfMonth.toISOString())
+      .lte('created_at', lastDayOfMonth.toISOString());
+    
+    if (error) {
+      console.error("Error fetching productions count:", error);
+      return;
+    }
+    
+    setProductionsCount(count || 0);
+  };
+
+  const fetchTodayProductions = async () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const { data, error } = await supabase
+      .from('productions')
+      .select('*, clients:client_id(id, name)')
+      .gte('start_date', today.toISOString())
+      .lt('start_date', tomorrow.toISOString());
+    
+    if (error) {
+      console.error("Error fetching today's productions:", error);
+      return;
+    }
+    
+    setTodayProductions(data || []);
+  };
+
+  const fetchTopProductions = async () => {
+    const { data, error } = await supabase
+      .from('productions')
+      .select('id, title, client_id, clients:client_id(id, name)')
+      .order('created_at', { ascending: false })
+      .limit(5);
+    
+    if (error) {
+      console.error("Error fetching top productions:", error);
+      return;
+    }
+    
+    const formattedData = (data || []).map((item) => {
+      // Get client name safely
+      let clientName = 'Cliente não especificado';
+      if (item.clients && typeof item.clients === 'object') {
+        // If clients is an object with a name property
+        clientName = item.clients.name || clientName;
+      }
+      
+      const initials = item.title.split(' ').slice(0, 2).map(word => word[0]).join('').toUpperCase();
+      
+      return {
+        name: item.title,
+        initials,
+        client: clientName
+      };
+    });
+    
+    setTopProductions(formattedData);
+  };
 
   const stats = [
     {
@@ -92,42 +139,6 @@ const Dashboard = () => {
     },
   ];
 
-  const [topProductions, setTopProductions] = useState([]);
-  
-  useEffect(() => {
-    const fetchTopProductions = async () => {
-      const { data, error } = await supabase
-        .from('productions')
-        .select('id, title, client_id, clients(id, name)')
-        .order('created_at', { ascending: false })
-        .limit(5);
-      
-      if (error) {
-        console.error("Error fetching top productions:", error);
-        return;
-      }
-      
-      const formattedData = (data || []).map((item) => {
-        // Fix: correctly access the clients array from the response
-        const clientName = item.clients && Array.isArray(item.clients) && item.clients.length > 0 
-          ? item.clients[0].name 
-          : 'Cliente não especificado';
-        
-        const initials = item.title.split(' ').slice(0, 2).map(word => word[0]).join('').toUpperCase();
-        
-        return {
-          name: item.title,
-          initials,
-          client: clientName
-        };
-      });
-      
-      setTopProductions(formattedData);
-    };
-    
-    fetchTopProductions();
-  }, []);
-
   const handleAddProduction = () => {
     navigate('/productions');
   };
@@ -137,6 +148,17 @@ const Dashboard = () => {
     const date = new Date(dateString);
     return format(date, "HH:mm", { locale: ptBR });
   };
+
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="flex justify-center items-center h-full py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-600 mr-2"></div>
+          <p>Carregando...</p>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -203,8 +225,8 @@ const Dashboard = () => {
                       <div>
                         <h4 className="font-medium">{production.title}</h4>
                         <p className="text-sm text-gray-400">
-                          {production.clients && Array.isArray(production.clients) && production.clients.length > 0 
-                            ? production.clients[0].name 
+                          {production.clients && typeof production.clients === 'object' 
+                            ? production.clients.name || 'Cliente não especificado'
                             : 'Cliente não especificado'}
                         </p>
                       </div>
