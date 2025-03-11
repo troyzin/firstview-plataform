@@ -15,7 +15,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requiredRoles = [],
   requiredActions = []
 }) => {
-  const { user, profile, loading, hasPermission, hasAction } = useAuth();
+  const { user, profile, loading } = useAuth();
   const location = useLocation();
 
   console.log('[PROTECTED] Route check:', { 
@@ -44,21 +44,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // Check role-based permissions if specified
-  if (requiredRoles.length > 0 && !hasPermission(requiredRoles)) {
-    console.log('[PROTECTED] Role access denied, redirecting to /');
-    toast.error("Você não tem permissão para acessar essa página");
-    return <Navigate to="/" replace />;
-  }
-
-  // Check action-based permissions if specified
-  if (requiredActions.length > 0 && !requiredActions.every(action => hasAction(action))) {
-    console.log('[PROTECTED] Action access denied, redirecting to /');
-    toast.error("Você não tem permissão para realizar esta ação");
-    return <Navigate to="/" replace />;
-  }
-
-  // If authenticated and has required permissions, render children
+  // All permissions checks are temporarily disabled
+  // Always render children for authenticated users
   console.log('[PROTECTED] Rendering protected content');
   return <>{children}</>;
 };

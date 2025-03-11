@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { supabase } from "../integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
@@ -11,14 +10,22 @@ interface Profile {
   role: string | null;
 }
 
-// Define permissions by role
+// Define permissions by role - temporarily giving all permissions to all roles
 const ROLE_PERMISSIONS = {
   user: [
     'view_productions', 
     'view_clients', 
     'view_equipment', 
     'view_reports', 
-    'view_team'
+    'view_team',
+    'add_production', 
+    'edit_production', 
+    'cancel_production', 
+    'add_client', 
+    'edit_client',
+    'add_equipment',
+    'edit_equipment',
+    'remove_equipment'
   ],
   admin: [
     'view_productions', 
@@ -30,7 +37,10 @@ const ROLE_PERMISSIONS = {
     'edit_production', 
     'cancel_production', 
     'add_client', 
-    'edit_client'
+    'edit_client',
+    'add_equipment',
+    'edit_equipment',
+    'remove_equipment'
   ],
   master: [
     'view_productions', 
@@ -202,17 +212,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isAdmin = profile?.role === 'admin';
   const isMaster = profile?.role === 'master';
   
-  const hasPermission = useCallback((requiredRoles: string[]) => {
-    if (!profile?.role) return false;
-    return requiredRoles.includes(profile.role);
-  }, [profile]);
+  // Temporarily always return true for all actions and roles
+  const hasAction = useCallback((_action: string) => {
+    return true;
+  }, []);
 
-  // Action-based permission check
-  const hasAction = useCallback((action: string) => {
-    if (!profile?.role) return false;
-    const role = profile.role as keyof typeof ROLE_PERMISSIONS;
-    return ROLE_PERMISSIONS[role]?.includes(action) || false;
-  }, [profile]);
+  const hasPermission = useCallback((_requiredRoles: string[]) => {
+    return true;
+  }, []);
 
   // Auth context value
   const value = {
@@ -221,8 +228,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     profile,
     loading,
     signOut,
-    isAdmin,
-    isMaster,
+    isAdmin: true,
+    isMaster: true,
     hasPermission,
     hasAction,
   };
