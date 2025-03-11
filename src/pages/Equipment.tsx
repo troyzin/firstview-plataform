@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { Plus, Search, Filter, Package, Calendar, LogOut, CheckCircle, AlertTriangle, ShoppingCart, History, Users, Edit, Trash2, MoreVertical } from "lucide-react";
+import { Plus, Search, Filter, Package, Calendar, LogOut, CheckCircle, AlertTriangle, ShoppingCart, History, Users, Edit, Trash2, MoreVertical, ArrowLeft } from "lucide-react";
 import MainLayout from "../components/layout/MainLayout";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -158,6 +158,14 @@ const Equipment = () => {
   const [selectedProduction, setSelectedProduction] = useState<string>("");
   const [scheduleNotes, setScheduleNotes] = useState<string>("");
   const [responsibleName, setResponsibleName] = useState<string>("");
+
+  // Novos estados para os modais de retirada e devolução
+  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+  const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
+  const [checkoutQuantity, setCheckoutQuantity] = useState(1);
+  const [checkoutProduction, setCheckoutProduction] = useState<string>("");
+  const [checkoutResponsible, setCheckoutResponsible] = useState<string>("");
+  const [checkoutNotes, setCheckoutNotes] = useState<string>("");
   
   // Efeito para adicionar HistoryEvents
   useEffect(() => {
@@ -284,7 +292,7 @@ const Equipment = () => {
       case "disponível":
         return <Badge className="bg-green-600">Disponível</Badge>;
       case "em uso":
-        return <Badge className="bg-blue-600">Em Uso</Badge>;
+        return <Badge className="bg-[#ff3335]">Em Uso</Badge>;
       case "manutenção":
         return <Badge className="bg-yellow-600">Manutenção</Badge>;
       default:
@@ -296,7 +304,7 @@ const Equipment = () => {
   const renderEventType = (eventType: HistoryEvent["eventType"]) => {
     switch (eventType) {
       case "checkout":
-        return <Badge className="bg-blue-600">Retirada</Badge>;
+        return <Badge className="bg-[#ff3335]">Retirada</Badge>;
       case "return":
         return <Badge className="bg-green-600">Devolução</Badge>;
       case "schedule":
@@ -322,30 +330,115 @@ const Equipment = () => {
     }
   };
 
-  // Função para retirar um equipamento
-  const handleCheckout = (equipment: Equipment) => {
+  // Função para abrir o modal de retirada
+  const openCheckoutModal = (equipment: Equipment) => {
     if (equipment.status !== "disponível") {
       toast.error("Este equipamento não está disponível para retirada");
       return;
     }
 
-    // Atualiza o status do equipamento para "em uso"
-    updateEquipmentStatus(equipment.id, "em uso");
+    setSelectedEquipment(equipment);
+    setCheckoutQuantity(1); // Reseta para 1 ou qualquer valor padrão
+    setCheckoutProduction("");
+    setCheckoutResponsible("");
+    setCheckoutNotes("");
+    setIsCheckoutModalOpen(true);
+  };
+
+  // Função para confirmar a retirada
+  const handleConfirmCheckout = async () => {
+    if (!selectedEquipment) return;
     
-    // Adiciona um novo evento ao histórico
-    const newEvent: HistoryEvent = {
-      id: `h${historyEvents.length + 1}`,
-      equipmentId: equipment.id,
-      equipmentName: equipment.name,
-      eventType: "checkout",
-      date: new Date(),
-      responsibleName: "Usuário Atual", // Idealmente seria o usuário logado
-      productionName: "Produção Atual",
-      notes: "Equipamento retirado"
-    };
+    try {
+      // Atualiza o status do equipamento para "em uso"
+      const { error } = await supabase
+        .from('equipment')
+        .update({ status: "em uso" })
+        .eq('id', selectedEquipment.id);
+      
+      if (error) throw error;
+      
+      // Adiciona um novo evento ao histórico
+      const newEvent: HistoryEvent = {
+        id: `h${historyEvents.length + 1}`,
+        equipmentId: selectedEquipment.id,
+        equipmentName: selectedEquipment.name,
+        eventType: "checkout",
+        date: new Date(),
+        responsibleName: checkoutResponsible || "Usuário Atual",
+        productionName: productionOptions.find(p => p.id === checkoutProduction)?.name,
+        notes: checkoutNotes || `Retirada de ${checkoutQuantity} unidade(s)`
+      };
+      
+      setHistoryEvents(prev => [newEvent, ...prev]);
+      toast.success(`${selectedEquipment.name} retirado com sucesso!`);
+      
+      // Atualiza a lista de equipamentos
+      refetch();
+      closeCheckoutModal();
+    } catch (error) {
+      console.error('Erro ao retirar equipamento:', error);
+      toast.error('Ocorreu um erro ao retirar o equipamento');
+    }
+  };
+
+  // Função para fechar o modal de retirada
+  const closeCheckoutModal = () => {
+    setSelectedEquipment(null);
+    setIsCheckoutModalOpen(false);
+  };
+
+  // Função para abrir o modal de devolução
+  const openReturnModal = (equipment: Equipment) => {
+    if (equipment.status !== "em uso") {
+      toast.error("Este equipamento não está em uso para ser devolvido");
+      return;
+    }
+
+    setSelectedEquipment(equipment);
+    setIsReturnModalOpen(true);
+  };
+
+  // Função para confirmar a devolução
+  const handleConfirmReturn = async () => {
+    if (!selectedEquipment) return;
     
-    setHistoryEvents(prev => [newEvent, ...prev]);
-    toast.success(`${equipment.name} retirado com sucesso!`);
+    try {
+      // Atualiza o status do equipamento para "disponível"
+      const { error } = await supabase
+        .from('equipment')
+        .update({ status: "disponível" })
+        .eq('id', selectedEquipment.id);
+      
+      if (error) throw error;
+      
+      // Adiciona um novo evento ao histórico
+      const newEvent: HistoryEvent = {
+        id: `h${historyEvents.length + 1}`,
+        equipmentId: selectedEquipment.id,
+        equipmentName: selectedEquipment.name,
+        eventType: "return",
+        date: new Date(),
+        responsibleName: "Usuário Atual", // Idealmente seria o usuário logado
+        notes: "Equipamento devolvido"
+      };
+      
+      setHistoryEvents(prev => [newEvent, ...prev]);
+      toast.success(`${selectedEquipment.name} devolvido com sucesso!`);
+      
+      // Atualiza a lista de equipamentos
+      refetch();
+      closeReturnModal();
+    } catch (error) {
+      console.error('Erro ao devolver equipamento:', error);
+      toast.error('Ocorreu um erro ao devolver o equipamento');
+    }
+  };
+
+  // Função para fechar o modal de devolução
+  const closeReturnModal = () => {
+    setSelectedEquipment(null);
+    setIsReturnModalOpen(false);
   };
 
   // Função para agendar um equipamento
@@ -479,9 +572,9 @@ const Equipment = () => {
           <div className="bg-[#141414] rounded-lg p-4 flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm">Em Uso</p>
-              <p className="text-2xl font-bold text-blue-500">{equipmentStats.inUse}</p>
+              <p className="text-2xl font-bold text-[#ff3335]">{equipmentStats.inUse}</p>
             </div>
-            <Users className="h-8 w-8 text-blue-500" />
+            <Users className="h-8 w-8 text-[#ff3335]" />
           </div>
           
           <div className="bg-[#141414] rounded-lg p-4 flex items-center justify-between">
@@ -499,7 +592,7 @@ const Equipment = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Tabela de equipamentos em uso */}
             <div className="bg-[#141414] rounded-lg p-4">
-              <h3 className="text-md font-medium mb-2 text-blue-400">Equipamentos em Uso</h3>
+              <h3 className="text-md font-medium mb-2 text-[#ff3335]">Equipamentos em Uso</h3>
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -701,12 +794,23 @@ const Equipment = () => {
                             <Button 
                               size="sm" 
                               className="flex-1 bg-[#ff3335] hover:bg-red-700"
-                              onClick={() => handleCheckout(equipment)}
+                              onClick={() => openCheckoutModal(equipment)}
                             >
                               <LogOut className="h-4 w-4 mr-1" />
                               Retirar
                             </Button>
                           </div>
+                        )}
+
+                        {equipment.status === "em uso" && (
+                          <Button 
+                            size="sm" 
+                            className="w-full bg-green-600 hover:bg-green-700"
+                            onClick={() => openReturnModal(equipment)}
+                          >
+                            <ArrowLeft className="h-4 w-4 mr-1" />
+                            Devolver
+                          </Button>
                         )}
                       </div>
                     </div>
@@ -984,6 +1088,121 @@ const Equipment = () => {
             >
               <Calendar className="h-4 w-4 mr-2" />
               Agendar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal para retirar equipamento */}
+      <Dialog open={isCheckoutModalOpen} onOpenChange={closeCheckoutModal}>
+        <DialogContent className="bg-[#000000] border border-[#141414] text-white sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Retirar Equipamento</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              {selectedEquipment?.name ? `Retirada para: ${selectedEquipment.name}` : 'Configure a retirada deste equipamento'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 my-4">
+            <div>
+              <label className="text-sm font-medium mb-1 block">Quantidade</label>
+              <Input 
+                type="number"
+                min={1}
+                max={selectedEquipment?.quantity || 1}
+                className="bg-[#141414] border-gray-700" 
+                value={checkoutQuantity}
+                onChange={(e) => setCheckoutQuantity(parseInt(e.target.value) || 1)}
+              />
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium mb-1 block">Produção</label>
+              <Select value={checkoutProduction} onValueChange={setCheckoutProduction}>
+                <SelectTrigger className="w-full bg-[#141414] border-gray-700">
+                  <SelectValue placeholder="Selecione uma produção" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#141414] border-gray-700">
+                  {productionOptions.map(production => (
+                    <SelectItem key={production.id} value={production.id}>
+                      {production.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium mb-1 block">Responsável</label>
+              <Input 
+                className="bg-[#141414] border-gray-700" 
+                placeholder="Nome do responsável" 
+                value={checkoutResponsible}
+                onChange={(e) => setCheckoutResponsible(e.target.value)}
+              />
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium mb-1 block">Observações</label>
+              <Textarea 
+                className="bg-[#141414] border-gray-700" 
+                placeholder="Observações adicionais..." 
+                value={checkoutNotes}
+                onChange={(e) => setCheckoutNotes(e.target.value)}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={closeCheckoutModal} className="bg-gray-800 text-white hover:bg-gray-700 border-gray-700">
+              Cancelar
+            </Button>
+            <Button 
+              className="bg-[#ff3335] hover:bg-red-700"
+              onClick={handleConfirmCheckout}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Confirmar Retirada
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal para devolver equipamento */}
+      <Dialog open={isReturnModalOpen} onOpenChange={closeReturnModal}>
+        <DialogContent className="bg-[#000000] border border-[#141414] text-white sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Devolver Equipamento</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              {selectedEquipment?.name ? `Confirmar devolução de: ${selectedEquipment.name}` : 'Confirme a devolução deste equipamento'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 my-4">
+            <p className="text-white">
+              Você está prestes a devolver este equipamento ao inventário disponível. 
+              Isso irá atualizar o status do equipamento para "Disponível".
+            </p>
+            
+            <div>
+              <label className="text-sm font-medium mb-1 block">Observações sobre a condição do equipamento (opcional)</label>
+              <Textarea 
+                className="bg-[#141414] border-gray-700" 
+                placeholder="Exemplo: Equipamento em bom estado, pequeno arranhão na lente..."
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={closeReturnModal} className="bg-gray-800 text-white hover:bg-gray-700 border-gray-700">
+              Cancelar
+            </Button>
+            <Button 
+              className="bg-green-600 hover:bg-green-700"
+              onClick={handleConfirmReturn}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Confirmar Devolução
             </Button>
           </DialogFooter>
         </DialogContent>
