@@ -25,30 +25,36 @@ const Dashboard = () => {
   const [todayProductions, setTodayProductions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [topProductions, setTopProductions] = useState([]);
-  const [dataFetched, setDataFetched] = useState(false);
   const navigate = useNavigate();
 
   // Only fetch data once when the component mounts
   useEffect(() => {
-    // Skip if data is already fetched
-    if (dataFetched) return;
+    let isMounted = true;
     
     const fetchData = async () => {
+      if (!isMounted) return;
+      
       setIsLoading(true);
       try {
         await fetchProductionsCount();
         await fetchTodayProductions();
         await fetchTopProductions();
-        setDataFetched(true);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchData();
-  }, [dataFetched]);
+    
+    // Cleanup function to prevent state updates after unmounting
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const fetchProductionsCount = async () => {
     const now = new Date();
@@ -125,8 +131,9 @@ const Dashboard = () => {
       let clientName = 'Cliente não especificado';
       
       // Properly check if clients exists and has the expected properties
-      if (item.clients && typeof item.clients === 'object' && 'name' in item.clients) {
-        clientName = item.clients.name || clientName;
+      if (item.clients && typeof item.clients === 'object') {
+        // Use optional chaining and nullish coalescing to safely access name
+        clientName = (item.clients as any)?.name || clientName;
       }
       
       const initials = item.title.split(' ').slice(0, 2).map(word => word[0]).join('').toUpperCase();
@@ -251,8 +258,8 @@ const Dashboard = () => {
                       <div>
                         <h4 className="font-medium">{production.title}</h4>
                         <p className="text-sm text-gray-400">
-                          {production.clients && typeof production.clients === 'object' && 'name' in production.clients
-                            ? production.clients.name 
+                          {production.clients && typeof production.clients === 'object'
+                            ? (production.clients as any)?.name || 'Cliente não especificado'
                             : 'Cliente não especificado'}
                         </p>
                       </div>
