@@ -24,31 +24,31 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     requiredRoles
   });
 
-  // Mostrar estado de carregamento
+  // Show loading state
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
-        <p className="ml-2 text-white">Carregando...</p>
+        <p className="ml-2 text-white">Carregando autenticação...</p>
       </div>
     );
   }
 
-  // Redirecionar para login se não estiver autenticado
+  // Redirect to login if not authenticated
   if (!user) {
     console.log('[PROTECTED] User not authenticated, redirecting to /auth');
     toast.error("Você precisa estar logado para acessar essa página");
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // Verificar permissões baseadas em papel se especificadas
+  // Check role-based permissions if specified
   if (requiredRoles.length > 0 && !hasPermission(requiredRoles)) {
     console.log('[PROTECTED] Access denied, redirecting to /');
     toast.error("Você não tem permissão para acessar essa página");
     return <Navigate to="/" replace />;
   }
 
-  // Se autenticado e com permissões necessárias, renderizar filhos
+  // If authenticated and has required permissions, render children
   console.log('[PROTECTED] Rendering protected content');
   return <>{children}</>;
 };

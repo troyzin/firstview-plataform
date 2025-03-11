@@ -19,7 +19,7 @@ const Auth = () => {
   const location = useLocation();
   const { user, loading: authLoading } = useAuth();
   
-  // Redirecionar se o usuário já estiver autenticado
+  // Redirect if user is already authenticated
   useEffect(() => {
     if (user && !authLoading) {
       console.log('[AUTH PAGE] User already authenticated, redirecting');
@@ -36,6 +36,7 @@ const Auth = () => {
 
     try {
       if (isSignUp) {
+        console.log('[AUTH PAGE] Attempting signup for:', email);
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -50,6 +51,7 @@ const Auth = () => {
         
         toast.success("Conta criada com sucesso! Verifique seu email para confirmar seu cadastro.");
       } else {
+        console.log('[AUTH PAGE] Attempting login for:', email);
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -62,6 +64,8 @@ const Auth = () => {
     } catch (error: any) {
       let errorMessage = "Ocorreu um erro durante a autenticação";
       
+      console.error('[AUTH PAGE] Authentication error:', error);
+      
       if (error.message.includes("Email not confirmed")) {
         errorMessage = "Por favor, confirme seu email antes de fazer login";
       } else if (error.message.includes("Invalid login credentials")) {
@@ -71,22 +75,23 @@ const Auth = () => {
       }
       
       toast.error(errorMessage);
-      console.error('[AUTH PAGE] Authentication error:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Se estiver carregando dados de autenticação, mostrar spinner
+  // Show loading state while auth is initializing
   if (authLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center p-4">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
-        <p className="ml-2 text-white">Carregando...</p>
+        <p className="ml-2 text-white">Verificando autenticação...</p>
       </div>
     );
   }
 
+  // If user is authenticated, they will be redirected by the useEffect above
+  // This is the login/signup form
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4">
       <div className="bg-[#141414] p-8 rounded-lg shadow-lg w-full max-w-md border border-gray-800">

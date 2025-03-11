@@ -40,11 +40,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
 
-  // Função para buscar o perfil do usuário
+  // Fetch profile data
   const fetchProfile = useCallback(async (userId: string) => {
-    if (!userId) return null;
-    
     try {
       console.log('[AUTH] Fetching profile for user:', userId);
       
@@ -55,118 +54,120 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (error) {
-        console.error('[AUTH] Error fetching user profile:', error);
+        console.error('[AUTH] Error fetching profile:', error.message);
         return null;
       }
 
-      console.log('[AUTH] Profile fetched successfully:', data);
+      console.log('[AUTH] Profile fetched:', data);
       return data;
     } catch (error) {
-      console.error('[AUTH] Error in fetchProfile:', error);
+      console.error('[AUTH] Unexpected error in fetchProfile:', error);
       return null;
     }
   }, []);
 
-  // Inicializar autenticação
-  useEffect(() => {
-    let mounted = true;
-    
-    const initializeAuth = async () => {
-      try {
-        console.log('[AUTH] Initializing auth...');
+  // Update auth state based on session
+  const updateAuthState = useCallback(async (currentSession: Session | null) => {
+    try {
+      console.log('[AUTH] Updating auth state with session:', currentSession?.user?.id || 'No session');
+      
+      if (currentSession?.user) {
+        setSession(currentSession);
+        setUser(currentSession.user);
         
-        // Obter sessão inicial
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        
-        if (!mounted) return;
-        
-        console.log('[AUTH] Initial session:', currentSession?.user?.id || 'No session');
-        
-        if (currentSession?.user) {
-          setSession(currentSession);
-          setUser(currentSession.user);
-          
-          // Buscar perfil apenas se houver um usuário autenticado
-          const profileData = await fetchProfile(currentSession.user.id);
-          if (mounted) {
-            setProfile(profileData);
-          }
-        } else {
-          // Sem sessão, definir tudo como nulo
-          setSession(null);
-          setUser(null);
-          setProfile(null);
-        }
-      } catch (error) {
-        console.error('[AUTH] Error in authentication initialization:', error);
-      } finally {
-        if (mounted) {
-          setLoading(false);
-          console.log('[AUTH] Auth initialization complete, loading set to false');
-        }
+        const profileData = await fetchProfile(currentSession.user.id);
+        setProfile(profileData);
+      } else {
+        setSession(null);
+        setUser(null);
+        setProfile(null);
       }
-    };
-
-    // Configurar listener para mudanças de estado de autenticação
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
-        console.log('[AUTH] Auth state changed:', event, newSession?.user?.id);
-        
-        if (!mounted) return;
-        
-        if (newSession?.user) {
-          setSession(newSession);
-          setUser(newSession.user);
-          
-          const profileData = await fetchProfile(newSession.user.id);
-          if (mounted) {
-            setProfile(profileData);
-          }
-        } else {
-          setSession(null);
-          setUser(null);
-          setProfile(null);
-        }
-        
-        setLoading(false);
-        console.log('[AUTH] Auth state change complete, loading set to false');
-      }
-    );
-
-    // Inicializar autenticação
-    initializeAuth();
-
-    // Limpeza ao desmontar
-    return () => {
-      mounted = false;
-      authListener.subscription.unsubscribe();
-    };
+    } catch (error) {
+      console.error('[AUTH] Error updating auth state:', error);
+    }
   }, [fetchProfile]);
 
-  // Função de logout
+  // Initialize auth once
+  useEffect(() => {
+    if (initialized) return;
+    
+    let mounted = true;
+    console.log('[AUTH] Initializing auth system');
+    
+    const initAuth = async () => {
+      try {
+        // Get initial session
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('[AUTH] Error getting session:', error.message);
+          if (mounted) setLoading(false);
+          return;
+        }
+        
+        if (mounted) {
+          await updateAuthState(data.session);
+          setInitialized(true);
+          setLoading(false);
+          console.log('[AUTH] Auth initialized, loading set to false');
+        }
+      } catch (error) {
+        console.error('[AUTH] Error in auth initialization:', error);
+        if (mounted) {
+          setLoading(false);
+          setInitialized(true);
+        }
+      }
+    };
+    
+    initAuth();
+    
+    return () => {
+      mounted = false;
+    };
+  }, [initialized, updateAuthState]);
+
+  // Listen for auth changes
+  useEffect(() => {
+    if (!initialized) return;
+    
+    console.log('[AUTH] Setting up auth state change listener');
+    
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      async (_event, newSession) => {
+        console.log('[AUTH] Auth state changed, new session:', newSession?.user?.id || 'No session');
+        await updateAuthState(newSession);
+      }
+    );
+    
+    return () => {
+      console.log('[AUTH] Removing auth state change listener');
+      listener.subscription.unsubscribe();
+    };
+  }, [initialized, updateAuthState]);
+
+  // Sign out function
   const signOut = async () => {
     try {
-      setLoading(true);
+      console.log('[AUTH] Signing out');
       await supabase.auth.signOut();
       toast.success("Logout realizado com sucesso");
     } catch (error) {
-      console.error('[AUTH] Error logging out:', error);
+      console.error('[AUTH] Error signing out:', error);
       toast.error("Erro ao fazer logout");
-    } finally {
-      setLoading(false);
     }
   };
 
-  // Verificações de permissão
+  // Role-based permission checks
   const isAdmin = profile?.role === 'admin';
   const isMaster = profile?.role === 'master';
   
   const hasPermission = useCallback((requiredRoles: string[]) => {
-    if (!profile || !profile.role) return false;
+    if (!profile?.role) return false;
     return requiredRoles.includes(profile.role);
   }, [profile]);
 
-  // Valor do contexto
+  // Auth context value
   const value = {
     session,
     user,
@@ -178,10 +179,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     hasPermission,
   };
 
-  console.log('[AUTH] Auth context state:', { 
+  console.log('[AUTH] Context state:', { 
     userId: user?.id, 
     profileRole: profile?.role, 
-    loading
+    loading,
+    initialized
   });
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
