@@ -52,16 +52,21 @@ const MainLayout = ({ children }: MainLayoutProps) => {
         <div className="p-4 border-b border-gray-800 flex items-center justify-between">
           {!sidebarCollapsed && (
             <div className="flex items-center space-x-2">
-              <svg className="w-8 h-8 text-red-600" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" />
-              </svg>
+              {/* Logo atualizada aqui */}
+              <img 
+                src="/logo.png" 
+                alt="Logo da empresa" 
+                className="w-8 h-8 object-contain" 
+              />
               <h1 className="text-xl font-bold">First View</h1>
             </div>
           )}
           {sidebarCollapsed && (
-            <svg className="w-8 h-8 text-red-600 mx-auto" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" />
-            </svg>
+            <img 
+              src="/logo.png" 
+              alt="Logo da empresa" 
+              className="w-8 h-8 object-contain mx-auto" 
+            />
           )}
           <Button 
             variant="ghost" 

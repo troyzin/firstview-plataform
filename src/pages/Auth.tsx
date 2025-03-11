@@ -100,6 +100,14 @@ const Auth = () => {
     <div className="min-h-screen bg-black flex items-center justify-center p-4">
       <div className="bg-gray-900 p-8 rounded-lg shadow-lg w-full max-w-md">
         <div className="mb-8 text-center">
+          {/* Logo adicionada aqui */}
+          <div className="flex justify-center mb-6">
+            <img 
+              src="/logo.png" 
+              alt="Logo da empresa" 
+              className="h-16 w-auto"
+            />
+          </div>
           <h1 className="text-3xl font-bold mb-2">First View Platform</h1>
           <p className="text-gray-400">
             {isSignUp
