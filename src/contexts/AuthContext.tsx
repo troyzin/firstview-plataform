@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { supabase } from "../integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
 import { toast } from "sonner";
@@ -40,15 +40,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [fetchingProfile, setFetchingProfile] = useState(false);
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
-  const fetchProfile = async (userId: string) => {
+  // Função simplificada para buscar o perfil do usuário
+  const fetchProfile = useCallback(async (userId: string) => {
     if (!userId) return null;
     
     try {
-      setFetchingProfile(true);
-      console.log('Fetching profile for user:', userId);
+      console.log('[AUTH] Fetching profile for user:', userId);
       
       const { data, error } = await supabase
         .from('profiles')
@@ -57,64 +55,72 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (error) {
-        console.error('Error fetching user profile:', error);
+        console.error('[AUTH] Error fetching user profile:', error);
         return null;
       }
 
-      console.log('Profile fetched successfully:', data);
+      console.log('[AUTH] Profile fetched successfully:', data);
       return data;
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      console.error('[AUTH] Error fetching user profile:', error);
       return null;
-    } finally {
-      setFetchingProfile(false);
     }
-  };
+  }, []);
 
+  // Este useEffect só é executado uma vez na montagem do componente
   useEffect(() => {
     let mounted = true;
     
-    // Get initial session
-    const getInitialSession = async () => {
+    const initializeAuth = async () => {
       try {
-        console.log('Getting initial session...');
+        console.log('[AUTH] Initializing auth...');
         setLoading(true);
         
-        const { data } = await supabase.auth.getSession();
+        // Obter sessão inicial
+        const { data: sessionData } = await supabase.auth.getSession();
         
         if (!mounted) return;
         
-        console.log('Initial session:', data.session?.user?.id || 'No session');
-        setSession(data.session);
+        const currentSession = sessionData.session;
+        console.log('[AUTH] Initial session:', currentSession?.user?.id || 'No session');
         
-        if (data.session?.user) {
-          setUser(data.session.user);
-          const profileData = await fetchProfile(data.session.user.id);
+        if (currentSession?.user) {
+          setSession(currentSession);
+          setUser(currentSession.user);
+          
+          // Buscar perfil apenas se houver um usuário autenticado
+          const profileData = await fetchProfile(currentSession.user.id);
           if (mounted) {
             setProfile(profileData);
           }
+        } else {
+          // Sem sessão, definir tudo como nulo
+          setSession(null);
+          setUser(null);
+          setProfile(null);
         }
       } catch (error) {
-        console.error('Error in initial authentication:', error);
+        console.error('[AUTH] Error in authentication initialization:', error);
         toast.error("Erro ao carregar dados do usuário");
       } finally {
         if (mounted) {
           setLoading(false);
-          setInitialLoadComplete(true);
-          console.log('Initial load complete');
+          console.log('[AUTH] Auth initialization complete');
         }
       }
     };
 
-    getInitialSession();
+    // Inicializar autenticação
+    initializeAuth();
 
-    // Listen for auth changes
+    // Configurar listener para mudanças de estado de autenticação
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
-        console.log('Auth state changed:', event, newSession?.user?.id);
+        console.log('[AUTH] Auth state changed:', event, newSession?.user?.id);
         
         if (!mounted) return;
         
+        // Atualizar estado com a nova sessão
         setSession(newSession);
         setUser(newSession?.user ?? null);
         
@@ -131,54 +137,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
+    // Limpeza ao desmontar
     return () => {
       mounted = false;
       authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [fetchProfile]);
 
+  // Função de logout
   const signOut = async () => {
     try {
       setLoading(true);
       await supabase.auth.signOut();
       toast.success("Logout realizado com sucesso");
     } catch (error) {
-      console.error('Error logging out:', error);
+      console.error('[AUTH] Error logging out:', error);
       toast.error("Erro ao fazer logout");
     } finally {
       setLoading(false);
     }
   };
 
-  // Check if user has admin role
+  // Verificações de permissão
   const isAdmin = profile?.role === 'admin';
-  
-  // Check if user has master role
   const isMaster = profile?.role === 'master';
   
-  // Function to check if user has permission based on required roles
-  const hasPermission = (requiredRoles: string[]) => {
+  const hasPermission = useCallback((requiredRoles: string[]) => {
     if (!profile || !profile.role) return false;
     return requiredRoles.includes(profile.role);
-  };
+  }, [profile]);
 
+  // Valor do contexto
   const value = {
     session,
     user,
     profile,
-    loading: loading || fetchingProfile,
+    loading,
     signOut,
     isAdmin,
     isMaster,
     hasPermission,
   };
 
-  console.log('Auth context value:', { 
+  console.log('[AUTH] Auth context state:', { 
     userId: user?.id, 
     profileRole: profile?.role, 
-    loading, 
-    fetchingProfile,
-    initialLoadComplete
+    loading
   });
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

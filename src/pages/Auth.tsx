@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
+
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "../integrations/supabase/client";
 import { Button } from "../components/ui/button";
@@ -6,6 +7,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Mail, Lock, User, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "../contexts/AuthContext";
 
 const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -15,46 +17,16 @@ const Auth = () => {
   const [fullName, setFullName] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
-  const [checkingSession, setCheckingSession] = useState(true);
-  const [sessionChecked, setSessionChecked] = useState(false);
-
-  const checkSession = useCallback(async () => {
-    try {
-      setCheckingSession(true);
-      const { data } = await supabase.auth.getSession();
-      console.log('Auth page - session check:', data.session?.user?.id || 'No session');
-      
-      if (data.session) {
-        const from = location.state?.from?.pathname || '/';
-        navigate(from, { replace: true });
-      }
-    } catch (error) {
-      console.error('Erro ao verificar sessão:', error);
-    } finally {
-      setCheckingSession(false);
-      setSessionChecked(true);
-    }
-  }, [navigate, location]);
+  const { user, loading: authLoading } = useAuth();
   
+  // Redirecionar se o usuário já estiver autenticado
   useEffect(() => {
-    if (!sessionChecked) {
-      checkSession();
+    if (user && !authLoading) {
+      console.log('[AUTH PAGE] User already authenticated, redirecting');
+      const from = location.state?.from?.pathname || '/';
+      navigate(from, { replace: true });
     }
-    
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log('Auth page - auth state changed:', event, session?.user?.id);
-        if (event === 'SIGNED_IN' && session) {
-          const from = location.state?.from?.pathname || '/';
-          navigate(from, { replace: true });
-        }
-      }
-    );
-    
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, [checkSession, navigate, location, sessionChecked]);
+  }, [user, authLoading, navigate, location]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,13 +69,14 @@ const Auth = () => {
       }
       
       toast.error(errorMessage);
-      console.error('Erro de autenticação:', error);
+      console.error('[AUTH PAGE] Authentication error:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  if (checkingSession) {
+  // Se estiver carregando dados de autenticação, mostrar spinner
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center p-4">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>

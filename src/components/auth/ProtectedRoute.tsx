@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { toast } from "sonner";
@@ -16,24 +16,15 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { user, profile, loading, hasPermission } = useAuth();
   const location = useLocation();
 
-  useEffect(() => {
-    if (!loading && !user) {
-      toast.error("Você precisa estar logado para acessar essa página");
-    } else if (!loading && user && requiredRoles.length > 0 && !hasPermission(requiredRoles)) {
-      toast.error("Você não tem permissão para acessar essa página");
-    }
-  }, [loading, user, requiredRoles, hasPermission]);
-
-  console.log('ProtectedRoute:', { 
+  console.log('[PROTECTED] Route check:', { 
     path: location.pathname,
     userId: user?.id,
     profileRole: profile?.role,
     loading,
-    requiredRoles,
-    hasPermission: requiredRoles.length > 0 ? hasPermission(requiredRoles) : 'N/A'
+    requiredRoles
   });
 
-  // Show loading state while checking authentication
+  // Mostrar estado de carregamento
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black">
@@ -42,20 +33,22 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  // Redirect to login if not authenticated
+  // Redirecionar para login se não estiver autenticado
   if (!user) {
-    console.log('Not authenticated, redirecting to /auth');
+    console.log('[PROTECTED] User not authenticated, redirecting to /auth');
+    toast.error("Você precisa estar logado para acessar essa página");
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // Check role-based access if roles are specified
+  // Verificar permissões baseadas em papel se especificadas
   if (requiredRoles.length > 0 && !hasPermission(requiredRoles)) {
-    console.log('Access denied, redirecting to /');
+    console.log('[PROTECTED] Access denied, redirecting to /');
+    toast.error("Você não tem permissão para acessar essa página");
     return <Navigate to="/" replace />;
   }
 
-  // If authenticated and has required permissions, render children
-  console.log('Rendering protected content');
+  // Se autenticado e com permissões necessárias, renderizar filhos
+  console.log('[PROTECTED] Rendering protected content');
   return <>{children}</>;
 };
 
