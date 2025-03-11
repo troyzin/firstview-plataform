@@ -103,7 +103,7 @@ const Auth = () => {
             <img 
               src="/logo.png" 
               alt="Logo da empresa" 
-              className="h-15 w-auto"
+              className="h-5 w-auto"
             />
           </div>
           <p className="text-gray-400">
