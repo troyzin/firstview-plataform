@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import StatCard from "@/components/dashboard/StatCard";
@@ -107,8 +108,11 @@ const Dashboard = () => {
       }
       
       const formattedData = (data || []).map((item) => {
-        const clientObj = item.clients && item.clients.length > 0 ? item.clients[0] : null;
-        const clientName = clientObj?.name || 'Cliente não especificado';
+        // Fix: correctly access the clients array from the response
+        const clientName = item.clients && Array.isArray(item.clients) && item.clients.length > 0 
+          ? item.clients[0].name 
+          : 'Cliente não especificado';
+        
         const initials = item.title.split(' ').slice(0, 2).map(word => word[0]).join('').toUpperCase();
         
         return {
@@ -199,7 +203,7 @@ const Dashboard = () => {
                       <div>
                         <h4 className="font-medium">{production.title}</h4>
                         <p className="text-sm text-gray-400">
-                          {production.clients && production.clients.length > 0 
+                          {production.clients && Array.isArray(production.clients) && production.clients.length > 0 
                             ? production.clients[0].name 
                             : 'Cliente não especificado'}
                         </p>
