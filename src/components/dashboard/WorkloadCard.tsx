@@ -6,20 +6,20 @@ import { MoreVertical } from "lucide-react";
 type WorkloadItem = {
   name: string;
   initials: string;
-  current: number;
-  max: number;
+  current?: number;
+  max?: number;
   currentLoad?: number;
   maxLoad?: number;
 };
 
 type WorkloadCardProps = {
-  workloads: WorkloadItem[];
+  workloads?: WorkloadItem[];
   members?: WorkloadItem[];
 };
 
 const WorkloadCard = ({ workloads, members }: WorkloadCardProps) => {
   // Use members prop if provided, otherwise use workloads
-  const items = members || workloads;
+  const items = members || workloads || [];
 
   const getProgressColor = (current: number, max: number) => {
     const percentage = (current / max) * 100;

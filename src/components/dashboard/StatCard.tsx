@@ -7,7 +7,7 @@ type StatCardProps = {
   title: string;
   value: string | number;
   icon: string | LucideIcon;
-  color: "red" | "blue" | "yellow" | "green";
+  color: "red" | "blue" | "yellow" | "green" | string;
   trend: {
     value: string;
     label?: string;

@@ -5,8 +5,8 @@ import { ChevronRight } from "lucide-react";
 export type DeadlineItem = {
   id?: string;
   title: string;
-  dueDate: string;
-  priority: "low" | "medium" | "high";
+  dueDate?: string;
+  priority?: "low" | "medium" | "high";
   status: "pending" | "overdue" | "completed" | "urgent" | "late" | "upcoming";
   timeLeft?: string;
 };
@@ -92,9 +92,9 @@ const DeadlineCard = ({ deadlines, onViewDeadline }: DeadlineCardProps) => {
       <h3 className="text-lg font-semibold mb-4">Próximos Prazos</h3>
       <div className="space-y-3">
         {deadlines.map((item, index) => {
-          const priorityColor = getPriorityColor(item.priority, item.status);
+          const priorityColor = getPriorityColor(item.priority || "medium", item.status);
           const statusColor = getStatusColor(item.status);
-          const displayDate = item.timeLeft || item.dueDate;
+          const displayDate = item.timeLeft || item.dueDate || "";
           
           return (
             <div 
@@ -104,7 +104,7 @@ const DeadlineCard = ({ deadlines, onViewDeadline }: DeadlineCardProps) => {
             >
               <div className={`w-10 h-10 ${priorityColor.bg} rounded-full flex items-center justify-center mr-3`}>
                 <span className={`material-symbols-outlined ${priorityColor.text}`}>
-                  {getPriorityIcon(item.priority, item.status)}
+                  {getPriorityIcon(item.priority || "medium", item.status)}
                 </span>
               </div>
               <div className="flex-1">
