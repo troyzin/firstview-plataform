@@ -25,15 +25,21 @@ const Dashboard = () => {
   const [todayProductions, setTodayProductions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [topProductions, setTopProductions] = useState([]);
+  const [dataFetched, setDataFetched] = useState(false);
   const navigate = useNavigate();
 
+  // Only fetch data once when the component mounts
   useEffect(() => {
+    // Skip if data is already fetched
+    if (dataFetched) return;
+    
     const fetchData = async () => {
       setIsLoading(true);
       try {
         await fetchProductionsCount();
         await fetchTodayProductions();
         await fetchTopProductions();
+        setDataFetched(true);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -42,7 +48,7 @@ const Dashboard = () => {
     };
 
     fetchData();
-  }, []);
+  }, [dataFetched]);
 
   const fetchProductionsCount = async () => {
     const now = new Date();
@@ -71,7 +77,18 @@ const Dashboard = () => {
     
     const { data, error } = await supabase
       .from('productions')
-      .select('*, clients:client_id(id, name)')
+      .select(`
+        id, 
+        title, 
+        description, 
+        start_date, 
+        end_date, 
+        client_id,
+        clients (
+          id, 
+          name
+        )
+      `)
       .gte('start_date', today.toISOString())
       .lt('start_date', tomorrow.toISOString());
     
@@ -86,7 +103,15 @@ const Dashboard = () => {
   const fetchTopProductions = async () => {
     const { data, error } = await supabase
       .from('productions')
-      .select('id, title, client_id, clients:client_id(id, name)')
+      .select(`
+        id, 
+        title, 
+        client_id,
+        clients (
+          id, 
+          name
+        )
+      `)
       .order('created_at', { ascending: false })
       .limit(5);
     
@@ -96,10 +121,11 @@ const Dashboard = () => {
     }
     
     const formattedData = (data || []).map((item) => {
-      // Get client name safely
+      // Safely handle client name
       let clientName = 'Cliente não especificado';
-      if (item.clients && typeof item.clients === 'object') {
-        // If clients is an object with a name property
+      
+      // Properly check if clients exists and has the expected properties
+      if (item.clients && typeof item.clients === 'object' && 'name' in item.clients) {
         clientName = item.clients.name || clientName;
       }
       
@@ -225,8 +251,8 @@ const Dashboard = () => {
                       <div>
                         <h4 className="font-medium">{production.title}</h4>
                         <p className="text-sm text-gray-400">
-                          {production.clients && typeof production.clients === 'object' 
-                            ? production.clients.name || 'Cliente não especificado'
+                          {production.clients && typeof production.clients === 'object' && 'name' in production.clients
+                            ? production.clients.name 
                             : 'Cliente não especificado'}
                         </p>
                       </div>
