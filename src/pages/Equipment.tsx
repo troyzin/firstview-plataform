@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Plus, Search, Filter, Package, Calendar, LogOut, CheckCircle, AlertTriangle, ShoppingCart, History, Clock, Users, Edit, Trash2 } from "lucide-react";
 import MainLayout from "../components/layout/MainLayout";
@@ -808,7 +809,6 @@ const Equipment = () => {
                           {format(new Date(record.startDate), "dd/MM/yyyy", { locale: ptBR })}
                         </p>
                         
-                        {/* Modificando a exibição da data de devolução conforme solicitado */}
                         {record.status === "returned" ? (
                           <>
                             <p className="text-sm text-gray-400">
@@ -817,4 +817,121 @@ const Equipment = () => {
                             </p>
                             <p className="text-sm text-green-400">
                               <span className="font-medium">Devolvido em: </span>
-                              {record
+                              {record.returnedDate && format(new Date(record.returnedDate), "dd/MM/yyyy", { locale: ptBR })}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-sm text-gray-400">
+                            <span className="font-medium">Data Prevista: </span>
+                            {format(new Date(record.endDate), "dd/MM/yyyy", { locale: ptBR })}
+                          </p>
+                        )}
+                      </div>
+                      
+                      {record.notes && (
+                        <div>
+                          <p className="text-sm text-gray-400">
+                            <span className="font-medium">Observações: </span>
+                            {record.notes}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="history" className="space-y-4">
+            {filteredHistoryEvents.length === 0 ? (
+              <div className="bg-[#141414] rounded-lg p-8 text-center">
+                <History className="h-12 w-12 mx-auto text-gray-500 mb-4" />
+                <h3 className="text-xl font-medium text-gray-300 mb-2">Nenhum histórico encontrado</h3>
+                <p className="text-gray-400 max-w-md mx-auto">
+                  {searchTerm ? 
+                    `Não encontramos registros com o termo "${searchTerm}"` : 
+                    "Não há eventos registrados no histórico"}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filteredHistoryEvents.map((event) => (
+                  <div 
+                    key={event.id}
+                    className="bg-[#141414] border border-gray-700 rounded-lg p-4 hover:border-gray-600 transition-all"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-medium">{event.equipmentName}</h3>
+                        {event.productionName && (
+                          <p className="text-gray-400">
+                            <span className="text-gray-500">Produção:</span> {event.productionName}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        {renderEventType(event.eventType)}
+                        <span className="text-gray-400 text-sm">
+                          {format(new Date(event.date), "dd/MM/yyyy", { locale: ptBR })}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-400">
+                        <span className="font-medium">Responsável: </span>
+                        {event.responsibleName}
+                      </p>
+                      
+                      {event.notes && (
+                        <p className="text-sm text-gray-400 mt-1">
+                          <span className="font-medium">Observações: </span>
+                          {event.notes}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
+      
+      {/* Modais */}
+      <EquipmentModal
+        isOpen={isNewEquipmentModalOpen}
+        onClose={() => setIsNewEquipmentModalOpen(false)}
+        equipment={equipmentToEdit}
+        onSuccess={refetch}
+      />
+      
+      {/* Modal de confirmação de exclusão */}
+      <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <AlertDialogContent className="bg-gray-900 border border-gray-800 text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmação de Exclusão</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              Tem certeza que deseja excluir o equipamento <span className="text-white font-medium">{selectedEquipment?.name}</span>?
+              <br />Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-gray-800 text-white hover:bg-gray-700 border-gray-700">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteEquipment}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </MainLayout>
+  );
+};
+
+export default Equipment;
