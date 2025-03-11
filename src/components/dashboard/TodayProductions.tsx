@@ -9,7 +9,9 @@ type Production = {
   description?: string;
   start_date?: string;
   end_date?: string;
-  clients?: any;
+  client_name?: string;
+  start_time?: string;
+  end_time?: string;
 };
 
 interface TodayProductionsProps {
@@ -17,10 +19,9 @@ interface TodayProductionsProps {
 }
 
 const TodayProductions = ({ productions }: TodayProductionsProps) => {
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    return format(date, "HH:mm", { locale: ptBR });
+  const formatTime = (timeString?: string) => {
+    if (!timeString) return "";
+    return timeString;
   };
 
   return (
@@ -34,17 +35,13 @@ const TodayProductions = ({ productions }: TodayProductionsProps) => {
                 <div>
                   <h4 className="font-medium">{production.title}</h4>
                   <p className="text-sm text-gray-400">
-                    {production.clients && typeof production.clients === 'object'
-                      ? (production.clients as any)?.name || 'Cliente não especificado'
-                      : 'Cliente não especificado'}
+                    {production.client_name || 'Cliente não especificado'}
                   </p>
                 </div>
-                {production.start_date && (
-                  <div className="text-sm text-gray-300">
-                    {formatDate(production.start_date)}
-                    {production.end_date && ` - ${formatDate(production.end_date)}`}
-                  </div>
-                )}
+                <div className="text-sm text-gray-300">
+                  {production.start_time && formatTime(production.start_time)}
+                  {production.end_time && ` - ${formatTime(production.end_time)}`}
+                </div>
               </div>
               {production.description && (
                 <p className="text-sm text-gray-400 mt-2">{production.description}</p>

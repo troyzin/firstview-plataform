@@ -86,20 +86,10 @@ export const useDashboardData = () => {
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
       
+      // Use a simpler query that doesn't try to join with clients
       const { data, error } = await supabase
         .from('productions')
-        .select(`
-          id, 
-          title, 
-          description, 
-          start_date, 
-          end_date, 
-          client_id,
-          clients (
-            id, 
-            name
-          )
-        `)
+        .select('*')
         .gte('start_date', today.toISOString())
         .lt('start_date', tomorrow.toISOString());
       
@@ -124,17 +114,10 @@ export const useDashboardData = () => {
     if (!isMounted.current) return;
     
     try {
+      // Use a simpler query that doesn't try to join with clients
       const { data, error } = await supabase
         .from('productions')
-        .select(`
-          id, 
-          title, 
-          client_id,
-          clients (
-            id, 
-            name
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(5);
       
@@ -149,17 +132,9 @@ export const useDashboardData = () => {
       
       if (isMounted.current && data) {
         const formattedData = data.map(item => {
-          // Default values
-          let clientName = 'Cliente não especificado';
+          // Get title and client
           const title = item.title || 'Sem título';
-          
-          // Properly handle null clients with safe type check
-          if (item.clients) { // Simplified null check
-            const clientNameValue = (item.clients as any).name;
-            if (clientNameValue) {
-              clientName = clientNameValue;
-            }
-          }
+          const clientName = item.client_name || 'Cliente não especificado';
           
           // Generate initials from title
           let initials = '';

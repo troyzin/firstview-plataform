@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { PlusIcon, SearchIcon, ClipboardCheck, CalendarIcon, MapPin, ClockIcon, UsersIcon, FileText } from "lucide-react";
-import { format, isSameDay, parseISO } from "date-fns";
+import { format, isSameDay, isToday, isTomorrow, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Input } from "@/components/ui/input";
 import ProductionModal from "@/components/productions/ProductionModal";
@@ -40,7 +39,6 @@ const Productions = () => {
   const [editingProduction, setEditingProduction] = useState<Production | null>(null);
   const queryClient = useQueryClient();
   
-  // Fetch productions from Supabase
   const { data: productions = [], isLoading, error } = useQuery({
     queryKey: ['productions'],
     queryFn: async () => {
@@ -58,7 +56,6 @@ const Productions = () => {
         
         console.log("Fetched productions:", data);
         
-        // Transform the data to match our Production type
         return data.map((item: any) => ({
           id: item.id,
           name: item.title,
@@ -79,8 +76,7 @@ const Productions = () => {
       }
     }
   });
-  
-  // Add production mutation
+
   const addProductionMutation = useMutation({
     mutationFn: async (production: Production) => {
       console.log("Adding production to Supabase:", production);
@@ -117,8 +113,7 @@ const Productions = () => {
       toast.error("Erro ao criar produção!");
     }
   });
-  
-  // Update production mutation
+
   const updateProductionMutation = useMutation({
     mutationFn: async (production: Production) => {
       console.log("Updating production in Supabase:", production);
@@ -156,8 +151,7 @@ const Productions = () => {
       toast.error("Erro ao atualizar produção!");
     }
   });
-  
-  // Delete production mutation
+
   const deleteProductionMutation = useMutation({
     mutationFn: async (productionId: string) => {
       console.log("Deleting production from Supabase:", productionId);
@@ -189,7 +183,6 @@ const Productions = () => {
     if (editingProduction) {
       updateProductionMutation.mutate(production);
     } else {
-      // Create new production
       addProductionMutation.mutate(production);
     }
   };
@@ -230,20 +223,15 @@ const Productions = () => {
   const groupedProductions = groupProductionsByDate(filteredProductions);
 
   const formatDateHeader = (date: Date) => {
-    const today = new Date();
-    const tomorrow = new Date();
-    tomorrow.setDate(today.getDate() + 1);
-    
-    if (isSameDay(date, today)) {
+    if (isToday(date)) {
       return "Hoje";
-    } else if (isSameDay(date, tomorrow)) {
+    } else if (isTomorrow(date)) {
       return "Amanhã";
     } else {
       return format(date, "EEEE, dd 'de' MMMM", { locale: ptBR });
     }
   };
 
-  // Loading state
   if (isLoading) {
     return (
       <MainLayout>
@@ -254,7 +242,6 @@ const Productions = () => {
     );
   }
 
-  // Error state
   if (error) {
     return (
       <MainLayout>
