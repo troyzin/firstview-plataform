@@ -3,10 +3,11 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "./badge";
 import { cn } from "@/lib/utils";
+import { LucideIcon } from "lucide-react";
 
 type NavItemProps = {
   to: string;
-  icon: string;
+  icon: string | LucideIcon;
   label?: string;
   notificationCount?: number;
   isActive?: boolean;
@@ -21,6 +22,16 @@ const NavItem = ({
   isActive = false,
   onClick,
 }: NavItemProps) => {
+  // Renderiza o ícone com base no tipo (string ou componente)
+  const renderIcon = () => {
+    if (typeof icon === "string") {
+      return <span className="material-symbols-outlined">{icon}</span>;
+    } else {
+      const Icon = icon;
+      return <Icon size={24} />;
+    }
+  };
+
   return (
     <Link
       to={to}
@@ -30,7 +41,7 @@ const NavItem = ({
       )}
       onClick={onClick}
     >
-      <span className="material-symbols-outlined">{icon}</span>
+      {renderIcon()}
       {label && <span className="ml-2">{label}</span>}
       
       {notificationCount && notificationCount > 0 && (
