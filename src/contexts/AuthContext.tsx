@@ -2,28 +2,64 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "../integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
+import { toast } from "sonner";
+
+interface Profile {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  role: string | null;
+}
 
 interface AuthContextProps {
   session: Session | null;
   user: User | null;
+  profile: Profile | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  isAdmin: boolean;
+  isMaster: boolean;
+  hasPermission: (requiredRole: string[]) => boolean;
 }
 
 const AuthContext = createContext<AuthContextProps>({
   session: null,
   user: null,
+  profile: null,
   loading: true,
   signOut: async () => {},
+  isAdmin: false,
+  isMaster: false,
+  hasPermission: () => false,
 });
 
 export const useAuth = () => useContext(AuthContext);
 
-// Fixed: Added proper React function component declaration
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const fetchProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Erro ao buscar perfil de usuário:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Erro ao buscar perfil de usuário:', error);
+      return null;
+    }
+  };
 
   useEffect(() => {
     // Get initial session
@@ -32,6 +68,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const { data } = await supabase.auth.getSession();
         setSession(data.session);
         setUser(data.session?.user ?? null);
+        
+        if (data.session?.user) {
+          const profileData = await fetchProfile(data.session.user.id);
+          setProfile(profileData);
+        }
+      } catch (error) {
+        console.error('Erro na autenticação inicial:', error);
+        toast.error("Erro ao carregar dados do usuário");
       } finally {
         setLoading(false);
       }
@@ -44,6 +88,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          const profileData = await fetchProfile(session.user.id);
+          setProfile(profileData);
+        } else {
+          setProfile(null);
+        }
+        
         setLoading(false);
       }
     );
@@ -55,13 +107,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    toast.success("Logout realizado com sucesso");
+  };
+
+  // Check if user has admin role
+  const isAdmin = profile?.role === 'admin';
+  
+  // Check if user has master role
+  const isMaster = profile?.role === 'master';
+  
+  // Function to check if user has permission based on required roles
+  const hasPermission = (requiredRoles: string[]) => {
+    if (!profile || !profile.role) return false;
+    return requiredRoles.includes(profile.role);
   };
 
   const value = {
     session,
     user,
+    profile,
     loading,
     signOut,
+    isAdmin,
+    isMaster,
+    hasPermission,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../integrations/supabase/client";
@@ -6,6 +7,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Mail, Lock, User, ArrowRight } from "lucide-react";
 import { useToast } from "../hooks/use-toast";
+import { toast } from "sonner";
 
 const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -14,7 +16,7 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
 
   useEffect(() => {
     const checkSession = async () => {
@@ -57,10 +59,7 @@ const Auth = () => {
 
         if (error) throw error;
         
-        toast({
-          title: "Conta criada com sucesso!",
-          description: "Verifique seu email para confirmar seu cadastro.",
-        });
+        toast.success("Conta criada com sucesso! Verifique seu email para confirmar seu cadastro.");
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -69,10 +68,7 @@ const Auth = () => {
 
         if (error) throw error;
         
-        toast({
-          title: "Login realizado com sucesso!",
-          description: "Você será redirecionado para o dashboard.",
-        });
+        toast.success("Login realizado com sucesso!");
       }
     } catch (error: any) {
       let errorMessage = "Ocorreu um erro durante a autenticação";
@@ -85,11 +81,7 @@ const Auth = () => {
         errorMessage = "Este email já está cadastrado";
       }
       
-      toast({
-        title: "Erro de autenticação",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

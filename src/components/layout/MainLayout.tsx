@@ -1,10 +1,19 @@
+
 import React, { ReactNode, useState } from "react";
-import { Menu, Bell, Settings } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { Menu, Bell, Settings, LogOut } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 import NavItem from "../ui/NavItem";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
+import { useAuth } from "../../contexts/AuthContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
 
 type MainLayoutProps = {
   children: ReactNode;
@@ -13,6 +22,8 @@ type MainLayoutProps = {
 const MainLayout = ({ children }: MainLayoutProps) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, profile, signOut, isAdmin, isMaster } = useAuth();
   
   const isActiveRoute = (path: string) => {
     return location.pathname === path;
@@ -37,6 +48,21 @@ const MainLayout = ({ children }: MainLayoutProps) => {
       default:
         return "First View";
     }
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/auth");
+  };
+
+  // Obter as iniciais do nome completo para o avatar
+  const getInitials = () => {
+    if (!profile?.full_name) return "U";
+    
+    const nameParts = profile.full_name.split(" ");
+    if (nameParts.length === 1) return nameParts[0].charAt(0).toUpperCase();
+    
+    return (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase();
   };
 
   return (
@@ -94,22 +120,31 @@ const MainLayout = ({ children }: MainLayoutProps) => {
                 isActive={isActiveRoute("/productions")}
               />
             </li>
-            <li>
-              <NavItem 
-                to="/equipment" 
-                icon="videocam" 
-                label={sidebarCollapsed ? undefined : "Equipamentos"} 
-                isActive={isActiveRoute("/equipment")}
-              />
-            </li>
-            <li>
-              <NavItem 
-                to="/clients" 
-                icon="groups" 
-                label={sidebarCollapsed ? undefined : "Clientes"} 
-                isActive={isActiveRoute("/clients")}
-              />
-            </li>
+            
+            {/* Mostrar equipamentos apenas para master */}
+            {isMaster && (
+              <li>
+                <NavItem 
+                  to="/equipment" 
+                  icon="videocam" 
+                  label={sidebarCollapsed ? undefined : "Equipamentos"} 
+                  isActive={isActiveRoute("/equipment")}
+                />
+              </li>
+            )}
+            
+            {/* Mostrar clientes para admin e master */}
+            {(isAdmin || isMaster) && (
+              <li>
+                <NavItem 
+                  to="/clients" 
+                  icon="groups" 
+                  label={sidebarCollapsed ? undefined : "Clientes"} 
+                  isActive={isActiveRoute("/clients")}
+                />
+              </li>
+            )}
+            
             <li>
               <NavItem 
                 to="/reports" 
@@ -188,12 +223,32 @@ const MainLayout = ({ children }: MainLayoutProps) => {
               <Settings size={20} />
             </Button>
             
-            <div className="flex items-center space-x-2">
-              <Avatar className="w-8 h-8 bg-[#ff3335] hover:bg-[#ff3335]/80 transition-colors">
-                <AvatarFallback>JS</AvatarFallback>
-              </Avatar>
-              <span className="text-sm font-medium">João Silva</span>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <div className="flex items-center space-x-2 cursor-pointer">
+                  <Avatar className="w-8 h-8 bg-[#ff3335] hover:bg-[#ff3335]/80 transition-colors">
+                    <AvatarFallback>{getInitials()}</AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm font-medium">{profile?.full_name || 'Usuário'}</span>
+                </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700 text-white">
+                <DropdownMenuItem className="hover:bg-gray-700 cursor-pointer">
+                  Perfil
+                </DropdownMenuItem>
+                <DropdownMenuItem className="hover:bg-gray-700 cursor-pointer">
+                  Preferências
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-gray-700" />
+                <DropdownMenuItem 
+                  className="text-red-400 hover:bg-gray-700 hover:text-red-300 cursor-pointer"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sair
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
         
