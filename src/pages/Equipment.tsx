@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Plus, Search, Filter, Package, Calendar, LogOut, CheckCircle, AlertTriangle, ShoppingCart, History, Users, Edit, Trash2, MoreVertical } from "lucide-react";
 import MainLayout from "../components/layout/MainLayout";
@@ -60,7 +59,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import EquipmentModal from "@/components/equipment/EquipmentModal";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Tipo de equipamento
 type Equipment = {
@@ -129,7 +128,7 @@ const fetchEquipments = async (): Promise<Equipment[]> => {
 
 const Equipment = () => {
   const queryClient = useQueryClient();
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   
   // Consulta para buscar equipamentos
   const { data: equipments = [], isLoading, isError, refetch } = useQuery({
