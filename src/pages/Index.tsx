@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import StatCard from "@/components/dashboard/StatCard";
@@ -51,7 +52,12 @@ const Dashboard = () => {
       
       const { data, error } = await supabase
         .from('productions')
-        .select('*, clients(name)')
+        .select(`
+          *,
+          clients:client_id (
+            name
+          )
+        `)
         .gte('start_date', today.toISOString())
         .lt('start_date', tomorrow.toISOString());
       
@@ -97,7 +103,14 @@ const Dashboard = () => {
     const fetchTopProductions = async () => {
       const { data, error } = await supabase
         .from('productions')
-        .select('title, id, client_id, clients(name)')
+        .select(`
+          id,
+          title,
+          client_id,
+          clients:client_id (
+            name
+          )
+        `)
         .order('created_at', { ascending: false })
         .limit(5);
       
@@ -106,15 +119,17 @@ const Dashboard = () => {
         return;
       }
       
-      const formattedData = data?.map((item, index) => {
-        const client = item.clients?.name || 'Cliente não especificado';
+      const formattedData = (data || []).map((item) => {
+        // Use optional chaining and provide a default when accessing the client name
+        const clientName = item.clients?.name || 'Cliente não especificado';
         const initials = item.title.split(' ').slice(0, 2).map(word => word[0]).join('').toUpperCase();
+        
         return {
           name: item.title,
           initials,
-          client
+          client: clientName
         };
-      }) || [];
+      });
       
       setTopProductions(formattedData);
     };
