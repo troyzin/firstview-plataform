@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from "react";
-import { Plus, Filter, Search, Calendar as CalendarIcon, Info, MapPin, FileText } from "lucide-react";
+import React, { useState } from "react";
+import { Plus, Filter, Search, Calendar as CalendarIcon, Info, MapPin, FileText, Trash2 } from "lucide-react";
 import MainLayout from "../components/layout/MainLayout";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -16,6 +16,7 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import ProductionModal from "../components/productions/ProductionModal";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../components/ui/dialog";
+import { toast } from "sonner";
 
 // Tipo para as produções
 type Production = {
@@ -49,9 +50,9 @@ const initialProductions: Production[] = [
     notes: "Levar protetor solar e roupas extras. Previsão de tempo ensolarado.",
     briefingFile: "briefing-campanha-verao.pdf",
     teamMembers: [
-      { id: "101", name: "Ana Silva", role: "coordenador" },
-      { id: "102", name: "Carlos Santos", role: "filmmaker" },
-      { id: "103", name: "Juliana Oliveira", role: "fotografo" },
+      { id: "101", name: "Filipe Silva", role: "coordenador" },
+      { id: "102", name: "Joao Gustavo", role: "filmmaker" },
+      { id: "103", name: "Arthur Leite", role: "fotografo" },
     ],
     createdAt: new Date(2023, 6, 1),
   },
@@ -66,9 +67,9 @@ const initialProductions: Production[] = [
     notes: "Agendar entrevistas com diretores. Verificar iluminação do local.",
     briefingFile: "briefing-video-institucional.pdf",
     teamMembers: [
-      { id: "201", name: "Marcos Lima", role: "coordenador" },
-      { id: "202", name: "Pedro Alves", role: "filmmaker" },
-      { id: "203", name: "Fernanda Costa", role: "storymaker" },
+      { id: "201", name: "Felipe Vieira", role: "coordenador" },
+      { id: "202", name: "Paulo Flecha", role: "filmmaker" },
+      { id: "203", name: "Matheus Worish", role: "storymaker" },
     ],
     createdAt: new Date(2023, 6, 5),
   },
@@ -83,8 +84,8 @@ const initialProductions: Production[] = [
     notes: "Produtos serão entregues no dia. Preparar fundo branco e iluminação suave.",
     briefingFile: "briefing-ensaio-produtos.pdf",
     teamMembers: [
-      { id: "301", name: "Roberto Dias", role: "fotografo" },
-      { id: "302", name: "Carla Mendes", role: "ajudante" },
+      { id: "301", name: "Arthur Leite", role: "fotografo" },
+      { id: "302", name: "Filipe Silva", role: "ajudante" },
     ],
     createdAt: new Date(2023, 7, 1),
   },
@@ -99,10 +100,10 @@ const initialProductions: Production[] = [
     notes: "Levar equipamentos à prova d'água. Entrevistar moradores e líderes comunitários.",
     briefingFile: "briefing-documentario.pdf",
     teamMembers: [
-      { id: "401", name: "Lucas Ferreira", role: "coordenador" },
-      { id: "402", name: "Marina Santos", role: "filmmaker" },
-      { id: "403", name: "Thiago Oliveira", role: "filmmaker" },
-      { id: "404", name: "Camila Rocha", role: "fotografo" },
+      { id: "401", name: "Paulo Flecha", role: "coordenador" },
+      { id: "402", name: "Matheus Worish", role: "filmmaker" },
+      { id: "403", name: "Joao Gustavo", role: "filmmaker" },
+      { id: "404", name: "Felipe Vieira", role: "fotografo" },
     ],
     createdAt: new Date(2023, 7, 10),
   },
@@ -115,10 +116,26 @@ const Productions = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [selectedProduction, setSelectedProduction] = useState<Production | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Adicionar nova produção
   const handleAddProduction = (production: Production) => {
     setProductions([...productions, production]);
+  };
+
+  // Deletar produção
+  const handleDeleteProduction = (productionId: string) => {
+    setProductions(productions.filter(prod => prod.id !== productionId));
+    toast.success("Produção cancelada com sucesso!");
+    setIsDetailsOpen(false);
+  };
+
+  // Atualizar produção
+  const handleUpdateProduction = (updatedProduction: Production) => {
+    setProductions(productions.map(prod => 
+      prod.id === updatedProduction.id ? updatedProduction : prod
+    ));
+    setSelectedProduction(updatedProduction);
   };
 
   // Filtrar produções por data selecionada
@@ -143,6 +160,12 @@ const Productions = () => {
   const openProductionDetails = (production: Production) => {
     setSelectedProduction(production);
     setIsDetailsOpen(true);
+  };
+
+  // Abrir modal de edição
+  const openEditModal = () => {
+    setIsDetailsOpen(false);
+    setIsEditModalOpen(true);
   };
 
   return (
@@ -355,8 +378,37 @@ const Productions = () => {
                 </div>
               </div>
             </div>
+
+            <div className="flex justify-between mt-4">
+              <Button 
+                variant="destructive" 
+                onClick={() => handleDeleteProduction(selectedProduction.id)}
+                className="bg-red-700 hover:bg-red-800"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Cancelar Produção
+              </Button>
+              <Button 
+                onClick={openEditModal}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Editar Produção
+              </Button>
+            </div>
           </DialogContent>
         </Dialog>
+      )}
+
+      {/* Modal para editar produção */}
+      {selectedProduction && (
+        <ProductionModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          onSave={handleUpdateProduction}
+          onDelete={handleDeleteProduction}
+          editMode={true}
+          production={selectedProduction}
+        />
       )}
     </MainLayout>
   );

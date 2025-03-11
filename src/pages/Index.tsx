@@ -13,9 +13,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { FilterIcon, PlusIcon } from "lucide-react";
+import ProductionModal from "@/components/productions/ProductionModal";
+import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
   const [filter, setFilter] = useState("all");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const navigate = useNavigate();
 
   const stats = [
     {
@@ -77,6 +81,12 @@ const Dashboard = () => {
     },
   ];
 
+  const handleAddProduction = (production: any) => {
+    // Aqui você pode adicionar lógica para salvar a produção
+    // Por enquanto, vamos apenas navegar para a página de produções após criar
+    navigate('/productions');
+  };
+
   return (
     <MainLayout>
       <div className="flex justify-between items-center mb-6">
@@ -117,7 +127,7 @@ const Dashboard = () => {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button className="bg-red-600 hover:bg-red-700">
+          <Button className="bg-red-600 hover:bg-red-700" onClick={() => setIsModalOpen(true)}>
             <PlusIcon className="mr-2 h-4 w-4" />
             Nova Produção
           </Button>
@@ -133,7 +143,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <div className="bg-gray-900 rounded-lg p-6">
-            <h3 className="text-lg font-semibold mb-4">Produções em Andamento</h3>
+            <h3 className="text-lg font-semibold mb-4">Hoje</h3>
             <KanbanBoard />
           </div>
         </div>
@@ -143,6 +153,13 @@ const Dashboard = () => {
           <DeadlineCard deadlines={deadlines} />
         </div>
       </div>
+
+      {/* Modal para nova produção */}
+      <ProductionModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleAddProduction}
+      />
     </MainLayout>
   );
 };

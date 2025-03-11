@@ -1,6 +1,6 @@
 
 import React from "react";
-import { X, Calendar, Clock, Users, Clipboard, MapPin } from "lucide-react";
+import { X, Calendar, Clock, Users, FileText, MapPin, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
 import {
   Dialog,
@@ -28,6 +28,8 @@ import {
   PopoverTrigger,
 } from "../ui/popover";
 import { cn } from "@/lib/utils";
+import { Label } from "../ui/label";
+import { toast } from "sonner";
 
 type TeamMember = {
   id: string;
@@ -35,13 +37,37 @@ type TeamMember = {
   role: string;
 };
 
+type Production = {
+  id: string;
+  name: string;
+  client: string;
+  date: Date;
+  startTime: string;
+  endTime: string;
+  location: string;
+  notes: string;
+  briefingFile: string | null;
+  teamMembers: TeamMember[];
+  createdAt: Date;
+}
+
 type ProductionModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onSave: (production: any) => void;
+  onDelete?: (productionId: string) => void;
+  editMode?: boolean;
+  production?: Production;
 };
 
-const ProductionModal = ({ isOpen, onClose, onSave }: ProductionModalProps) => {
+const ProductionModal = ({ 
+  isOpen, 
+  onClose, 
+  onSave, 
+  onDelete,
+  editMode = false,
+  production
+}: ProductionModalProps) => {
   const [productionName, setProductionName] = React.useState("");
   const [clientName, setClientName] = React.useState("");
   const [date, setDate] = React.useState<Date | undefined>(new Date());
@@ -51,8 +77,18 @@ const ProductionModal = ({ isOpen, onClose, onSave }: ProductionModalProps) => {
   const [notes, setNotes] = React.useState("");
   const [briefingFile, setBriefingFile] = React.useState<File | null>(null);
   const [teamMembers, setTeamMembers] = React.useState<TeamMember[]>([]);
-  const [newMemberName, setNewMemberName] = React.useState("");
+  const [selectedMember, setSelectedMember] = React.useState("");
   const [newMemberRole, setNewMemberRole] = React.useState("filmmaker");
+
+  // Membros pré-cadastrados
+  const availableTeamMembers = [
+    { id: "1", name: "Filipe Silva" },
+    { id: "2", name: "Joao Gustavo" },
+    { id: "3", name: "Arthur Leite" },
+    { id: "4", name: "Matheus Worish" },
+    { id: "5", name: "Felipe Vieira" },
+    { id: "6", name: "Paulo Flecha" },
+  ];
 
   const roleOptions = [
     { value: "coordenador", label: "Coordenador" },
@@ -62,17 +98,42 @@ const ProductionModal = ({ isOpen, onClose, onSave }: ProductionModalProps) => {
     { value: "storymaker", label: "Storymaker" },
   ];
 
+  // Inicializar dados se estiver em modo de edição
+  React.useEffect(() => {
+    if (editMode && production) {
+      setProductionName(production.name);
+      setClientName(production.client);
+      setDate(new Date(production.date));
+      setStartTime(production.startTime);
+      setEndTime(production.endTime);
+      setLocation(production.location);
+      setNotes(production.notes);
+      setTeamMembers(production.teamMembers);
+    } else {
+      resetForm();
+    }
+  }, [editMode, production, isOpen]);
+
   const handleAddTeamMember = () => {
-    if (newMemberName.trim() === "") return;
+    if (selectedMember === "") return;
+    
+    const memberToAdd = availableTeamMembers.find(m => m.id === selectedMember);
+    if (!memberToAdd) return;
+    
+    // Verificar se o membro já está na equipe
+    if (teamMembers.some(member => member.id === memberToAdd.id)) {
+      toast.error("Este membro já foi adicionado à equipe");
+      return;
+    }
     
     const newMember = {
-      id: Date.now().toString(),
-      name: newMemberName,
+      id: memberToAdd.id,
+      name: memberToAdd.name,
       role: newMemberRole,
     };
     
     setTeamMembers([...teamMembers, newMember]);
-    setNewMemberName("");
+    setSelectedMember("");
   };
 
   const handleRemoveTeamMember = (id: string) => {
@@ -86,8 +147,8 @@ const ProductionModal = ({ isOpen, onClose, onSave }: ProductionModalProps) => {
   };
 
   const handleSubmit = () => {
-    const production = {
-      id: Date.now().toString(),
+    const productionData = {
+      id: editMode && production ? production.id : Date.now().toString(),
       name: productionName,
       client: clientName,
       date: date,
@@ -95,14 +156,23 @@ const ProductionModal = ({ isOpen, onClose, onSave }: ProductionModalProps) => {
       endTime,
       location,
       notes,
-      briefingFile: briefingFile ? briefingFile.name : null,
+      briefingFile: briefingFile ? briefingFile.name : production?.briefingFile || null,
       teamMembers,
-      createdAt: new Date(),
+      createdAt: editMode && production ? production.createdAt : new Date(),
     };
     
-    onSave(production);
+    onSave(productionData);
+    toast.success(editMode ? "Produção atualizada com sucesso!" : "Produção criada com sucesso!");
     resetForm();
     onClose();
+  };
+
+  const handleDelete = () => {
+    if (onDelete && production) {
+      onDelete(production.id);
+      toast.success("Produção cancelada com sucesso!");
+      onClose();
+    }
   };
 
   const resetForm = () => {
@@ -115,7 +185,7 @@ const ProductionModal = ({ isOpen, onClose, onSave }: ProductionModalProps) => {
     setNotes("");
     setBriefingFile(null);
     setTeamMembers([]);
-    setNewMemberName("");
+    setSelectedMember("");
     setNewMemberRole("filmmaker");
   };
 
@@ -123,9 +193,12 @@ const ProductionModal = ({ isOpen, onClose, onSave }: ProductionModalProps) => {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="bg-gray-900 border border-gray-800 text-white max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl">Nova Produção</DialogTitle>
+          <DialogTitle className="text-xl">{editMode ? "Editar Produção" : "Nova Produção"}</DialogTitle>
           <DialogDescription className="text-gray-400">
-            Preencha as informações para criar uma nova produção.
+            {editMode 
+              ? "Edite as informações da produção."
+              : "Preencha as informações para criar uma nova produção."
+            }
           </DialogDescription>
         </DialogHeader>
         
@@ -248,9 +321,9 @@ const ProductionModal = ({ isOpen, onClose, onSave }: ProductionModalProps) => {
                 onChange={handleFileChange}
                 className="bg-gray-800 border-gray-700"
               />
-              {briefingFile && (
+              {(briefingFile || (production && production.briefingFile)) && (
                 <p className="text-xs mt-1 text-gray-400">
-                  Arquivo: {briefingFile.name}
+                  Arquivo: {briefingFile ? briefingFile.name : production?.briefingFile}
                 </p>
               )}
             </div>
@@ -262,12 +335,18 @@ const ProductionModal = ({ isOpen, onClose, onSave }: ProductionModalProps) => {
                 Adicionar Equipe
               </label>
               <div className="flex gap-2 mb-2">
-                <Input
-                  value={newMemberName}
-                  onChange={(e) => setNewMemberName(e.target.value)}
-                  className="bg-gray-800 border-gray-700"
-                  placeholder="Nome do membro"
-                />
+                <Select value={selectedMember} onValueChange={setSelectedMember}>
+                  <SelectTrigger className="bg-gray-800 border-gray-700">
+                    <SelectValue placeholder="Selecionar membro" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-800 border-gray-700">
+                    {availableTeamMembers.map((member) => (
+                      <SelectItem key={member.id} value={member.id}>
+                        {member.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Select value={newMemberRole} onValueChange={setNewMemberRole}>
                   <SelectTrigger className="w-[180px] bg-gray-800 border-gray-700">
                     <SelectValue placeholder="Função" />
@@ -331,19 +410,33 @@ const ProductionModal = ({ isOpen, onClose, onSave }: ProductionModalProps) => {
           </div>
         </div>
         
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline" className="bg-gray-800 border-gray-700">
-              Cancelar
+        <DialogFooter className="flex justify-between">
+          <div className="flex space-x-2">
+            {editMode && onDelete && (
+              <Button 
+                variant="destructive" 
+                onClick={handleDelete}
+                className="bg-red-700 hover:bg-red-800"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Cancelar Produção
+              </Button>
+            )}
+          </div>
+          <div className="flex space-x-2">
+            <DialogClose asChild>
+              <Button variant="outline" className="bg-gray-800 border-gray-700">
+                Cancelar
+              </Button>
+            </DialogClose>
+            <Button 
+              onClick={handleSubmit}
+              disabled={!productionName || !clientName || !date || !startTime || !endTime}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Salvar Produção
             </Button>
-          </DialogClose>
-          <Button 
-            onClick={handleSubmit}
-            disabled={!productionName || !clientName || !date || !startTime || !endTime}
-            className="bg-red-600 hover:bg-red-700"
-          >
-            Salvar Produção
-          </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
