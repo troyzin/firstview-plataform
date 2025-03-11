@@ -40,9 +40,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [fetchingProfile, setFetchingProfile] = useState(false);
 
   const fetchProfile = async (userId: string) => {
     try {
+      setFetchingProfile(true);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -58,6 +60,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error('Erro ao buscar perfil de usuário:', error);
       return null;
+    } finally {
+      setFetchingProfile(false);
     }
   };
 
@@ -86,6 +90,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Listen for auth changes
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -106,8 +111,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    toast.success("Logout realizado com sucesso");
+    setLoading(true);
+    try {
+      await supabase.auth.signOut();
+      toast.success("Logout realizado com sucesso");
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      toast.error("Erro ao fazer logout");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Check if user has admin role
@@ -126,12 +139,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     session,
     user,
     profile,
-    loading,
+    loading: loading || fetchingProfile,
     signOut,
     isAdmin,
     isMaster,
     hasPermission,
   };
+
+  console.log('Auth context value:', { 
+    user: user?.id, 
+    profile: profile?.role, 
+    loading, 
+    fetchingProfile 
+  });
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

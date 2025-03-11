@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "../integrations/supabase/client";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -16,13 +16,26 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast: uiToast } = useToast();
+  const [checkingSession, setCheckingSession] = useState(true);
 
   useEffect(() => {
     const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        navigate("/");
+      try {
+        setCheckingSession(true);
+        const { data } = await supabase.auth.getSession();
+        console.log('Auth page - session check:', data.session?.user?.id || 'No session');
+        
+        if (data.session) {
+          // Obtenha a origem do redirecionamento se existir
+          const from = location.state?.from?.pathname || '/';
+          navigate(from, { replace: true });
+        }
+      } catch (error) {
+        console.error('Erro ao verificar sessão:', error);
+      } finally {
+        setCheckingSession(false);
       }
     };
     
@@ -30,8 +43,10 @@ const Auth = () => {
     
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('Auth page - auth state changed:', event, session?.user?.id);
         if (session) {
-          navigate("/");
+          const from = location.state?.from?.pathname || '/';
+          navigate(from, { replace: true });
         }
       }
     );
@@ -39,7 +54,7 @@ const Auth = () => {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, location]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,10 +97,19 @@ const Auth = () => {
       }
       
       toast.error(errorMessage);
+      console.error('Erro de autenticação:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center p-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4">

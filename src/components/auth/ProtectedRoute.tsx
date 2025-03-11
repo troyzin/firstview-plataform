@@ -15,6 +15,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { user, loading, hasPermission } = useAuth();
   const location = useLocation();
 
+  console.log('ProtectedRoute:', { 
+    path: location.pathname,
+    user: user?.id,
+    loading,
+    requiredRoles,
+    hasPermission: requiredRoles.length > 0 ? hasPermission(requiredRoles) : 'N/A'
+  });
+
   // Show loading state while checking authentication
   if (loading) {
     return (
@@ -26,16 +34,19 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Redirect to login if not authenticated
   if (!user) {
+    console.log('Not authenticated, redirecting to /auth');
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
   // Check role-based access if roles are specified
   if (requiredRoles.length > 0 && !hasPermission(requiredRoles)) {
+    console.log('Access denied, redirecting to /');
     // Redirect to dashboard with access denied message
     return <Navigate to="/" replace />;
   }
 
   // If authenticated and has required permissions, render children
+  console.log('Rendering protected content');
   return <>{children}</>;
 };
 
