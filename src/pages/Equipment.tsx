@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Plus, Search, Filter, Package, Calendar, LogOut, CheckCircle, AlertTriangle, ShoppingCart, History, Users, Edit, Trash2, MoreVertical } from "lucide-react";
 import MainLayout from "../components/layout/MainLayout";
@@ -149,6 +150,15 @@ const Equipment = () => {
   const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
   const [equipmentToEdit, setEquipmentToEdit] = useState<Equipment | null>(null);
   
+  // Estados para os novos modais
+  const [isKitModalOpen, setIsKitModalOpen] = useState(false);
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [scheduleEndDate, setScheduleEndDate] = useState<Date | undefined>(new Date());
+  const [selectedProduction, setSelectedProduction] = useState<string>("");
+  const [scheduleNotes, setScheduleNotes] = useState<string>("");
+  const [responsibleName, setResponsibleName] = useState<string>("");
+  
   // Efeito para adicionar HistoryEvents
   useEffect(() => {
     setHistoryEvents([
@@ -190,44 +200,6 @@ const Equipment = () => {
         responsibleName: "João Silva",
         productionName: "Campanha de Marketing - Verão 2023",
         notes: "Equipamento devolvido"
-      },
-      {
-        id: "h5",
-        equipmentId: "e1",
-        equipmentName: "Canon EOS R5",
-        eventType: "return",
-        date: new Date(2023, 2, 10, 23, 56), // 10/03/2023 23:56
-        responsibleName: "João Silva",
-        productionName: "Vídeo Institucional",
-        notes: "Equipamento devolvido"
-      },
-      {
-        id: "h6",
-        equipmentId: "e1",
-        equipmentName: "Canon EOS R5",
-        eventType: "schedule",
-        date: new Date(2023, 2, 9, 23, 47), // 09/03/2023 23:47
-        responsibleName: "João Silva",
-        productionName: "Vídeo Institucional"
-      },
-      {
-        id: "h7",
-        equipmentId: "e5",
-        equipmentName: "Kit Iluminação Aputure 300d",
-        eventType: "return",
-        date: new Date(2023, 2, 8, 23, 47), // 08/03/2023 23:47
-        responsibleName: "João Silva",
-        productionName: "Ensaio Fotográfico Produto",
-        notes: "Devolvido em perfeito estado"
-      },
-      {
-        id: "h8",
-        equipmentId: "e3",
-        equipmentName: "Sony Alpha a7S III",
-        eventType: "maintenance",
-        date: new Date(2023, 2, 3, 23, 47), // 03/03/2023 23:47
-        responsibleName: "Técnico Externo",
-        notes: "Enviado para reparo do visor eletrônico"
       }
     ]);
   }, []);
@@ -350,6 +322,97 @@ const Equipment = () => {
     }
   };
 
+  // Função para retirar um equipamento
+  const handleCheckout = (equipment: Equipment) => {
+    if (equipment.status !== "disponível") {
+      toast.error("Este equipamento não está disponível para retirada");
+      return;
+    }
+
+    // Atualiza o status do equipamento para "em uso"
+    updateEquipmentStatus(equipment.id, "em uso");
+    
+    // Adiciona um novo evento ao histórico
+    const newEvent: HistoryEvent = {
+      id: `h${historyEvents.length + 1}`,
+      equipmentId: equipment.id,
+      equipmentName: equipment.name,
+      eventType: "checkout",
+      date: new Date(),
+      responsibleName: "Usuário Atual", // Idealmente seria o usuário logado
+      productionName: "Produção Atual",
+      notes: "Equipamento retirado"
+    };
+    
+    setHistoryEvents(prev => [newEvent, ...prev]);
+    toast.success(`${equipment.name} retirado com sucesso!`);
+  };
+
+  // Função para agendar um equipamento
+  const handleScheduleEquipment = () => {
+    if (!selectedEquipment) return;
+    
+    // Aqui você adicionaria lógica para salvar o agendamento no banco de dados
+    
+    // Adiciona um novo evento ao histórico
+    const newEvent: HistoryEvent = {
+      id: `h${historyEvents.length + 1}`,
+      equipmentId: selectedEquipment.id,
+      equipmentName: selectedEquipment.name,
+      eventType: "schedule",
+      date: selectedDate || new Date(),
+      responsibleName: responsibleName || "Usuário Atual", // Idealmente seria o usuário logado
+      productionName: productionOptions.find(p => p.id === selectedProduction)?.name,
+      notes: scheduleNotes
+    };
+    
+    setHistoryEvents(prev => [newEvent, ...prev]);
+    toast.success(`${selectedEquipment.name} agendado com sucesso!`);
+    closeScheduleModal();
+  };
+
+  // Função para atualizar o status de um equipamento
+  const updateEquipmentStatus = async (equipmentId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('equipment')
+        .update({ status: newStatus })
+        .eq('id', equipmentId);
+      
+      if (error) throw error;
+      
+      // Atualiza a lista de equipamentos
+      refetch();
+    } catch (error) {
+      console.error('Erro ao atualizar status do equipamento:', error);
+      toast.error('Ocorreu um erro ao atualizar o status do equipamento');
+    }
+  };
+
+  // Funções para abrir/fechar modais
+  const openKitModal = () => {
+    setIsKitModalOpen(true);
+  };
+
+  const closeKitModal = () => {
+    setIsKitModalOpen(false);
+  };
+
+  const openScheduleModal = (equipment: Equipment) => {
+    setSelectedEquipment(equipment);
+    setIsScheduleModalOpen(true);
+  };
+
+  const closeScheduleModal = () => {
+    setSelectedEquipment(null);
+    setSelectedDate(new Date());
+    setScheduleEndDate(new Date());
+    setSelectedProduction("");
+    setScheduleNotes("");
+    setResponsibleName("");
+    setIsScheduleModalOpen(false);
+  };
+
   return (
     <MainLayout>
       <div className="flex flex-col h-full">
@@ -376,7 +439,8 @@ const Equipment = () => {
           <div className="flex space-x-3 w-full md:w-auto">
             <Button 
               variant="secondary"
-              className="w-full md:w-auto"
+              className="w-full md:w-auto bg-blue-600 hover:bg-blue-700"
+              onClick={openKitModal}
             >
               <ShoppingCart className="h-4 w-4 mr-2" />
               Retirar KIT
@@ -629,6 +693,7 @@ const Equipment = () => {
                               variant="outline" 
                               size="sm" 
                               className="flex-1 border-gray-600"
+                              onClick={() => openScheduleModal(equipment)}
                             >
                               <Calendar className="h-4 w-4 mr-1" />
                               Agendar
@@ -636,6 +701,7 @@ const Equipment = () => {
                             <Button 
                               size="sm" 
                               className="flex-1 bg-[#ff3335] hover:bg-red-700"
+                              onClick={() => handleCheckout(equipment)}
                             >
                               <LogOut className="h-4 w-4 mr-1" />
                               Retirar
@@ -728,6 +794,200 @@ const Equipment = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Modal para retirar kit */}
+      <Dialog open={isKitModalOpen} onOpenChange={closeKitModal}>
+        <DialogContent className="bg-[#000000] border border-[#141414] text-white sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Retirar Kit de Equipamentos</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Selecione os equipamentos que deseja retirar como um kit.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 my-4">
+            <div className="bg-[#141414] p-4 rounded-md">
+              <h3 className="font-medium mb-2">Equipamentos Disponíveis</h3>
+              <div className="max-h-[300px] overflow-y-auto space-y-2">
+                {equipments
+                  .filter(e => e.status === "disponível")
+                  .map(equipment => (
+                    <div key={equipment.id} className="flex items-center space-x-2">
+                      <Checkbox id={`kit-${equipment.id}`} />
+                      <label htmlFor={`kit-${equipment.id}`} className="text-sm cursor-pointer">
+                        {equipment.name} ({equipment.quantity} disponíveis)
+                      </label>
+                    </div>
+                  ))}
+                {equipments.filter(e => e.status === "disponível").length === 0 && (
+                  <p className="text-gray-500 text-center py-2">Nenhum equipamento disponível</p>
+                )}
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Produção</label>
+                  <Select>
+                    <SelectTrigger className="w-full bg-[#141414] border-gray-700">
+                      <SelectValue placeholder="Selecione uma produção" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#141414] border-gray-700">
+                      {productionOptions.map(production => (
+                        <SelectItem key={production.id} value={production.id}>
+                          {production.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Responsável</label>
+                  <Input className="bg-[#141414] border-gray-700" placeholder="Nome do responsável" />
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Observações</label>
+                  <Textarea className="bg-[#141414] border-gray-700" placeholder="Observações adicionais..." />
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={closeKitModal} className="bg-gray-800 text-white hover:bg-gray-700 border-gray-700">
+              Cancelar
+            </Button>
+            <Button className="bg-[#ff3335] hover:bg-red-700" onClick={closeKitModal}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Retirar Kit
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal para agendar equipamento */}
+      <Dialog open={isScheduleModalOpen} onOpenChange={closeScheduleModal}>
+        <DialogContent className="bg-[#000000] border border-[#141414] text-white sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Agendar Equipamento</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              {selectedEquipment?.name ? `Agendamento para: ${selectedEquipment.name}` : 'Agende a utilização deste equipamento'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 my-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Data Inicial</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-left font-normal bg-[#141414] border-gray-700"
+                    >
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {selectedDate ? (
+                        format(selectedDate, "dd/MM/yyyy", { locale: ptBR })
+                      ) : (
+                        <span>Selecione uma data</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 bg-[#141414] border-gray-700">
+                    <CalendarComponent
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={setSelectedDate}
+                      initialFocus
+                      className="bg-[#141414]"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium mb-1 block">Data Final</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-left font-normal bg-[#141414] border-gray-700"
+                    >
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {scheduleEndDate ? (
+                        format(scheduleEndDate, "dd/MM/yyyy", { locale: ptBR })
+                      ) : (
+                        <span>Selecione uma data</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 bg-[#141414] border-gray-700">
+                    <CalendarComponent
+                      mode="single"
+                      selected={scheduleEndDate}
+                      onSelect={setScheduleEndDate}
+                      initialFocus
+                      className="bg-[#141414]"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium mb-1 block">Produção</label>
+              <Select value={selectedProduction} onValueChange={setSelectedProduction}>
+                <SelectTrigger className="w-full bg-[#141414] border-gray-700">
+                  <SelectValue placeholder="Selecione uma produção" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#141414] border-gray-700">
+                  {productionOptions.map(production => (
+                    <SelectItem key={production.id} value={production.id}>
+                      {production.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium mb-1 block">Responsável</label>
+              <Input 
+                className="bg-[#141414] border-gray-700" 
+                placeholder="Nome do responsável" 
+                value={responsibleName}
+                onChange={(e) => setResponsibleName(e.target.value)}
+              />
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium mb-1 block">Observações</label>
+              <Textarea 
+                className="bg-[#141414] border-gray-700" 
+                placeholder="Observações adicionais..." 
+                value={scheduleNotes}
+                onChange={(e) => setScheduleNotes(e.target.value)}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={closeScheduleModal} className="bg-gray-800 text-white hover:bg-gray-700 border-gray-700">
+              Cancelar
+            </Button>
+            <Button 
+              className="bg-[#ff3335] hover:bg-red-700"
+              onClick={handleScheduleEquipment}
+            >
+              <Calendar className="h-4 w-4 mr-2" />
+              Agendar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 };
