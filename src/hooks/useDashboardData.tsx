@@ -153,9 +153,10 @@ export const useDashboardData = () => {
           let clientName = 'Cliente não especificado';
           const title = item.title || 'Sem título';
           
-          // Safely check client name
-          if (item.clients) {
-            if (typeof item.clients === 'object' && item.clients !== null && 'name' in item.clients) {
+          // Fixed: Properly check for clients being null before accessing its properties
+          if (item.clients !== null && item.clients !== undefined) {
+            // Now TypeScript knows clients is not null at this point
+            if (typeof item.clients === 'object' && 'name' in item.clients) {
               clientName = item.clients.name || clientName;
             }
           }
