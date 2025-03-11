@@ -1,20 +1,19 @@
 
-import React from 'react';
-import Header from './Header';
-import { Toaster } from "sonner";
+import React, { ReactNode } from "react";
+import Header from "./Header";
 
-interface MainLayoutProps {
-  children: React.ReactNode;
-}
+type MainLayoutProps = {
+  children: ReactNode;
+};
 
 const MainLayout = ({ children }: MainLayoutProps) => {
   return (
     <div className="bg-black text-white font-sans min-h-screen flex flex-col">
       <Header />
-      <main className="p-6 flex-1">
+      
+      <main className="flex-1 p-6">
         {children}
       </main>
-      <Toaster position="top-right" richColors />
     </div>
   );
 };
