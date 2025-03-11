@@ -1,4 +1,5 @@
 
+import React, { useState, useEffect } from "react";
 import {
   createBrowserRouter,
   RouterProvider,
@@ -29,9 +30,9 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
 
   // If still loading after 5 seconds, show the content anyway
   // This prevents getting stuck in an infinite loading state
-  const [loadingTimeout, setLoadingTimeout] = React.useState(false);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
   
-  React.useEffect(() => {
+  useEffect(() => {
     const timer = setTimeout(() => {
       if (loading) {
         setLoadingTimeout(true);
@@ -84,7 +85,9 @@ const router = createBrowserRouter([
     path: "/productions",
     element: (
       <ProtectedRoute>
-        <Productions />
+        <Suspense fallback={<Loading />}>
+          <Productions />
+        </Suspense>
       </ProtectedRoute>
     ),
   },
@@ -92,7 +95,9 @@ const router = createBrowserRouter([
     path: "/equipment",
     element: (
       <ProtectedRoute>
-        <Equipment />
+        <Suspense fallback={<Loading />}>
+          <Equipment />
+        </Suspense>
       </ProtectedRoute>
     ),
   },
@@ -100,7 +105,9 @@ const router = createBrowserRouter([
     path: "/clients",
     element: (
       <ProtectedRoute>
-        <Clients />
+        <Suspense fallback={<Loading />}>
+          <Clients />
+        </Suspense>
       </ProtectedRoute>
     ),
   },
@@ -108,7 +115,9 @@ const router = createBrowserRouter([
     path: "/team",
     element: (
       <ProtectedRoute>
-        <Team />
+        <Suspense fallback={<Loading />}>
+          <Team />
+        </Suspense>
       </ProtectedRoute>
     ),
   },
@@ -116,7 +125,9 @@ const router = createBrowserRouter([
     path: "/reports",
     element: (
       <ProtectedRoute>
-        <Reports />
+        <Suspense fallback={<Loading />}>
+          <Reports />
+        </Suspense>
       </ProtectedRoute>
     ),
   },
@@ -124,7 +135,9 @@ const router = createBrowserRouter([
     path: "/profile",
     element: (
       <ProtectedRoute>
-        <Profile />
+        <Suspense fallback={<Loading />}>
+          <Profile />
+        </Suspense>
       </ProtectedRoute>
     ),
   },
@@ -132,7 +145,9 @@ const router = createBrowserRouter([
     path: "/edits",
     element: (
       <ProtectedRoute>
-        <Edits />
+        <Suspense fallback={<Loading />}>
+          <Edits />
+        </Suspense>
       </ProtectedRoute>
     ),
   },

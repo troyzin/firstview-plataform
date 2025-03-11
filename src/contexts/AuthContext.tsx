@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { supabase } from "../integrations/supabase/client";
 import { Session, User } from "@supabase/supabase-js";
@@ -123,6 +124,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (error) {
       console.error('[AUTH] Error updating auth state:', error);
+    } finally {
+      // Ensure loading is set to false in all cases
+      setLoading(false);
     }
   }, [fetchProfile]);
 
