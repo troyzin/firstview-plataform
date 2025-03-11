@@ -1,24 +1,20 @@
 
-import React, { useState } from "react";
-import { Plus, Filter, Search, Calendar as CalendarIcon, Info, MapPin, FileText, Trash2 } from "lucide-react";
-import MainLayout from "../components/layout/MainLayout";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Badge } from "../components/ui/badge";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "../components/ui/popover";
-import { Calendar } from "../components/ui/calendar";
-import { format, isSameDay } from "date-fns";
+import React, { useState, useEffect } from "react";
+import MainLayout from "@/components/layout/MainLayout";
+import { Button } from "@/components/ui/button";
+import { PlusIcon, SearchIcon, ClipboardCheck, CalendarIcon, MapPin, ClockIcon, UsersIcon, User, FileText } from "lucide-react";
+import { format, isSameDay, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { cn } from "@/lib/utils";
-import ProductionModal from "../components/productions/ProductionModal";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import ProductionModal from "@/components/productions/ProductionModal";
 import { toast } from "sonner";
 
-// Tipo para as produções
+type TeamMember = {
+  id: string;
+  name: string;
+  role: string;
+};
+
 type Production = {
   id: string;
   name: string;
@@ -29,387 +25,269 @@ type Production = {
   location: string;
   notes: string;
   briefingFile: string | null;
-  teamMembers: Array<{
-    id: string;
-    name: string;
-    role: string;
-  }>;
+  teamMembers: TeamMember[];
   createdAt: Date;
 };
 
-// Dados iniciais de exemplo
+// Exemplo de produções (simulando dados do banco)
 const initialProductions: Production[] = [
   {
     id: "1",
-    name: "Campanha de Marketing - Verão 2023",
-    client: "Empresa de Cosméticos Beauty Glow",
-    date: new Date(2023, 6, 15), // 15 de Julho de 2023
+    name: "Campanha Nova Marca",
+    client: "Empresa XYZ",
+    date: new Date(2023, 11, 20),
     startTime: "09:00",
     endTime: "17:00",
-    location: "Praia de Copacabana, Rio de Janeiro",
-    notes: "Levar protetor solar e roupas extras. Previsão de tempo ensolarado.",
-    briefingFile: "briefing-campanha-verao.pdf",
+    location: "Estúdio Central",
+    notes: "Trazer equipamento de iluminação extra",
+    briefingFile: "briefing-xyz.pdf",
     teamMembers: [
-      { id: "101", name: "Filipe Silva", role: "coordenador" },
-      { id: "102", name: "Joao Gustavo", role: "filmmaker" },
-      { id: "103", name: "Arthur Leite", role: "fotografo" },
+      { id: "1", name: "Filipe Silva", role: "coordenador" },
+      { id: "3", name: "Arthur Leite", role: "filmmaker" },
+      { id: "6", name: "Paulo Flecha", role: "ajudante" },
     ],
-    createdAt: new Date(2023, 6, 1),
+    createdAt: new Date(2023, 11, 15),
   },
   {
     id: "2",
-    name: "Vídeo Institucional",
-    client: "Banco Nacional",
-    date: new Date(2023, 6, 22), // 22 de Julho de 2023
-    startTime: "08:30",
-    endTime: "15:30",
-    location: "Sede do Banco - Av. Paulista, 1000, São Paulo",
-    notes: "Agendar entrevistas com diretores. Verificar iluminação do local.",
-    briefingFile: "briefing-video-institucional.pdf",
+    name: "Documentário Institucional",
+    client: "Fundação ABC",
+    date: new Date(2023, 11, 18),
+    startTime: "08:00",
+    endTime: "18:00",
+    location: "Sede do cliente",
+    notes: "Entrevistar 5 diretores",
+    briefingFile: "doc-fundacao-abc.docx",
     teamMembers: [
-      { id: "201", name: "Felipe Vieira", role: "coordenador" },
-      { id: "202", name: "Paulo Flecha", role: "filmmaker" },
-      { id: "203", name: "Matheus Worish", role: "storymaker" },
+      { id: "4", name: "Matheus Worish", role: "storymaker" },
+      { id: "2", name: "Joao Gustavo", role: "filmmaker" },
     ],
-    createdAt: new Date(2023, 6, 5),
+    createdAt: new Date(2023, 11, 10),
   },
   {
     id: "3",
-    name: "Ensaio Fotográfico Produto",
-    client: "Tech Innovations",
-    date: new Date(2023, 7, 5), // 5 de Agosto de 2023
-    startTime: "10:00",
-    endTime: "14:00",
-    location: "Estúdio Central - Rua Augusta, 500, São Paulo",
-    notes: "Produtos serão entregues no dia. Preparar fundo branco e iluminação suave.",
-    briefingFile: "briefing-ensaio-produtos.pdf",
+    name: "Teaser Evento Anual",
+    client: "Conferência Tech",
+    date: new Date(2023, 11, 22),
+    startTime: "14:00",
+    endTime: "20:00",
+    location: "Centro de Convenções",
+    notes: "Foco nos palestrantes principais",
+    briefingFile: null,
     teamMembers: [
-      { id: "301", name: "Arthur Leite", role: "fotografo" },
-      { id: "302", name: "Filipe Silva", role: "ajudante" },
+      { id: "5", name: "Felipe Vieira", role: "filmmaker" },
+      { id: "1", name: "Filipe Silva", role: "fotografo" },
     ],
-    createdAt: new Date(2023, 7, 1),
-  },
-  {
-    id: "4",
-    name: "Documentário Social",
-    client: "ONG Futuro Melhor",
-    date: new Date(), // Hoje
-    startTime: "07:00",
-    endTime: "18:00",
-    location: "Comunidade Vila Esperança, Rio de Janeiro",
-    notes: "Levar equipamentos à prova d'água. Entrevistar moradores e líderes comunitários.",
-    briefingFile: "briefing-documentario.pdf",
-    teamMembers: [
-      { id: "401", name: "Paulo Flecha", role: "coordenador" },
-      { id: "402", name: "Matheus Worish", role: "filmmaker" },
-      { id: "403", name: "Joao Gustavo", role: "filmmaker" },
-      { id: "404", name: "Felipe Vieira", role: "fotografo" },
-    ],
-    createdAt: new Date(2023, 7, 10),
+    createdAt: new Date(2023, 11, 12),
   },
 ];
 
 const Productions = () => {
-  const [productions, setProductions] = useState<Production[]>(initialProductions);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [productions, setProductions] = useState<Production[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [selectedProduction, setSelectedProduction] = useState<Production | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingProduction, setEditingProduction] = useState<Production | null>(null);
 
-  // Adicionar nova produção
+  useEffect(() => {
+    // Carregar produções do localStorage ou usar os dados iniciais
+    const savedProductions = localStorage.getItem("productions");
+    if (savedProductions) {
+      const parsed = JSON.parse(savedProductions);
+      // Convertendo strings de data de volta para objetos Date
+      const productions = parsed.map((prod: any) => ({
+        ...prod,
+        date: new Date(prod.date),
+        createdAt: new Date(prod.createdAt)
+      }));
+      setProductions(productions);
+    } else {
+      setProductions(initialProductions);
+    }
+  }, []);
+
+  // Salvar produções no localStorage sempre que mudar
+  useEffect(() => {
+    if (productions.length > 0) {
+      localStorage.setItem("productions", JSON.stringify(productions));
+    }
+  }, [productions]);
+
   const handleAddProduction = (production: Production) => {
-    setProductions([...productions, production]);
+    if (editingProduction) {
+      // Atualizando produção existente
+      setProductions(productions.map(p => 
+        p.id === production.id ? production : p
+      ));
+      toast.success("Produção atualizada com sucesso!");
+    } else {
+      // Adicionando nova produção
+      setProductions([...productions, production]);
+      toast.success("Produção criada com sucesso!");
+    }
+    setIsModalOpen(false);
+    setEditingProduction(null);
   };
 
-  // Deletar produção
   const handleDeleteProduction = (productionId: string) => {
-    setProductions(productions.filter(prod => prod.id !== productionId));
+    setProductions(productions.filter(p => p.id !== productionId));
+    setIsModalOpen(false);
+    setEditingProduction(null);
     toast.success("Produção cancelada com sucesso!");
-    setIsDetailsOpen(false);
   };
 
-  // Atualizar produção
-  const handleUpdateProduction = (updatedProduction: Production) => {
-    setProductions(productions.map(prod => 
-      prod.id === updatedProduction.id ? updatedProduction : prod
-    ));
-    setSelectedProduction(updatedProduction);
+  const handleEditProduction = (production: Production) => {
+    setEditingProduction(production);
+    setIsModalOpen(true);
   };
 
-  // Filtrar produções por data selecionada
-  const filteredProductions = productions.filter((production) => {
-    // Filtro de pesquisa por texto
-    const matchesSearch = searchTerm === "" || 
-      production.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      production.client.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredProductions = productions.filter(production => 
+    production.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    production.client.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Agrupar produções por data
+  const groupProductionsByDate = (productions: Production[]) => {
+    const groups: { [key: string]: Production[] } = {};
     
-    // Filtro por data
-    const matchesDate = selectedDate ? isSameDay(new Date(production.date), selectedDate) : true;
+    productions.forEach(production => {
+      const dateKey = format(new Date(production.date), 'yyyy-MM-dd');
+      if (!groups[dateKey]) {
+        groups[dateKey] = [];
+      }
+      groups[dateKey].push(production);
+    });
     
-    return matchesSearch && matchesDate;
-  });
-
-  // Função para destacar datas no calendário com produções
-  const hasProductionOnDate = (date: Date) => {
-    return productions.some((production) => isSameDay(new Date(production.date), date));
+    // Ordenar as datas
+    return Object.keys(groups)
+      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+      .map(dateKey => ({
+        date: new Date(dateKey),
+        productions: groups[dateKey]
+      }));
   };
 
-  // Abrir detalhes da produção
-  const openProductionDetails = (production: Production) => {
-    setSelectedProduction(production);
-    setIsDetailsOpen(true);
-  };
+  const groupedProductions = groupProductionsByDate(filteredProductions);
 
-  // Abrir modal de edição
-  const openEditModal = () => {
-    setIsDetailsOpen(false);
-    setIsEditModalOpen(true);
+  // Função para formatar a data no estilo "Segunda-feira, 20 de Dezembro"
+  const formatDateHeader = (date: Date) => {
+    const today = new Date();
+    const tomorrow = new Date();
+    tomorrow.setDate(today.getDate() + 1);
+    
+    if (isSameDay(date, today)) {
+      return "Hoje";
+    } else if (isSameDay(date, tomorrow)) {
+      return "Amanhã";
+    } else {
+      return format(date, "EEEE, dd 'de' MMMM", { locale: ptBR });
+    }
   };
 
   return (
     <MainLayout>
-      <div className="flex flex-col h-full">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold">Produções</h1>
-            
-            <div className="flex items-center bg-gray-800 rounded-md px-3 py-2">
-              <Search className="h-5 w-5 text-gray-400 mr-2" />
-              <Input
-                placeholder="Buscar produções..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 w-60"
-              />
-            </div>
-            
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="bg-gray-800 border-gray-700">
-                  <CalendarIcon className="h-4 w-4 mr-2" />
-                  {selectedDate ? format(selectedDate, "dd 'de' MMMM", { locale: ptBR }) : "Selecionar data"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-gray-800 border-gray-700">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
-                  modifiers={{
-                    hasProduction: (date) => hasProductionOnDate(date),
-                  }}
-                  modifiersClassNames={{
-                    hasProduction: "bg-red-500/20 text-red-600 font-bold",
-                  }}
-                  className="p-3 pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
-            
-            <Button variant="outline" className="bg-gray-800 border-gray-700">
-              <Filter className="h-4 w-4 mr-2" />
-              Filtros
-            </Button>
-          </div>
-          
-          <Button 
-            onClick={() => setIsModalOpen(true)} 
-            className="bg-red-600 hover:bg-red-700"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Nova Produção
-          </Button>
-        </div>
-        
-        <div className="flex-1 overflow-y-auto pr-4">
-          {selectedDate && (
-            <h2 className="text-xl font-medium mb-4">
-              Produções para {format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-            </h2>
-          )}
-          
-          <div className="space-y-4">
-            {filteredProductions.length === 0 ? (
-              <div className="bg-gray-800 rounded-lg p-8 text-center">
-                <CalendarIcon className="h-12 w-12 mx-auto text-gray-500 mb-4" />
-                <h3 className="text-xl font-medium text-gray-300 mb-2">Nenhuma produção encontrada</h3>
-                <p className="text-gray-400 max-w-md mx-auto">
-                  {searchTerm ? 
-                    `Não encontramos produções com o termo "${searchTerm}"` : 
-                    "Não há produções agendadas para esta data"}
-                </p>
-                <Button 
-                  onClick={() => setIsModalOpen(true)} 
-                  className="mt-4 bg-red-600 hover:bg-red-700"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Adicionar Nova Produção
-                </Button>
-              </div>
-            ) : (
-              filteredProductions.map((production) => (
-                <div 
-                  key={production.id}
-                  className="bg-gray-800 border border-gray-700 rounded-lg p-4 hover:border-gray-600 transition-all cursor-pointer"
-                  onClick={() => openProductionDetails(production)}
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-medium text-lg">{production.name}</h3>
-                      <p className="text-gray-400">{production.client}</p>
-                    </div>
-                    <div className="flex flex-col items-end">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-400">{production.startTime} - {production.endTime}</span>
-                      </div>
-                      <Badge className="mt-1 bg-red-600">{production.teamMembers.length} membros</Badge>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4 flex items-center text-sm text-gray-400">
-                    <MapPin className="h-4 w-4 mr-1" />
-                    <span className="truncate max-w-md">{production.location}</span>
-                  </div>
-                  
-                  <div className="mt-4 flex justify-between items-center">
-                    <div className="flex -space-x-2">
-                      {production.teamMembers.slice(0, 3).map((member) => (
-                        <div 
-                          key={member.id}
-                          className="w-8 h-8 rounded-full bg-gray-700 border-2 border-gray-800 flex items-center justify-center text-xs overflow-hidden"
-                          title={`${member.name} (${member.role})`}
-                        >
-                          {member.name.substring(0, 2).toUpperCase()}
-                        </div>
-                      ))}
-                      {production.teamMembers.length > 3 && (
-                        <div className="w-8 h-8 rounded-full bg-gray-700 border-2 border-gray-800 flex items-center justify-center text-xs">
-                          +{production.teamMembers.length - 3}
-                        </div>
-                      )}
-                    </div>
-                    <Button variant="ghost" size="sm" className="text-red-500">
-                      <Info className="h-4 w-4 mr-1" />
-                      Detalhes
-                    </Button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold">Produções</h2>
+        <Button className="bg-red-600 hover:bg-red-700" onClick={() => {
+          setEditingProduction(null);
+          setIsModalOpen(true);
+        }}>
+          <PlusIcon className="mr-2 h-4 w-4" />
+          Nova Produção
+        </Button>
+      </div>
+
+      <div className="bg-gray-900 p-4 rounded-lg mb-6">
+        <div className="relative">
+          <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            className="pl-10 bg-gray-800 border-gray-700"
+            placeholder="Buscar produção ou cliente..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
       </div>
 
-      {/* Modal para nova produção */}
+      <div className="space-y-8">
+        {groupedProductions.length === 0 ? (
+          <div className="text-center py-12 bg-gray-900 rounded-lg">
+            <ClipboardCheck className="mx-auto h-12 w-12 text-gray-600 mb-4" />
+            <h3 className="text-lg font-medium text-gray-400 mb-2">Nenhuma produção encontrada</h3>
+            <p className="text-gray-500 mb-6">Crie uma nova produção para começar</p>
+            <Button 
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => {
+                setEditingProduction(null);
+                setIsModalOpen(true);
+              }}
+            >
+              <PlusIcon className="mr-2 h-4 w-4" />
+              Nova Produção
+            </Button>
+          </div>
+        ) : (
+          groupedProductions.map(group => (
+            <div key={group.date.toISOString()} className="bg-gray-900 rounded-lg overflow-hidden">
+              <div className="px-4 py-3 bg-gray-800 flex items-center">
+                <CalendarIcon className="text-gray-400 mr-2 h-5 w-5" />
+                <h3 className="font-medium capitalize">{formatDateHeader(group.date)}</h3>
+              </div>
+              <div className="divide-y divide-gray-800">
+                {group.productions.map(production => (
+                  <div 
+                    key={production.id} 
+                    className="p-4 hover:bg-gray-800/50 cursor-pointer transition-colors"
+                    onClick={() => handleEditProduction(production)}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h4 className="font-medium text-white">{production.name}</h4>
+                        <p className="text-gray-400 text-sm">{production.client}</p>
+                      </div>
+                      <div className="text-right">
+                        <div className="flex items-center text-gray-300 text-sm">
+                          <ClockIcon className="h-4 w-4 mr-1" />
+                          <span>{production.startTime} - {production.endTime}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm mt-3">
+                      {production.location && (
+                        <div className="flex items-center text-gray-400">
+                          <MapPin className="h-4 w-4 mr-2 text-gray-500" />
+                          <span>{production.location}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center text-gray-400">
+                        <UsersIcon className="h-4 w-4 mr-2 text-gray-500" />
+                        <span>{production.teamMembers.length} membros</span>
+                      </div>
+                      {production.briefingFile && (
+                        <div className="flex items-center text-gray-400">
+                          <FileText className="h-4 w-4 mr-2 text-gray-500" />
+                          <span>Briefing anexado</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
       <ProductionModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingProduction(null);
+        }}
         onSave={handleAddProduction}
+        onDelete={handleDeleteProduction}
+        editMode={!!editingProduction}
+        production={editingProduction || undefined}
       />
-
-      {/* Modal de detalhes da produção */}
-      {selectedProduction && (
-        <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-          <DialogContent className="bg-gray-900 border border-gray-800 text-white max-w-3xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-xl">{selectedProduction.name}</DialogTitle>
-              <DialogDescription className="text-gray-400">
-                {selectedProduction.client}
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-6 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h4 className="text-sm font-medium text-gray-400 mb-1">Data e Horário</h4>
-                  <p className="text-white">
-                    {format(new Date(selectedProduction.date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                  </p>
-                  <p className="text-white">
-                    {selectedProduction.startTime} às {selectedProduction.endTime}
-                  </p>
-                </div>
-                
-                <div>
-                  <h4 className="text-sm font-medium text-gray-400 mb-1">Local</h4>
-                  <p className="text-white">{selectedProduction.location}</p>
-                </div>
-              </div>
-              
-              <div>
-                <h4 className="text-sm font-medium text-gray-400 mb-1">Briefing</h4>
-                {selectedProduction.briefingFile ? (
-                  <p className="text-white flex items-center">
-                    <FileText className="h-4 w-4 mr-2" />
-                    {selectedProduction.briefingFile}
-                  </p>
-                ) : (
-                  <p className="text-gray-400">Nenhum briefing anexado</p>
-                )}
-              </div>
-              
-              <div>
-                <h4 className="text-sm font-medium text-gray-400 mb-1">Anotações</h4>
-                <p className="text-white">{selectedProduction.notes || "Sem anotações"}</p>
-              </div>
-              
-              <div>
-                <h4 className="text-sm font-medium text-gray-400 mb-1">Equipe</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
-                  {selectedProduction.teamMembers.map((member) => (
-                    <div key={member.id} className="bg-gray-800 p-2 rounded-md">
-                      <p className="text-sm font-medium">{member.name}</p>
-                      <p className="text-xs text-gray-400">
-                        {(() => {
-                          switch (member.role) {
-                            case 'coordenador': return 'Coordenador';
-                            case 'filmmaker': return 'Filmmaker';
-                            case 'fotografo': return 'Fotógrafo';
-                            case 'ajudante': return 'Ajudante';
-                            case 'storymaker': return 'Storymaker';
-                            default: return member.role;
-                          }
-                        })()}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-between mt-4">
-              <Button 
-                variant="destructive" 
-                onClick={() => handleDeleteProduction(selectedProduction.id)}
-                className="bg-red-700 hover:bg-red-800"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Cancelar Produção
-              </Button>
-              <Button 
-                onClick={openEditModal}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                Editar Produção
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* Modal para editar produção */}
-      {selectedProduction && (
-        <ProductionModal
-          isOpen={isEditModalOpen}
-          onClose={() => setIsEditModalOpen(false)}
-          onSave={handleUpdateProduction}
-          onDelete={handleDeleteProduction}
-          editMode={true}
-          production={selectedProduction}
-        />
-      )}
     </MainLayout>
   );
 };
