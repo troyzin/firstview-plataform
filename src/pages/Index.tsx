@@ -1,19 +1,18 @@
 
-import React, { useState } from "react";
+import React from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import StatCard from "@/components/dashboard/StatCard";
 import DeadlineCard from "@/components/dashboard/DeadlineCard";
 import ProductionModal from "@/components/productions/ProductionModal";
 import { useNavigate } from "react-router-dom";
-import Loading from "@/components/Loading";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import TodayProductions from "@/components/dashboard/TodayProductions";
 import ProductionsRanking from "@/components/dashboard/ProductionsRanking";
 import { useDashboardData } from "@/hooks/useDashboardData";
 
 const Dashboard = () => {
-  const [filter, setFilter] = useState("all");
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [filter, setFilter] = React.useState("all");
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
   const { 
     productionsCount, 
     todayProductions, 

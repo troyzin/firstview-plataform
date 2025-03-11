@@ -22,16 +22,15 @@ export const useDashboardData = () => {
         await fetchProductionsCount();
         await fetchTodayProductions();
         await fetchTopProductions();
-        
-        // Make sure we always set loading to false, even if data is empty
-        if (isMounted.current) {
-          setIsLoading(false);
-        }
       } catch (error) {
         console.error("Error fetching data:", error);
         if (isMounted.current) {
           setError(error instanceof Error ? error : new Error("Unknown error occurred"));
-          setIsLoading(false); // Make sure to set loading to false on error
+        }
+      } finally {
+        // Make sure we always set loading to false, even if data is empty or errors occurred
+        if (isMounted.current) {
+          setIsLoading(false);
         }
       }
     };
@@ -133,20 +132,20 @@ export const useDashboardData = () => {
         return;
       }
       
-      if (isMounted.current) {
-        const formattedData = (data || []).map((item) => {
-          // Safely handle client name
+      if (isMounted.current && data) {
+        const formattedData = data.map((item) => {
+          // Safely handle client name with proper type checking
           let clientName = 'Cliente não especificado';
           
-          // Properly check if clients exists and has the expected properties
-          if (item.clients && typeof item.clients === 'object') {
-            // Use optional chaining and nullish coalescing to safely access name
-            clientName = item.clients?.name || clientName;
+          // Check if clients exists and has a name property that's not null or undefined
+          if (item.clients && typeof item.clients === 'object' && item.clients.name) {
+            clientName = item.clients.name;
           }
           
           // Handle case where title might be null or undefined
           const title = item.title || 'Sem título';
           
+          // Generate initials only if title is not empty
           const initials = title
             .split(' ')
             .slice(0, 2)
@@ -162,9 +161,16 @@ export const useDashboardData = () => {
         });
         
         setTopProductions(formattedData);
+      } else if (isMounted.current) {
+        // If no data, set empty array
+        setTopProductions([]);
       }
     } catch (err) {
       console.error("Exception in fetchTopProductions:", err);
+      if (isMounted.current) {
+        // Make sure we set a default empty array even on error
+        setTopProductions([]);
+      }
     }
   };
 
