@@ -41,7 +41,7 @@ export default function Equipment() {
 
   // Delete equipment mutation
   const deleteEquipment = useMutation({
-    mutationFn: async (id) => {
+    mutationFn: async (id: string) => {
       const { error } = await supabase
         .from("equipment")
         .delete()
@@ -59,13 +59,13 @@ export default function Equipment() {
     },
   });
 
-  const handleDelete = (id) => {
+  const handleDelete = (id: string) => {
     if (window.confirm("Tem certeza que deseja remover este equipamento?")) {
       deleteEquipment.mutate(id);
     }
   };
 
-  const handleEdit = (equipment) => {
+  const handleEdit = (equipment: any) => {
     setSelectedEquipment(equipment);
     setIsModalOpen(true);
   };

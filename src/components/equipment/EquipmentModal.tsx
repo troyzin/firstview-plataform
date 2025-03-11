@@ -176,13 +176,19 @@ const EquipmentModal: React.FC<EquipmentModalProps> = ({ isOpen, onClose, equipm
         if (error) throw error;
         equipmentId = equipment.id;
       } else {
-        // Create new equipment
+        // Create new equipment - corrected to ensure name is properly included
         const { data, error } = await supabase
           .from('equipment')
           .insert({
-            ...formData,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
+            name: formData.name,
+            category: formData.category,
+            brand: formData.brand,
+            model: formData.model,
+            serial_number: formData.serial_number,
+            quantity: formData.quantity,
+            status: formData.status,
+            acquisition_date: formData.acquisition_date,
+            notes: formData.notes,
           })
           .select();
         
