@@ -1,87 +1,128 @@
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Navigate,
+} from "react-router-dom";
+import { Auth } from "./pages/Auth";
+import { Login } from "./pages/Login";
+import { NotFound } from "./pages/NotFound";
+import { useAuth } from "./contexts/AuthContext";
+import { lazy, Suspense } from "react";
+import { Loading } from "./components/Loading";
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import Productions from "./pages/Productions";
-import Equipment from "./pages/Equipment";
-import Clients from "./pages/Clients";
-import Reports from "./pages/Reports";
-import Team from "./pages/Team";
-import Auth from "./pages/Auth";
-import { AuthProvider } from "./contexts/AuthContext";
-import ProtectedRoute from "./components/auth/ProtectedRoute";
+const Index = lazy(() => import("./pages/Index"));
+const Dashboard = lazy(() => import("./pages/Index"));
+const Productions = lazy(() => import("./pages/Productions"));
+const Equipment = lazy(() => import("./pages/Equipment"));
+const Clients = lazy(() => import("./pages/Clients"));
+const Team = lazy(() => import("./pages/Team"));
+const Reports = lazy(() => import("./pages/Reports"));
 
-const queryClient = new QueryClient();
+const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+  const { user, loading } = useAuth();
+  const isAuthenticated = user !== null;
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            
-            <Route path="/" element={
-              <ProtectedRoute>
-                <Index />
-              </ProtectedRoute>
-            } />
-            
-            <Route path="/productions" element={
-              <ProtectedRoute requiredActions={['view_productions']}>
-                <Productions />
-              </ProtectedRoute>
-            } />
-            
-            <Route path="/reports" element={
-              <ProtectedRoute requiredActions={['view_reports']}>
-                <Reports />
-              </ProtectedRoute>
-            } />
-            
-            <Route path="/team" element={
-              <ProtectedRoute requiredActions={['view_team']}>
-                <Team />
-              </ProtectedRoute>
-            } />
-            
-            <Route path="/equipment" element={
-              <ProtectedRoute requiredActions={['view_equipment']}>
-                <Equipment />
-              </ProtectedRoute>
-            } />
-            
-            <Route path="/clients" element={
-              <ProtectedRoute requiredActions={['view_clients']}>
-                <Clients />
-              </ProtectedRoute>
-            } />
-            
-            <Route path="/settings" element={
-              <ProtectedRoute>
-                <Index />
-              </ProtectedRoute>
-            } />
-            
-            <Route path="/notifications" element={
-              <ProtectedRoute>
-                <Index />
-              </ProtectedRoute>
-            } />
-            
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+  if (loading) {
+    return <Loading />;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/auth" />;
+  }
+
+  return children;
+};
+
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: (
+      <ProtectedRoute>
+        <Index />
+      </ProtectedRoute>
+    ),
+    errorElement: <NotFound />,
+  },
+  {
+    path: "/auth",
+    element: <Auth />,
+  },
+  {
+    path: "/login",
+    element: <Login />,
+  },
+  {
+    path: "/dashboard",
+    element: (
+      <ProtectedRoute>
+        <Dashboard />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/productions",
+    element: (
+      <ProtectedRoute>
+        <Productions />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/equipment",
+    element: (
+      <ProtectedRoute>
+        <Equipment />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/clients",
+    element: (
+      <ProtectedRoute>
+        <Clients />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/team",
+    element: (
+      <ProtectedRoute>
+        <Team />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/reports",
+    element: (
+      <ProtectedRoute>
+        <Reports />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/profile",
+    element: (
+      <ProtectedRoute>
+        <lazy(() => import("./pages/Profile")) />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/edits",
+    element: (
+      <ProtectedRoute>
+        <lazy(() => import("./pages/Edits")) />
+      </ProtectedRoute>
+    ),
+  },
+]);
+
+function App() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <RouterProvider router={router} />
+    </Suspense>
+  );
+}
 
 export default App;

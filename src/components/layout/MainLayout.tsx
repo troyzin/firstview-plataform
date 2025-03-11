@@ -1,8 +1,9 @@
+
 import React, { ReactNode, useState } from "react";
 import { Menu, Bell, Settings, LogOut } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import NavItem from "../ui/NavItem";
-import { Avatar, AvatarFallback } from "../ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { useAuth } from "../../contexts/AuthContext";
@@ -42,6 +43,10 @@ const MainLayout = ({ children }: MainLayoutProps) => {
         return "Equipamentos";
       case "/clients":
         return "Clientes";
+      case "/edits":
+        return "Edições";
+      case "/profile":
+        return "Perfil";
       case "/settings":
         return "Configurações";
       default:
@@ -76,7 +81,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
               <img 
                 src="/logo.png" 
                 alt="Logo da empresa" 
-                className="w-12 h-auto object-contain" 
+                className="w-16 h-auto object-contain" 
               />
             </div>
           )}
@@ -84,7 +89,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
             <img 
               src="/logo.png" 
               alt="Logo da empresa" 
-              className="w-8 h-8 object-contain mx-auto" 
+              className="w-10 h-10 object-contain mx-auto" 
             />
           )}
           <Button 
@@ -113,6 +118,14 @@ const MainLayout = ({ children }: MainLayoutProps) => {
                 icon="view_kanban" 
                 label={sidebarCollapsed ? undefined : "Produções"} 
                 isActive={isActiveRoute("/productions")}
+              />
+            </li>
+            <li>
+              <NavItem 
+                to="/edits" 
+                icon="edit" 
+                label={sidebarCollapsed ? undefined : "Edições"} 
+                isActive={isActiveRoute("/edits")}
               />
             </li>
             <li>
@@ -149,41 +162,6 @@ const MainLayout = ({ children }: MainLayoutProps) => {
             </li>
           </ul>
         </nav>
-
-        {!sidebarCollapsed && (
-          <div className="mt-8 pt-6 border-t border-gray-800/30 px-4 pb-6">
-            <h3 className="text-xs uppercase text-gray-500 font-semibold px-3 mb-3">Projetos Recentes</h3>
-            <ul className="space-y-1">
-              <li>
-                <a
-                  href="#"
-                  className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-800/70 text-sm group transition-all duration-200"
-                >
-                  <div className="w-2 h-2 rounded-full bg-[#ff3335]"></div>
-                  <span className="group-hover:text-[#ff3335]">Campanha Nova Marca</span>
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-800/70 text-sm group transition-all duration-200"
-                >
-                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                  <span className="group-hover:text-blue-400">Documentário</span>
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-800/70 text-sm group transition-all duration-200"
-                >
-                  <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-                  <span className="group-hover:text-yellow-400">Teaser Evento</span>
-                </a>
-              </li>
-            </ul>
-          </div>
-        )}
       </aside>
 
       <div className="flex-1 flex flex-col">
@@ -209,16 +187,19 @@ const MainLayout = ({ children }: MainLayoutProps) => {
               <DropdownMenuTrigger asChild>
                 <div className="flex items-center space-x-2 cursor-pointer">
                   <Avatar className="w-8 h-8 bg-[#ff3335] hover:bg-[#ff3335]/80 transition-colors">
+                    {profile?.avatar_url ? (
+                      <AvatarImage src={profile.avatar_url} alt="Avatar do usuário" />
+                    ) : null}
                     <AvatarFallback>{getInitials()}</AvatarFallback>
                   </Avatar>
                   <span className="text-sm font-medium">{profile?.full_name || 'Usuário'}</span>
                 </div>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700 text-white">
-                <DropdownMenuItem className="hover:bg-gray-700 cursor-pointer">
+                <DropdownMenuItem className="hover:bg-gray-700 cursor-pointer" onClick={() => navigate('/profile')}>
                   Perfil
                 </DropdownMenuItem>
-                <DropdownMenuItem className="hover:bg-gray-700 cursor-pointer">
+                <DropdownMenuItem className="hover:bg-gray-700 cursor-pointer" onClick={() => navigate('/settings')}>
                   Preferências
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-gray-700" />

@@ -18,14 +18,6 @@ const ROLE_PERMISSIONS = {
     'view_equipment', 
     'view_reports', 
     'view_team',
-    'add_production', 
-    'edit_production', 
-    'cancel_production', 
-    'add_client', 
-    'edit_client',
-    'add_equipment',
-    'edit_equipment',
-    'remove_equipment'
   ],
   admin: [
     'view_productions', 
@@ -38,9 +30,6 @@ const ROLE_PERMISSIONS = {
     'cancel_production', 
     'add_client', 
     'edit_client',
-    'add_equipment',
-    'edit_equipment',
-    'remove_equipment'
   ],
   master: [
     'view_productions', 
