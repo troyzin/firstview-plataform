@@ -95,38 +95,56 @@ export type Database = {
       }
       productions: {
         Row: {
+          briefing_file: string | null
           budget: number | null
           client_id: string | null
+          client_name: string | null
           created_at: string | null
           description: string | null
           end_date: string | null
+          end_time: string | null
           id: string
+          location: string | null
           start_date: string | null
+          start_time: string | null
           status: string | null
+          team_members: Json | null
           title: string
           updated_at: string | null
         }
         Insert: {
+          briefing_file?: string | null
           budget?: number | null
           client_id?: string | null
+          client_name?: string | null
           created_at?: string | null
           description?: string | null
           end_date?: string | null
+          end_time?: string | null
           id?: string
+          location?: string | null
           start_date?: string | null
+          start_time?: string | null
           status?: string | null
+          team_members?: Json | null
           title: string
           updated_at?: string | null
         }
         Update: {
+          briefing_file?: string | null
           budget?: number | null
           client_id?: string | null
+          client_name?: string | null
           created_at?: string | null
           description?: string | null
           end_date?: string | null
+          end_time?: string | null
           id?: string
+          location?: string | null
           start_date?: string | null
+          start_time?: string | null
           status?: string | null
+          team_members?: Json | null
           title?: string
           updated_at?: string | null
         }

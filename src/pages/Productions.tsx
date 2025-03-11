@@ -52,16 +52,18 @@ const Productions = () => {
           .order('created_at', { ascending: false });
         
         if (error) {
+          console.error("Supabase query error:", error);
           throw error;
         }
         
         console.log("Fetched productions:", data);
+        
         // Transform the data to match our Production type
         return data.map((item: any) => ({
           id: item.id,
           name: item.title,
           client: item.client_name || "Unknown Client",
-          date: new Date(item.start_date),
+          date: item.start_date ? new Date(item.start_date) : new Date(),
           startTime: item.start_time || "09:00",
           endTime: item.end_time || "17:00",
           location: item.location || "",
@@ -81,10 +83,10 @@ const Productions = () => {
   // Add production mutation
   const addProductionMutation = useMutation({
     mutationFn: async (production: Production) => {
+      console.log("Adding production to Supabase:", production);
       const { data, error } = await supabase
         .from('productions')
         .insert({
-          id: production.id,
           title: production.name,
           client_name: production.client,
           start_date: production.date.toISOString(),
@@ -119,6 +121,7 @@ const Productions = () => {
   // Update production mutation
   const updateProductionMutation = useMutation({
     mutationFn: async (production: Production) => {
+      console.log("Updating production in Supabase:", production);
       const { data, error } = await supabase
         .from('productions')
         .update({
@@ -157,6 +160,7 @@ const Productions = () => {
   // Delete production mutation
   const deleteProductionMutation = useMutation({
     mutationFn: async (productionId: string) => {
+      console.log("Deleting production from Supabase:", productionId);
       const { error } = await supabase
         .from('productions')
         .delete()
