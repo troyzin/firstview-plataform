@@ -51,10 +51,7 @@ const Dashboard = () => {
       
       const { data, error } = await supabase
         .from('productions')
-        .select(`
-          *,
-          clients(name)
-        `)
+        .select('*, clients!inner(name)')
         .gte('start_date', today.toISOString())
         .lt('start_date', tomorrow.toISOString());
       
@@ -104,7 +101,7 @@ const Dashboard = () => {
           id,
           title,
           client_id,
-          clients(name)
+          clients!inner(name)
         `)
         .order('created_at', { ascending: false })
         .limit(5);
@@ -115,10 +112,7 @@ const Dashboard = () => {
       }
       
       const formattedData = (data || []).map((item) => {
-        const client = Array.isArray(item.clients) && item.clients.length > 0 
-          ? item.clients[0] 
-          : null;
-        const clientName = client?.name || 'Cliente não especificado';
+        const clientName = item.clients?.name || 'Cliente não especificado';
         const initials = item.title.split(' ').slice(0, 2).map(word => word[0]).join('').toUpperCase();
         
         return {
