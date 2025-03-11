@@ -1,13 +1,16 @@
+
 import React, { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
-import { PlusIcon, SearchIcon, ClipboardCheck, CalendarIcon, MapPin, ClockIcon, UsersIcon, User, FileText } from "lucide-react";
+import { PlusIcon, SearchIcon, ClipboardCheck, CalendarIcon, MapPin, ClockIcon, UsersIcon, FileText } from "lucide-react";
 import { format, isSameDay, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Input } from "@/components/ui/input";
 import ProductionModal from "@/components/productions/ProductionModal";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 type TeamMember = {
   id: string;
@@ -29,107 +32,166 @@ type Production = {
   createdAt: Date;
 };
 
-const initialProductions: Production[] = [
-  {
-    id: "1",
-    name: "Campanha Nova Marca",
-    client: "Empresa XYZ",
-    date: new Date(2023, 11, 20),
-    startTime: "09:00",
-    endTime: "17:00",
-    location: "Estúdio Central",
-    notes: "Trazer equipamento de iluminação extra",
-    briefingFile: "briefing-xyz.pdf",
-    teamMembers: [
-      { id: "1", name: "Filipe Silva", role: "coordenador" },
-      { id: "3", name: "Arthur Leite", role: "filmmaker" },
-      { id: "6", name: "Paulo Flecha", role: "ajudante" },
-    ],
-    createdAt: new Date(2023, 11, 15),
-  },
-  {
-    id: "2",
-    name: "Documentário Institucional",
-    client: "Fundação ABC",
-    date: new Date(2023, 11, 18),
-    startTime: "08:00",
-    endTime: "18:00",
-    location: "Sede do cliente",
-    notes: "Entrevistar 5 diretores",
-    briefingFile: "doc-fundacao-abc.docx",
-    teamMembers: [
-      { id: "4", name: "Matheus Worish", role: "storymaker" },
-      { id: "2", name: "Joao Gustavo", role: "filmmaker" },
-    ],
-    createdAt: new Date(2023, 11, 10),
-  },
-  {
-    id: "3",
-    name: "Teaser Evento Anual",
-    client: "Conferência Tech",
-    date: new Date(2023, 11, 22),
-    startTime: "14:00",
-    endTime: "20:00",
-    location: "Centro de Convenções",
-    notes: "Foco nos palestrantes principais",
-    briefingFile: null,
-    teamMembers: [
-      { id: "5", name: "Felipe Vieira", role: "filmmaker" },
-      { id: "1", name: "Filipe Silva", role: "fotografo" },
-    ],
-    createdAt: new Date(2023, 11, 12),
-  },
-];
-
 const Productions = () => {
-  const { hasAction } = useAuth();
+  const { hasAction, user } = useAuth();
   const canAddProduction = hasAction('add_production');
-  
-  const [productions, setProductions] = useState<Production[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduction, setEditingProduction] = useState<Production | null>(null);
-
-  useEffect(() => {
-    const savedProductions = localStorage.getItem("productions");
-    if (savedProductions) {
-      const parsed = JSON.parse(savedProductions);
-      const productions = parsed.map((prod: any) => ({
-        ...prod,
-        date: new Date(prod.date),
-        createdAt: new Date(prod.createdAt)
-      }));
-      setProductions(productions);
-    } else {
-      setProductions(initialProductions);
+  const queryClient = useQueryClient();
+  
+  // Fetch productions from Supabase
+  const { data: productions = [], isLoading, error } = useQuery({
+    queryKey: ['productions'],
+    queryFn: async () => {
+      try {
+        console.log("Fetching productions from Supabase...");
+        const { data, error } = await supabase
+          .from('productions')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (error) {
+          throw error;
+        }
+        
+        console.log("Fetched productions:", data);
+        // Transform the data to match our Production type
+        return data.map((item: any) => ({
+          id: item.id,
+          name: item.title,
+          client: item.client_name || "Unknown Client",
+          date: new Date(item.start_date),
+          startTime: item.start_time || "09:00",
+          endTime: item.end_time || "17:00",
+          location: item.location || "",
+          notes: item.description || "",
+          briefingFile: item.briefing_file || null,
+          teamMembers: item.team_members || [],
+          createdAt: new Date(item.created_at)
+        }));
+      } catch (error) {
+        console.error("Error fetching productions:", error);
+        toast.error("Erro ao carregar produções!");
+        return [];
+      }
     }
-  }, []);
-
-  useEffect(() => {
-    if (productions.length > 0) {
-      localStorage.setItem("productions", JSON.stringify(productions));
+  });
+  
+  // Add production mutation
+  const addProductionMutation = useMutation({
+    mutationFn: async (production: Production) => {
+      const { data, error } = await supabase
+        .from('productions')
+        .insert({
+          id: production.id,
+          title: production.name,
+          client_name: production.client,
+          start_date: production.date.toISOString(),
+          start_time: production.startTime,
+          end_time: production.endTime,
+          location: production.location,
+          description: production.notes,
+          briefing_file: production.briefingFile,
+          team_members: production.teamMembers
+        })
+        .select();
+        
+      if (error) {
+        console.error("Error adding production:", error);
+        throw error;
+      }
+      
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['productions'] });
+      setIsModalOpen(false);
+      setEditingProduction(null);
+      toast.success("Produção criada com sucesso!");
+    },
+    onError: (error) => {
+      console.error("Mutation error:", error);
+      toast.error("Erro ao criar produção!");
     }
-  }, [productions]);
+  });
+  
+  // Update production mutation
+  const updateProductionMutation = useMutation({
+    mutationFn: async (production: Production) => {
+      const { data, error } = await supabase
+        .from('productions')
+        .update({
+          title: production.name,
+          client_name: production.client,
+          start_date: production.date.toISOString(),
+          start_time: production.startTime,
+          end_time: production.endTime,
+          location: production.location,
+          description: production.notes,
+          briefing_file: production.briefingFile,
+          team_members: production.teamMembers
+        })
+        .eq('id', production.id)
+        .select();
+        
+      if (error) {
+        console.error("Error updating production:", error);
+        throw error;
+      }
+      
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['productions'] });
+      setIsModalOpen(false);
+      setEditingProduction(null);
+      toast.success("Produção atualizada com sucesso!");
+    },
+    onError: (error) => {
+      console.error("Mutation error:", error);
+      toast.error("Erro ao atualizar produção!");
+    }
+  });
+  
+  // Delete production mutation
+  const deleteProductionMutation = useMutation({
+    mutationFn: async (productionId: string) => {
+      const { error } = await supabase
+        .from('productions')
+        .delete()
+        .eq('id', productionId);
+        
+      if (error) {
+        console.error("Error deleting production:", error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['productions'] });
+      setIsModalOpen(false);
+      setEditingProduction(null);
+      toast.success("Produção cancelada com sucesso!");
+    },
+    onError: (error) => {
+      console.error("Mutation error:", error);
+      toast.error("Erro ao cancelar produção!");
+    }
+  });
 
   const handleAddProduction = (production: Production) => {
+    console.log("Saving production:", production);
+    
     if (editingProduction) {
-      setProductions(productions.map(p => 
-        p.id === production.id ? production : p
-      ));
-      toast.success("Produção atualizada com sucesso!");
+      updateProductionMutation.mutate(production);
     } else {
-      setProductions([...productions, production]);
-      toast.success("Produção criada com sucesso!");
+      // Create new production
+      addProductionMutation.mutate(production);
     }
-    setIsModalOpen(false);
-    setEditingProduction(null);
   };
 
   const handleDeleteProduction = (productionId: string) => {
-    setProductions(productions.filter(p => p.id !== productionId));
-    setIsModalOpen(false);
-    setEditingProduction(null);
-    toast.success("Produção cancelada com sucesso!");
+    deleteProductionMutation.mutate(productionId);
   };
 
   const handleEditProduction = (production: Production) => {
@@ -137,7 +199,7 @@ const Productions = () => {
     setIsModalOpen(true);
   };
 
-  const filteredProductions = productions.filter(production => 
+  const filteredProductions = productions.filter((production: Production) => 
     production.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     production.client.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -176,6 +238,36 @@ const Productions = () => {
       return format(date, "EEEE, dd 'de' MMMM", { locale: ptBR });
     }
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <MainLayout>
+        <div className="text-center py-12 bg-gray-900 rounded-lg">
+          <ClipboardCheck className="mx-auto h-12 w-12 text-gray-600 mb-4" />
+          <h3 className="text-lg font-medium text-gray-400 mb-2">Erro ao carregar produções</h3>
+          <p className="text-gray-500 mb-6">Ocorreu um erro ao tentar carregar as produções</p>
+          <Button 
+            onClick={() => queryClient.invalidateQueries({ queryKey: ['productions'] })}
+            className="bg-red-600 hover:bg-red-700"
+          >
+            Tentar novamente
+          </Button>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
