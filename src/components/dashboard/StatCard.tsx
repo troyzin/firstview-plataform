@@ -1,4 +1,3 @@
-
 import React from "react";
 import { cn } from "@/lib/utils";
 import { LucideIcon } from "lucide-react";
@@ -7,7 +6,7 @@ type StatCardProps = {
   title: string;
   value: string | number;
   icon: string | LucideIcon;
-  color: "red" | "blue" | "yellow" | "green" | string;
+  color?: "red" | "blue" | "yellow" | "green" | string;
   trend: {
     value: string;
     label?: string;
@@ -21,7 +20,16 @@ type StatCardProps = {
   borderColor?: string;
 };
 
-const StatCard = ({ title, value, icon, color, trend, iconColor, iconBgColor, borderColor }: StatCardProps) => {
+const StatCard = ({ 
+  title, 
+  value, 
+  icon, 
+  color = "blue", 
+  trend, 
+  iconColor, 
+  iconBgColor, 
+  borderColor 
+}: StatCardProps) => {
   const getColorClasses = (color: string) => {
     switch (color) {
       case "red":
@@ -71,7 +79,6 @@ const StatCard = ({ title, value, icon, color, trend, iconColor, iconBgColor, bo
     return "schedule";
   };
 
-  // Check if icon is a string (material icon) or a Lucide component
   const renderIcon = () => {
     if (typeof icon === "string") {
       return <span className={cn("material-symbols-outlined", colorClasses.iconColor)}>{icon}</span>;
