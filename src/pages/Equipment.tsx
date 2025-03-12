@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { Plus, Search, Filter, Package, Calendar, LogOut, CheckCircle, AlertTriangle, ShoppingCart, History, Users, Edit, Trash2, MoreVertical, ArrowLeft } from "lucide-react";
+import { Plus, Search, Filter, Package, Calendar, LogOut, CheckCircle, AlertTriangle, ShoppingCart, History, Users, Edit, ArrowLeft, FileText, Info, Receipt, ReceiptText } from "lucide-react";
 import MainLayout from "../components/layout/MainLayout";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -25,7 +25,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogClose,
 } from "../components/ui/dialog";
 import {
   Popover,
@@ -59,8 +58,13 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import EquipmentModal from "@/components/equipment/EquipmentModal";
+import ReceiptModal from "@/components/equipment/ReceiptModal";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/contexts/AuthContext";
+import { Receipt as ReceiptType } from "@/types/equipment";
+import SchedulesList from "@/components/equipment/SchedulesList";
+import WithdrawalsList from "@/components/equipment/WithdrawalsList";
 
 // Tipo de equipamento
 type Equipment = {
@@ -127,9 +131,55 @@ const fetchEquipments = async (): Promise<Equipment[]> => {
   return data || [];
 };
 
+// Função para buscar recibos do Supabase
+const fetchReceipts = async (): Promise<ReceiptType[]> => {
+  const { data, error } = await supabase
+    .from("equipment_withdrawals")
+    .select(`
+      id,
+      withdrawal_date,
+      equipment_id,
+      equipment:equipment_id (id, name),
+      user_id,
+      user:user_id (id, full_name),
+      production_id,
+      production:production_id (id, title),
+      expected_return_date,
+      returned_date,
+      is_personal_use,
+      notes,
+      status,
+      created_at:withdrawal_date
+    `)
+    .order("withdrawal_date", { ascending: false });
+
+  if (error) {
+    console.error("Erro ao buscar recibos:", error);
+    throw new Error(error.message);
+  }
+
+  return (data as unknown as ReceiptType[]) || [];
+};
+
+// Função para buscar produções do Supabase
+const fetchProductions = async () => {
+  const { data, error } = await supabase
+    .from("productions")
+    .select("id, title")
+    .order("title");
+
+  if (error) {
+    console.error("Erro ao buscar produções:", error);
+    throw new Error(error.message);
+  }
+
+  return data || [];
+};
+
 const Equipment = () => {
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
+  const { user, profile } = useAuth();
   
   // Consulta para buscar equipamentos
   const { data: equipments = [], isLoading, isError, refetch } = useQuery({
@@ -137,6 +187,18 @@ const Equipment = () => {
     queryFn: fetchEquipments,
   });
 
+  // Consulta para buscar recibos
+  const { data: receipts = [], refetch: refetchReceipts } = useQuery({
+    queryKey: ["receipts"],
+    queryFn: fetchReceipts,
+  });
+
+  // Consulta para buscar produções
+  const { data: productions = [] } = useQuery({
+    queryKey: ["productions"],
+    queryFn: fetchProductions,
+  });
+  
   // Estados
   const [historyEvents, setHistoryEvents] = useState<HistoryEvent[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -157,15 +219,17 @@ const Equipment = () => {
   const [scheduleEndDate, setScheduleEndDate] = useState<Date | undefined>(new Date());
   const [selectedProduction, setSelectedProduction] = useState<string>("");
   const [scheduleNotes, setScheduleNotes] = useState<string>("");
-  const [responsibleName, setResponsibleName] = useState<string>("");
-
-  // Novos estados para os modais de retirada e devolução
+  const [isPersonalUse, setIsPersonalUse] = useState<boolean>(false);
+  
+  // Estados para os modais de retirada e devolução
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
-  const [checkoutQuantity, setCheckoutQuantity] = useState(1);
   const [checkoutProduction, setCheckoutProduction] = useState<string>("");
-  const [checkoutResponsible, setCheckoutResponsible] = useState<string>("");
   const [checkoutNotes, setCheckoutNotes] = useState<string>("");
+  
+  // Estado para o modal de recibo
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+  const [selectedReceipt, setSelectedReceipt] = useState<ReceiptType | null>(null);
   
   // Efeito para adicionar HistoryEvents
   useEffect(() => {
@@ -245,6 +309,15 @@ const Equipment = () => {
     return matchesSearch;
   });
   
+  // Filtragem de recibos
+  const filteredReceipts = receipts.filter((receipt) => {
+    const matchesSearch = searchTerm === "" || 
+      receipt.equipment?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (receipt.production?.title && receipt.production.title.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    return matchesSearch;
+  });
+  
   // Manipuladores de eventos
   const handleEditEquipment = (equipment: Equipment) => {
     setEquipmentToEdit(equipment);
@@ -300,6 +373,22 @@ const Equipment = () => {
     }
   };
   
+  // Função para renderizar o status do recibo
+  const renderReceiptStatus = (status: string) => {
+    switch (status) {
+      case "withdrawn":
+        return <Badge className="bg-[#ff3335]">Em Uso</Badge>;
+      case "returned":
+        return <Badge className="bg-green-600">Devolvido</Badge>;
+      case "overdue":
+        return <Badge className="bg-yellow-600">Atrasado</Badge>;
+      case "returned_late":
+        return <Badge className="bg-purple-600">Devolvido com Atraso</Badge>;
+      default:
+        return <Badge>Desconhecido</Badge>;
+    }
+  };
+  
   // Função para renderizar o tipo do evento do histórico
   const renderEventType = (eventType: HistoryEvent["eventType"]) => {
     switch (eventType) {
@@ -338,44 +427,55 @@ const Equipment = () => {
     }
 
     setSelectedEquipment(equipment);
-    setCheckoutQuantity(1); // Reseta para 1 ou qualquer valor padrão
     setCheckoutProduction("");
-    setCheckoutResponsible("");
     setCheckoutNotes("");
+    setIsPersonalUse(false);
     setIsCheckoutModalOpen(true);
   };
 
   // Função para confirmar a retirada
   const handleConfirmCheckout = async () => {
-    if (!selectedEquipment) return;
+    if (!selectedEquipment || !user) return;
     
     try {
+      // Dados para criar o recibo
+      const withdrawalData = {
+        equipment_id: selectedEquipment.id,
+        user_id: user.id,
+        production_id: isPersonalUse ? null : checkoutProduction || null,
+        expected_return_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 dias a partir de hoje
+        notes: checkoutNotes || null,
+        is_personal_use: isPersonalUse,
+        status: 'withdrawn'
+      };
+      
+      // Insere o recibo no banco de dados
+      const { data: receiptData, error: receiptError } = await supabase
+        .from('equipment_withdrawals')
+        .insert(withdrawalData)
+        .select()
+        .single();
+      
+      if (receiptError) throw receiptError;
+      
       // Atualiza o status do equipamento para "em uso"
-      const { error } = await supabase
+      const { error: equipmentError } = await supabase
         .from('equipment')
         .update({ status: "em uso" })
         .eq('id', selectedEquipment.id);
       
-      if (error) throw error;
+      if (equipmentError) throw equipmentError;
       
-      // Adiciona um novo evento ao histórico
-      const newEvent: HistoryEvent = {
-        id: `h${historyEvents.length + 1}`,
-        equipmentId: selectedEquipment.id,
-        equipmentName: selectedEquipment.name,
-        eventType: "checkout",
-        date: new Date(),
-        responsibleName: checkoutResponsible || "Usuário Atual",
-        productionName: productionOptions.find(p => p.id === checkoutProduction)?.name,
-        notes: checkoutNotes || `Retirada de ${checkoutQuantity} unidade(s)`
-      };
-      
-      setHistoryEvents(prev => [newEvent, ...prev]);
       toast.success(`${selectedEquipment.name} retirado com sucesso!`);
       
-      // Atualiza a lista de equipamentos
+      // Atualiza as consultas
       refetch();
+      refetchReceipts();
       closeCheckoutModal();
+      
+      // Abre automaticamente o modal de recibo
+      setSelectedReceipt(receiptData as unknown as ReceiptType);
+      setIsReceiptModalOpen(true);
     } catch (error) {
       console.error('Erro ao retirar equipamento:', error);
       toast.error('Ocorreu um erro ao retirar o equipamento');
@@ -404,30 +504,42 @@ const Equipment = () => {
     if (!selectedEquipment) return;
     
     try {
+      // Busca o recibo relacionado ao equipamento
+      const { data: receiptData, error: receiptFetchError } = await supabase
+        .from('equipment_withdrawals')
+        .select('*')
+        .eq('equipment_id', selectedEquipment.id)
+        .eq('status', 'withdrawn')
+        .order('withdrawal_date', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (receiptFetchError) throw receiptFetchError;
+      
+      // Atualiza o recibo
+      const { error: receiptUpdateError } = await supabase
+        .from('equipment_withdrawals')
+        .update({ 
+          status: 'returned',
+          returned_date: new Date().toISOString() 
+        })
+        .eq('id', receiptData.id);
+      
+      if (receiptUpdateError) throw receiptUpdateError;
+      
       // Atualiza o status do equipamento para "disponível"
-      const { error } = await supabase
+      const { error: equipmentError } = await supabase
         .from('equipment')
         .update({ status: "disponível" })
         .eq('id', selectedEquipment.id);
       
-      if (error) throw error;
+      if (equipmentError) throw equipmentError;
       
-      // Adiciona um novo evento ao histórico
-      const newEvent: HistoryEvent = {
-        id: `h${historyEvents.length + 1}`,
-        equipmentId: selectedEquipment.id,
-        equipmentName: selectedEquipment.name,
-        eventType: "return",
-        date: new Date(),
-        responsibleName: "Usuário Atual", // Idealmente seria o usuário logado
-        notes: "Equipamento devolvido"
-      };
-      
-      setHistoryEvents(prev => [newEvent, ...prev]);
       toast.success(`${selectedEquipment.name} devolvido com sucesso!`);
       
-      // Atualiza a lista de equipamentos
+      // Atualiza as consultas
       refetch();
+      refetchReceipts();
       closeReturnModal();
     } catch (error) {
       console.error('Erro ao devolver equipamento:', error);
@@ -442,43 +554,47 @@ const Equipment = () => {
   };
 
   // Função para agendar um equipamento
-  const handleScheduleEquipment = () => {
-    if (!selectedEquipment) return;
+  const handleScheduleEquipment = async () => {
+    if (!selectedEquipment || !user || !selectedDate || !scheduleEndDate) return;
     
-    // Aqui você adicionaria lógica para salvar o agendamento no banco de dados
-    
-    // Adiciona um novo evento ao histórico
-    const newEvent: HistoryEvent = {
-      id: `h${historyEvents.length + 1}`,
-      equipmentId: selectedEquipment.id,
-      equipmentName: selectedEquipment.name,
-      eventType: "schedule",
-      date: selectedDate || new Date(),
-      responsibleName: responsibleName || "Usuário Atual", // Idealmente seria o usuário logado
-      productionName: productionOptions.find(p => p.id === selectedProduction)?.name,
-      notes: scheduleNotes
-    };
-    
-    setHistoryEvents(prev => [newEvent, ...prev]);
-    toast.success(`${selectedEquipment.name} agendado com sucesso!`);
-    closeScheduleModal();
-  };
-
-  // Função para atualizar o status de um equipamento
-  const updateEquipmentStatus = async (equipmentId: string, newStatus: string) => {
     try {
+      const scheduleData = {
+        equipment_id: selectedEquipment.id,
+        user_id: user.id,
+        production_id: selectedProduction || null,
+        start_date: selectedDate.toISOString(),
+        end_date: scheduleEndDate.toISOString(),
+        notes: scheduleNotes || null
+      };
+      
       const { error } = await supabase
-        .from('equipment')
-        .update({ status: newStatus })
-        .eq('id', equipmentId);
+        .from('equipment_schedules')
+        .insert(scheduleData);
       
       if (error) throw error;
       
-      // Atualiza a lista de equipamentos
-      refetch();
+      toast.success(`${selectedEquipment.name} agendado com sucesso!`);
+      
+      // Adiciona um novo evento ao histórico
+      const newEvent: HistoryEvent = {
+        id: `h${historyEvents.length + 1}`,
+        equipmentId: selectedEquipment.id,
+        equipmentName: selectedEquipment.name,
+        eventType: "schedule",
+        date: new Date(),
+        responsibleName: profile?.full_name || user.email || "Usuário Atual",
+        productionName: productions.find(p => p.id === selectedProduction)?.title,
+        notes: scheduleNotes
+      };
+      
+      setHistoryEvents(prev => [newEvent, ...prev]);
+      closeScheduleModal();
+      
+      // Atualiza a lista de agendamentos
+      queryClient.invalidateQueries({ queryKey: ['schedules'] });
     } catch (error) {
-      console.error('Erro ao atualizar status do equipamento:', error);
-      toast.error('Ocorreu um erro ao atualizar o status do equipamento');
+      console.error('Erro ao agendar equipamento:', error);
+      toast.error('Ocorreu um erro ao agendar o equipamento');
     }
   };
 
@@ -502,8 +618,28 @@ const Equipment = () => {
     setScheduleEndDate(new Date());
     setSelectedProduction("");
     setScheduleNotes("");
-    setResponsibleName("");
     setIsScheduleModalOpen(false);
+  };
+  
+  // Função para abrir o modal de recibo
+  const openReceiptModal = (receipt: ReceiptType) => {
+    setSelectedReceipt(receipt);
+    setIsReceiptModalOpen(true);
+  };
+  
+  // Função para fechar o modal de recibo
+  const closeReceiptModal = () => {
+    setSelectedReceipt(null);
+    setIsReceiptModalOpen(false);
+  };
+
+  // Encontrar a produção associada a um equipamento em uso
+  const findEquipmentProduction = (equipmentId: string) => {
+    const withdrawalForEquipment = receipts.find(
+      receipt => receipt.equipment?.id === equipmentId && receipt.status === 'withdrawn'
+    );
+    
+    return withdrawalForEquipment?.production?.title || 'Uso Pessoal';
   };
 
   return (
@@ -598,21 +734,42 @@ const Equipment = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Equipamento</TableHead>
-                      <TableHead className="text-right">Quantidade</TableHead>
+                      <TableHead>Produção</TableHead>
+                      <TableHead className="text-right">Recibo</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {equipments
                       .filter(e => e.status === "em uso")
-                      .map(equipment => (
-                        <TableRow key={`in-use-${equipment.id}`}>
-                          <TableCell>{equipment.name}</TableCell>
-                          <TableCell className="text-right">{equipment.quantity}</TableCell>
-                        </TableRow>
-                      ))}
+                      .map(equipment => {
+                        const receipt = receipts.find(
+                          r => r.equipment?.id === equipment.id && r.status === 'withdrawn'
+                        );
+                        
+                        return (
+                          <TableRow key={`in-use-${equipment.id}`}>
+                            <TableCell>{equipment.name}</TableCell>
+                            <TableCell>
+                              {findEquipmentProduction(equipment.id)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {receipt && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  onClick={() => openReceiptModal(receipt)}
+                                  className="h-8 w-8 rounded-full hover:bg-gray-700"
+                                >
+                                  <ReceiptText className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     {equipments.filter(e => e.status === "em uso").length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={2} className="text-center text-gray-500">
+                        <TableCell colSpan={3} className="text-center text-gray-500">
                           Nenhum equipamento em uso
                         </TableCell>
                       </TableRow>
@@ -630,6 +787,7 @@ const Equipment = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Equipamento</TableHead>
+                      <TableHead>Tipo</TableHead>
                       <TableHead className="text-right">Quantidade</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -639,12 +797,13 @@ const Equipment = () => {
                       .map(equipment => (
                         <TableRow key={`available-${equipment.id}`}>
                           <TableCell>{equipment.name}</TableCell>
+                          <TableCell>{renderEquipmentType(equipment.category || '')}</TableCell>
                           <TableCell className="text-right">{equipment.quantity}</TableCell>
                         </TableRow>
                       ))}
                     {equipments.filter(e => e.status === "disponível").length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={2} className="text-center text-gray-500">
+                        <TableCell colSpan={3} className="text-center text-gray-500">
                           Nenhum equipamento disponível
                         </TableCell>
                       </TableRow>
@@ -659,6 +818,8 @@ const Equipment = () => {
         <Tabs defaultValue="inventory" value={currentTab} onValueChange={setCurrentTab} className="w-full">
           <TabsList className="mb-4 flex overflow-x-auto md:flex-nowrap">
             <TabsTrigger value="inventory">Inventário</TabsTrigger>
+            <TabsTrigger value="schedules">Agendamentos</TabsTrigger>
+            <TabsTrigger value="receipts">Recibos</TabsTrigger>
             <TabsTrigger value="history">Histórico</TabsTrigger>
           </TabsList>
           
@@ -754,7 +915,7 @@ const Equipment = () => {
                           {renderStatus(equipment.status)}
                         </div>
                         
-                        {/* Exibindo quantidade do item */}
+                        {/* Exibindo detalhes do equipamento */}
                         <div className="flex justify-between items-center mb-2 text-sm">
                           <span className="text-gray-400">
                             <span className="font-medium">Quantidade: </span>
@@ -777,8 +938,16 @@ const Equipment = () => {
                         
                         <p className="text-sm text-gray-400 mb-4">
                           <span className="font-medium">Tipo: </span>
-                          {renderEquipmentType(equipment.category)}
+                          {renderEquipmentType(equipment.category || '')}
                         </p>
+                        
+                        {/* Mostrar produção se o equipamento estiver em uso */}
+                        {equipment.status === "em uso" && (
+                          <p className="text-sm text-[#ff3335] mb-4">
+                            <span className="font-medium">Em uso para: </span>
+                            {findEquipmentProduction(equipment.id)}
+                          </p>
+                        )}
                         
                         {equipment.status === "disponível" && (
                           <div className="flex space-x-2">
@@ -818,6 +987,68 @@ const Equipment = () => {
                 )}
               </div>
             )}
+          </TabsContent>
+          
+          <TabsContent value="schedules" className="space-y-4">
+            <SchedulesList equipmentId={null} />
+          </TabsContent>
+          
+          <TabsContent value="receipts" className="space-y-4">
+            <div className="overflow-x-auto">
+              <Table className="bg-[#141414] rounded-lg">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Data da Retirada</TableHead>
+                    <TableHead>Equipamento</TableHead>
+                    <TableHead>Responsável</TableHead>
+                    <TableHead>Produção</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Data de Devolução</TableHead>
+                    <TableHead>Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredReceipts.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center text-gray-500 py-8">
+                        <div className="flex flex-col items-center justify-center">
+                          <Receipt className="h-12 w-12 text-gray-500 mb-4" />
+                          <h3 className="text-xl font-medium text-gray-300 mb-2">Nenhum recibo encontrado</h3>
+                          <p className="text-gray-400 max-w-md">
+                            {searchTerm ? 
+                              `Não encontramos recibos com o termo "${searchTerm}"` : 
+                              "Não há recibos registrados no sistema"}
+                          </p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredReceipts.map((receipt) => (
+                      <TableRow key={receipt.id}>
+                        <TableCell className="font-mono">{receipt.id.substring(0, 8)}</TableCell>
+                        <TableCell>{receipt.withdrawal_date ? format(new Date(receipt.withdrawal_date), "dd/MM/yyyy HH:mm", { locale: ptBR }) : "-"}</TableCell>
+                        <TableCell>{receipt.equipment?.name || "-"}</TableCell>
+                        <TableCell>{receipt.user?.full_name || "-"}</TableCell>
+                        <TableCell>{receipt.is_personal_use ? "Uso Pessoal" : (receipt.production?.title || "-")}</TableCell>
+                        <TableCell>{renderReceiptStatus(receipt.status)}</TableCell>
+                        <TableCell>{receipt.returned_date ? format(new Date(receipt.returned_date), "dd/MM/yyyy HH:mm", { locale: ptBR }) : "Pendente"}</TableCell>
+                        <TableCell>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => openReceiptModal(receipt)}
+                            className="h-8 w-8 rounded-full hover:bg-gray-700"
+                          >
+                            <ReceiptText className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </TabsContent>
           
           <TabsContent value="history" className="space-y-4">
@@ -875,6 +1106,13 @@ const Equipment = () => {
         onSuccess={refetch}
       />
       
+      {/* Modal de visualização de recibo */}
+      <ReceiptModal 
+        isOpen={isReceiptModalOpen}
+        onClose={closeReceiptModal}
+        receipt={selectedReceipt}
+      />
+      
       {/* Modal de confirmação de exclusão */}
       <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
         <AlertDialogContent className="bg-[#000000] border border-[#141414] text-white">
@@ -919,7 +1157,7 @@ const Equipment = () => {
                     <div key={equipment.id} className="flex items-center space-x-2">
                       <Checkbox id={`kit-${equipment.id}`} />
                       <label htmlFor={`kit-${equipment.id}`} className="text-sm cursor-pointer">
-                        {equipment.name} ({equipment.quantity} disponíveis)
+                        {equipment.name}
                       </label>
                     </div>
                   ))}
@@ -938,9 +1176,9 @@ const Equipment = () => {
                       <SelectValue placeholder="Selecione uma produção" />
                     </SelectTrigger>
                     <SelectContent className="bg-[#141414] border-gray-700">
-                      {productionOptions.map(production => (
+                      {productions.map(production => (
                         <SelectItem key={production.id} value={production.id}>
-                          {production.name}
+                          {production.title}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -949,7 +1187,25 @@ const Equipment = () => {
                 
                 <div>
                   <label className="text-sm font-medium mb-1 block">Responsável</label>
-                  <Input className="bg-[#141414] border-gray-700" placeholder="Nome do responsável" />
+                  <Input 
+                    className="bg-[#141414] border-gray-700" 
+                    value={profile?.full_name || user?.email || ""}
+                    readOnly
+                  />
+                </div>
+                
+                <div className="flex items-center space-x-2 mt-2">
+                  <Checkbox 
+                    id="personal-use-kit" 
+                    checked={isPersonalUse}
+                    onCheckedChange={(checked) => setIsPersonalUse(checked === true)}
+                  />
+                  <label
+                    htmlFor="personal-use-kit"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Retirar sob minha responsabilidade (Uso Pessoal)
+                  </label>
                 </div>
                 
                 <div>
@@ -1006,7 +1262,6 @@ const Equipment = () => {
                       selected={selectedDate}
                       onSelect={setSelectedDate}
                       initialFocus
-                      className="bg-[#141414]"
                     />
                   </PopoverContent>
                 </Popover>
@@ -1034,7 +1289,6 @@ const Equipment = () => {
                       selected={scheduleEndDate}
                       onSelect={setScheduleEndDate}
                       initialFocus
-                      className="bg-[#141414]"
                     />
                   </PopoverContent>
                 </Popover>
@@ -1048,9 +1302,9 @@ const Equipment = () => {
                   <SelectValue placeholder="Selecione uma produção" />
                 </SelectTrigger>
                 <SelectContent className="bg-[#141414] border-gray-700">
-                  {productionOptions.map(production => (
+                  {productions.map(production => (
                     <SelectItem key={production.id} value={production.id}>
-                      {production.name}
+                      {production.title}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1061,9 +1315,8 @@ const Equipment = () => {
               <label className="text-sm font-medium mb-1 block">Responsável</label>
               <Input 
                 className="bg-[#141414] border-gray-700" 
-                placeholder="Nome do responsável" 
-                value={responsibleName}
-                onChange={(e) => setResponsibleName(e.target.value)}
+                value={profile?.full_name || user?.email || ""}
+                readOnly
               />
             </div>
             
@@ -1105,27 +1358,19 @@ const Equipment = () => {
           
           <div className="space-y-4 my-4">
             <div>
-              <label className="text-sm font-medium mb-1 block">Quantidade</label>
-              <Input 
-                type="number"
-                min={1}
-                max={selectedEquipment?.quantity || 1}
-                className="bg-[#141414] border-gray-700" 
-                value={checkoutQuantity}
-                onChange={(e) => setCheckoutQuantity(parseInt(e.target.value) || 1)}
-              />
-            </div>
-            
-            <div>
               <label className="text-sm font-medium mb-1 block">Produção</label>
-              <Select value={checkoutProduction} onValueChange={setCheckoutProduction}>
+              <Select 
+                value={checkoutProduction} 
+                onValueChange={setCheckoutProduction}
+                disabled={isPersonalUse}
+              >
                 <SelectTrigger className="w-full bg-[#141414] border-gray-700">
                   <SelectValue placeholder="Selecione uma produção" />
                 </SelectTrigger>
                 <SelectContent className="bg-[#141414] border-gray-700">
-                  {productionOptions.map(production => (
+                  {productions.map(production => (
                     <SelectItem key={production.id} value={production.id}>
-                      {production.name}
+                      {production.title}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1136,10 +1381,23 @@ const Equipment = () => {
               <label className="text-sm font-medium mb-1 block">Responsável</label>
               <Input 
                 className="bg-[#141414] border-gray-700" 
-                placeholder="Nome do responsável" 
-                value={checkoutResponsible}
-                onChange={(e) => setCheckoutResponsible(e.target.value)}
+                value={profile?.full_name || user?.email || ""}
+                readOnly
               />
+            </div>
+            
+            <div className="flex items-center space-x-2 mt-2">
+              <Checkbox 
+                id="personal-use" 
+                checked={isPersonalUse}
+                onCheckedChange={(checked) => setIsPersonalUse(checked === true)}
+              />
+              <label
+                htmlFor="personal-use"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Retirar sob minha responsabilidade (Uso Pessoal)
+              </label>
             </div>
             
             <div>
@@ -1160,6 +1418,7 @@ const Equipment = () => {
             <Button 
               className="bg-[#ff3335] hover:bg-red-700"
               onClick={handleConfirmCheckout}
+              disabled={!isPersonalUse && !checkoutProduction}
             >
               <LogOut className="h-4 w-4 mr-2" />
               Confirmar Retirada

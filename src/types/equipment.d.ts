@@ -37,6 +37,8 @@ export interface Receipt {
   notes: string | null;
   created_at: string;
   return_notes: string | null;
+  returned_date: string | null;
+  status: "withdrawn" | "overdue" | "returned" | "returned_late";
 }
 
 export interface EquipmentSchedule {
