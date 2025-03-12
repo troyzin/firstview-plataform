@@ -15,11 +15,19 @@ export const useWithdrawals = () => {
           user:user_id(id, full_name),
           production:production_id(id, title)
         `)
-        .order('withdrawal_date', { ascending: false })
-        .returns<EquipmentWithdrawal[]>();
+        .order('withdrawal_date', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      
+      // Certifique-se de que user e production estão presentes mesmo que null
+      const processedData = (data || []).map(item => ({
+        ...item,
+        user: item.user || { id: item.user_id, full_name: 'Usuário não encontrado' },
+        equipment: item.equipment || { id: item.equipment_id, name: 'Equipamento não encontrado' },
+        production: item.production || (item.production_id ? { id: item.production_id, title: 'Produção não encontrada' } : null)
+      }));
+      
+      return processedData as EquipmentWithdrawal[];
     },
   });
 };

@@ -2,134 +2,70 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Import Material Symbols with the correct format */
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
-
-/* Import Inter font */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
+ 
 @layer base {
   :root {
     --background: 0 0% 0%;
     --foreground: 0 0% 100%;
-
+    
     --card: 0 0% 8%;
     --card-foreground: 0 0% 100%;
-
+ 
     --popover: 0 0% 8%;
     --popover-foreground: 0 0% 100%;
-
-    --primary: 355 100% 60%;
+ 
+    --primary: 0 100% 60%;
     --primary-foreground: 0 0% 100%;
-
+ 
     --secondary: 0 0% 8%;
     --secondary-foreground: 0 0% 100%;
-
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 63.9%;
-
-    --accent: 355 100% 60%;
+ 
+    --muted: 0 0% 20%;
+    --muted-foreground: 0 0% 70%;
+ 
+    --accent: 0 100% 60%;
     --accent-foreground: 0 0% 100%;
-
-    --destructive: 355 100% 60%;
+ 
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-
+ 
     --border: 0 0% 20%;
-    --input: 0 0% 15%;
-    --ring: 355 100% 60%;
-
+    --input: 0 0% 20%;
+    --ring: 0 100% 60%;
+ 
     --radius: 0.5rem;
+  }
 
-    --sidebar-background: 0 0% 8%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 355 100% 60%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 8%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 0 0% 15%;
-    --sidebar-ring: 355 100% 60%;
+  body {
+    @apply bg-black text-white;
   }
 }
-
+ 
 @layer base {
   * {
     @apply border-border;
   }
-
   body {
-    @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Inter', sans-serif;
-  }
-
-  /* Scrollbar customization */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.1);
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 10px;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
-  }
-
-  /* Material Symbols with explicit properties */
-  .material-symbols-outlined {
-    font-variation-settings:
-      'FILL' 0,
-      'wght' 400,
-      'GRAD' 0,
-      'opsz' 24;
-    font-family: 'Material Symbols Outlined' !important;
-    font-weight: normal;
-    font-style: normal;
-    font-size: 24px;
-    line-height: 1;
-    letter-spacing: normal;
-    text-transform: none;
-    display: inline-block;
-    white-space: nowrap;
-    word-wrap: normal;
-    direction: ltr;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
+    @apply bg-background text-foreground;
   }
 }
 
-@layer components {
-  .card-hover {
-    @apply transition-all transform hover:-translate-y-1 hover:shadow-lg cursor-pointer;
+@media print {
+  body * {
+    visibility: hidden;
   }
-  
-  .nav-item {
-    @apply hover:text-[#ff3335] transition-colors;
+  #receipt-printable, #receipt-printable * {
+    visibility: visible;
   }
-  
-  .btn-primary {
-    @apply bg-[#ff3335] hover:bg-[#ff3335]/80 text-white transition-colors;
+  #receipt-printable {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: white !important;
+    color: black !important;
   }
-  
-  .glass-card {
-    @apply bg-black/60 backdrop-blur-lg border border-white/10 shadow-lg;
+  #receipt-printable button {
+    display: none !important;
   }
-
-  .status-pill {
-    @apply text-xs px-2 py-1 rounded-full;
-  }
-}
-
-#root {
-  max-width: 100%;
-  margin: 0 auto;
-  padding: 0;
-  text-align: left;
 }

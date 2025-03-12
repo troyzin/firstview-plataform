@@ -1,339 +1,294 @@
+
 import React, { useState, useEffect } from 'react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  TextField,
-  FormControlLabel,
-  Checkbox,
-} from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import AddIcon from '@mui/icons-material/Add';
-import { toast } from 'react-hot-toast';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Edit, Trash, Plus, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { EquipmentWithdrawal } from '@/types/equipment';
-import dayjs from 'dayjs';
-import 'dayjs/locale/pt-br';
-import { useRouter } from 'next/router';
-import VisibilityIcon from '@mui/icons-material/Visibility';
+import { useWithdrawals } from '@/hooks/useWithdrawals';
+import { format, isAfter, parseISO } from 'date-fns';
+import ReturnModal from './ReturnModal';
+import ReceiptModal from './ReceiptModal';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '@/components/ui/alert-dialog';
 
-dayjs.locale('pt-br');
-
-const WithdrawalsList = () => {
+const WithdrawalsList: React.FC = () => {
   const [withdrawals, setWithdrawals] = useState<EquipmentWithdrawal[]>([]);
-  const [openDialog, setOpenDialog] = useState(false);
-  const [selectedWithdrawal, setSelectedWithdrawal] = useState<EquipmentWithdrawal | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const router = useRouter();
+  const [returnModalOpen, setReturnModalOpen] = useState<boolean>(false);
+  const [selectedWithdrawalId, setSelectedWithdrawalId] = useState<string | null>(null);
+  const [receiptModalOpen, setReceiptModalOpen] = useState<boolean>(false);
+  const [selectedReceiptId, setSelectedReceiptId] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [withdrawalToDelete, setWithdrawalToDelete] = useState<string | null>(null);
+  
+  const { data: withdrawalsData, isLoading, error, refetch } = useWithdrawals();
 
   useEffect(() => {
-    const fetchInitialWithdrawals = async () => {
-      const initialWithdrawals = await fetchWithdrawals();
-      setWithdrawals(initialWithdrawals);
-    };
+    if (withdrawalsData) {
+      // Ensure we have properly formatted data
+      const processedData = withdrawalsData.map(item => ({
+        ...item,
+        user: item.user || { id: item.user_id, full_name: 'Usuário não encontrado' },
+        equipment: item.equipment || { id: item.equipment_id, name: 'Equipamento não encontrado' },
+        production: item.production || (item.production_id ? { id: item.production_id, title: 'Produção não encontrada' } : null)
+      }));
 
-    fetchInitialWithdrawals();
-  }, []);
-
-  const fetchWithdrawals = async () => {
-    const { data, error } = await supabase
-      .from('equipment_withdrawals')
-      .select(`
-        *,
-        equipment:equipment_id(id, name),
-        user:user_id(id, full_name),
-        production:production_id(id, title)
-      `)
-      .order('withdrawal_date', { ascending: false });
-
-    if (error) {
-      toast.error('Erro ao carregar retiradas');
-      return [];
+      processWithdrawals(processedData);
     }
+  }, [withdrawalsData]);
 
-    return data || [];
+  const processWithdrawals = (data: EquipmentWithdrawal[]) => {
+    // Process withdrawals to check for overdue items
+    const processed = data.map(withdrawal => {
+      let status = withdrawal.status;
+      
+      // Check if it's overdue and not returned yet
+      if (status === 'withdrawn' && isAfter(new Date(), parseISO(withdrawal.expected_return_date))) {
+        status = 'overdue';
+      }
+      
+      // Check if it was returned late
+      if (status === 'returned' && withdrawal.returned_date && 
+          isAfter(parseISO(withdrawal.returned_date), parseISO(withdrawal.expected_return_date))) {
+        status = 'returned_late';
+      }
+      
+      return {
+        ...withdrawal,
+        status
+      };
+    });
+    
+    setWithdrawals(processed as EquipmentWithdrawal[]);
   };
 
-  const handleOpenDialog = () => {
-    setSelectedWithdrawal(null);
-    setIsEditing(false);
-    setOpenDialog(true);
+  const handleOpenReturnModal = (id: string) => {
+    setSelectedWithdrawalId(id);
+    setReturnModalOpen(true);
   };
 
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-    setSelectedWithdrawal(null);
+  const handleCloseReturnModal = () => {
+    setSelectedWithdrawalId(null);
+    setReturnModalOpen(false);
+    refetch();
   };
 
-  const handleEditWithdrawal = (withdrawal: EquipmentWithdrawal) => {
-    setSelectedWithdrawal({ ...withdrawal });
-    setIsEditing(true);
-    setOpenDialog(true);
+  const handleOpenReceiptModal = (id: string) => {
+    setSelectedReceiptId(id);
+    setReceiptModalOpen(true);
   };
 
-  const handleDeleteWithdrawal = async (id: string) => {
-    const confirmDelete = window.confirm('Tem certeza que deseja excluir esta retirada?');
-    if (!confirmDelete) return;
+  const handleCloseReceiptModal = () => {
+    setSelectedReceiptId(null);
+    setReceiptModalOpen(false);
+  };
 
-    const { error } = await supabase.from('equipment_withdrawals').delete().eq('id', id);
-
-    if (error) {
-      toast.error('Erro ao excluir retirada');
-    } else {
+  const handleConfirmDelete = async () => {
+    if (!withdrawalToDelete) return;
+    
+    try {
+      const { error } = await supabase
+        .from('equipment_withdrawals')
+        .delete()
+        .eq('id', withdrawalToDelete);
+        
+      if (error) throw error;
+      
+      setWithdrawals(prevWithdrawals => 
+        prevWithdrawals.filter(withdrawal => withdrawal.id !== withdrawalToDelete) as EquipmentWithdrawal[]
+      );
+      
       toast.success('Retirada excluída com sucesso');
-      const updatedWithdrawals = withdrawals.filter((withdrawal) => withdrawal.id !== id);
-      setWithdrawals(updatedWithdrawals);
+    } catch (error) {
+      console.error('Erro ao excluir retirada:', error);
+      toast.error('Erro ao excluir retirada');
+    } finally {
+      setDeleteDialogOpen(false);
+      setWithdrawalToDelete(null);
     }
   };
 
-  const handleWithdrawalDetails = (id: string) => {
-    router.push(`/withdrawals/${id}`);
+  const handleDelete = (id: string) => {
+    setWithdrawalToDelete(id);
+    setDeleteDialogOpen(true);
   };
 
-  const handleChange = (event: any) => {
-    const { name, value, type, checked } = event.target;
-    setSelectedWithdrawal((prevWithdrawal) => ({
-      ...prevWithdrawal,
-      [name]: type === 'checkbox' ? checked : value,
-    } as EquipmentWithdrawal));
-  };
-
-  const handleSubmit = async (event: any) => {
-    event.preventDefault();
-
-    if (!selectedWithdrawal) return;
-
-    const {
-      equipment_id,
-      user_id,
-      production_id,
-      withdrawal_date,
-      expected_return_date,
-      returned_date,
-      status,
-      notes,
-      is_personal_use,
-    } = selectedWithdrawal;
-
-    const withdrawalToUpdate = {
-      equipment_id,
-      user_id,
-      production_id,
-      withdrawal_date,
-      expected_return_date,
-      returned_date,
-      status,
-      notes,
-      is_personal_use,
-    };
-
-    if (isEditing) {
-      const { data, error } = await supabase
-        .from('equipment_withdrawals')
-        .update(withdrawalToUpdate)
-        .eq('id', selectedWithdrawal.id)
-        .select()
-        .single();
-
-      if (error) {
-        toast.error('Erro ao atualizar retirada');
-      } else {
-        toast.success('Retirada atualizada com sucesso');
-        setWithdrawals((prevWithdrawals) =>
-          prevWithdrawals.map((withdrawal) => (withdrawal.id === selectedWithdrawal.id ? data : withdrawal))
-        );
-      }
-    } else {
-      const { data, error } = await supabase
-        .from('equipment_withdrawals')
-        .insert(withdrawalToUpdate)
-        .select()
-        .single();
-
-      if (error) {
-        toast.error('Erro ao criar retirada');
-      } else {
-        toast.success('Retirada criada com sucesso');
-        setWithdrawals((prevWithdrawals) => [...prevWithdrawals, data]);
-      }
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'withdrawn':
+        return <Badge className="bg-yellow-500">Em uso</Badge>;
+      case 'overdue':
+        return <Badge className="bg-[#ff3335]">Atrasado</Badge>;
+      case 'returned':
+        return <Badge className="bg-green-500">Devolvido</Badge>;
+      case 'returned_late':
+        return <Badge className="bg-orange-500">Devolvido com atraso</Badge>;
+      default:
+        return <Badge className="bg-gray-500">{status}</Badge>;
     }
-
-    handleCloseDialog();
   };
+
+  if (isLoading) {
+    return <div className="p-4 text-center">Carregando retiradas...</div>;
+  }
+
+  if (error) {
+    return <div className="p-4 text-center text-red-500">Erro ao carregar retiradas</div>;
+  }
 
   return (
-    <div>
-      <Button variant="contained" color="primary" onClick={handleOpenDialog} style={{ marginBottom: '20px' }}>
-        <AddIcon /> Nova Retirada
-      </Button>
-
-      <TableContainer component={Paper}>
-        <Table sx={{ minWidth: 650 }} aria-label="simple table">
-          <TableHead>
-            <TableRow>
-              <TableCell>Equipamento</TableCell>
-              <TableCell>Usuário</TableCell>
-              <TableCell>Produção</TableCell>
-              <TableCell>Data de Retirada</TableCell>
-              <TableCell>Data de Retorno Esperada</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Ações</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {withdrawals.map((withdrawal) => (
-              <TableRow key={withdrawal.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                <TableCell component="th" scope="row">
-                  {withdrawal.equipment?.name}
-                </TableCell>
-                <TableCell>{withdrawal.user?.full_name}</TableCell>
-                <TableCell>{withdrawal.production?.title || 'N/A'}</TableCell>
-                <TableCell>{dayjs(withdrawal.withdrawal_date).format('DD/MM/YYYY')}</TableCell>
-                <TableCell>{dayjs(withdrawal.expected_return_date).format('DD/MM/YYYY')}</TableCell>
-                <TableCell>{withdrawal.status}</TableCell>
-                <TableCell>
-                  <IconButton aria-label="details" onClick={() => handleWithdrawalDetails(withdrawal.id)}>
-                    <VisibilityIcon />
-                  </IconButton>
-                  <IconButton aria-label="edit" onClick={() => handleEditWithdrawal(withdrawal)}>
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton aria-label="delete" onClick={() => handleDeleteWithdrawal(withdrawal.id)}>
-                    <DeleteIcon />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      <Dialog open={openDialog} onClose={handleCloseDialog} aria-labelledby="form-dialog-title">
-        <DialogTitle id="form-dialog-title">{isEditing ? 'Editar Retirada' : 'Nova Retirada'}</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            id="equipment_id"
-            name="equipment_id"
-            label="ID do Equipamento"
-            type="text"
-            fullWidth
-            value={selectedWithdrawal?.equipment_id || ''}
-            onChange={handleChange}
-          />
-          <TextField
-            margin="dense"
-            id="user_id"
-            name="user_id"
-            label="ID do Usuário"
-            type="text"
-            fullWidth
-            value={selectedWithdrawal?.user_id || ''}
-            onChange={handleChange}
-          />
-          <TextField
-            margin="dense"
-            id="production_id"
-            name="production_id"
-            label="ID da Produção"
-            type="text"
-            fullWidth
-            value={selectedWithdrawal?.production_id || ''}
-            onChange={handleChange}
-          />
-          <TextField
-            margin="dense"
-            id="withdrawal_date"
-            name="withdrawal_date"
-            label="Data de Retirada"
-            type="date"
-            fullWidth
-            value={selectedWithdrawal?.withdrawal_date || ''}
-            onChange={handleChange}
-            InputLabelProps={{
-              shrink: true,
-            }}
-          />
-          <TextField
-            margin="dense"
-            id="expected_return_date"
-            name="expected_return_date"
-            label="Data de Retorno Esperada"
-            type="date"
-            fullWidth
-            value={selectedWithdrawal?.expected_return_date || ''}
-            onChange={handleChange}
-            InputLabelProps={{
-              shrink: true,
-            }}
-          />
-          <TextField
-            margin="dense"
-            id="returned_date"
-            name="returned_date"
-            label="Data de Retorno"
-            type="date"
-            fullWidth
-            value={selectedWithdrawal?.returned_date || ''}
-            onChange={handleChange}
-            InputLabelProps={{
-              shrink: true,
-            }}
-          />
-          <TextField
-            margin="dense"
-            id="status"
-            name="status"
-            label="Status"
-            type="text"
-            fullWidth
-            value={selectedWithdrawal?.status || ''}
-            onChange={handleChange}
-          />
-          <TextField
-            margin="dense"
-            id="notes"
-            name="notes"
-            label="Notas"
-            type="text"
-            fullWidth
-            multiline
-            rows={4}
-            value={selectedWithdrawal?.notes || ''}
-            onChange={handleChange}
-          />
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={selectedWithdrawal?.is_personal_use || false}
-                onChange={handleChange}
-                name="is_personal_use"
-              />
-            }
-            label="Uso pessoal"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog} color="primary">
-            Cancelar
-          </Button>
-          <Button onClick={handleSubmit} color="primary">
-            Salvar
-          </Button>
-        </DialogActions>
-      </Dialog>
+    <div className="space-y-4">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold text-white">Retiradas de Equipamentos</h2>
+        <Button 
+          onClick={() => window.location.href='/equipment/new-withdrawal'} 
+          variant="default" 
+          className="bg-[#ff3335] hover:bg-red-700 text-white"
+        >
+          <Plus className="mr-2 h-4 w-4" /> Nova Retirada
+        </Button>
+      </div>
+      
+      {withdrawals.length === 0 ? (
+        <Card className="bg-[#141414] border-0 text-white">
+          <CardContent className="pt-6 text-center">
+            Nenhuma retirada encontrada
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {withdrawals.map((withdrawal) => (
+            <Card key={withdrawal.id} className="bg-[#141414] border-0 text-white overflow-hidden">
+              <CardHeader className="pb-2">
+                <div className="flex justify-between items-start">
+                  <CardTitle className="text-lg font-bold text-white truncate">
+                    {withdrawal.equipment?.name}
+                  </CardTitle>
+                  <div>
+                    {getStatusBadge(withdrawal.status)}
+                  </div>
+                </div>
+                <div className="text-sm text-gray-400">
+                  {withdrawal.user?.full_name}
+                </div>
+                
+                {withdrawal.is_personal_use ? (
+                  <div className="text-sm text-gray-400">
+                    Uso pessoal
+                  </div>
+                ) : (
+                  withdrawal.production?.title && (
+                    <div className="text-sm text-gray-400">
+                      Produção: {withdrawal.production.title}
+                    </div>
+                  )
+                )}
+              </CardHeader>
+              
+              <CardContent className="pb-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Retirada:</span>
+                  <span>{withdrawal.withdrawal_date ? format(new Date(withdrawal.withdrawal_date), 'dd/MM/yyyy') : '-'}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Devolução Prevista:</span>
+                  <span>{format(new Date(withdrawal.expected_return_date), 'dd/MM/yyyy')}</span>
+                </div>
+                
+                {withdrawal.returned_date && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Devolvido em:</span>
+                    <span>{format(new Date(withdrawal.returned_date), 'dd/MM/yyyy')}</span>
+                  </div>
+                )}
+                
+                {withdrawal.notes && (
+                  <>
+                    <Separator className="my-2 bg-gray-700" />
+                    <div className="text-sm">
+                      <span className="text-gray-400">Observações:</span>
+                      <p className="mt-1 text-white">{withdrawal.notes}</p>
+                    </div>
+                  </>
+                )}
+                
+                <div className="flex justify-end gap-2 mt-4">
+                  <Button
+                    onClick={() => handleOpenReceiptModal(withdrawal.id)}
+                    variant="ghost" 
+                    size="sm"
+                    className="text-white hover:bg-[#333]"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  {withdrawal.status === 'withdrawn' || withdrawal.status === 'overdue' ? (
+                    <Button
+                      onClick={() => handleOpenReturnModal(withdrawal.id)}
+                      variant="outline" 
+                      size="sm"
+                      className="border-green-500 text-green-500 hover:bg-green-950 hover:text-green-400"
+                    >
+                      Devolver
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => handleDelete(withdrawal.id)}
+                      variant="ghost" 
+                      size="sm"
+                      className="text-white hover:bg-[#333]"
+                    >
+                      <Trash className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+      
+      {returnModalOpen && selectedWithdrawalId && (
+        <ReturnModal
+          open={returnModalOpen}
+          onClose={handleCloseReturnModal}
+          withdrawalId={selectedWithdrawalId}
+        />
+      )}
+      
+      {receiptModalOpen && selectedReceiptId && (
+        <ReceiptModal
+          withdrawalId={selectedReceiptId}
+          onClose={handleCloseReceiptModal}
+        />
+      )}
+      
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="bg-[#141414] text-white border-none">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              Tem certeza que deseja excluir esta retirada? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="text-white bg-gray-700 hover:bg-gray-600">Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-[#ff3335] hover:bg-red-700">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -1,261 +1,239 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  TextField,
-  Snackbar,
-  Alert,
-} from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import AddIcon from '@mui/icons-material/Add';
-import { DatePicker } from '@mui/x-date-pickers';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import dayjs, { Dayjs } from 'dayjs';
-import { supabase } from '@/integrations/supabase/client';
-import { EquipmentSchedule } from '@/types/equipment';
-import { toast } from 'react-toastify';
 
-const SchedulesList = () => {
+import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Edit, Trash, Plus } from 'lucide-react';
+import { format, isAfter, isBefore, parseISO } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import ScheduleModal from './ScheduleModal';
+import { EquipmentSchedule } from '@/types/equipment';
+import { useSchedules } from '@/hooks/useSchedules';
+import { Separator } from '@/components/ui/separator';
+import { toast } from 'sonner';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '@/components/ui/alert-dialog';
+
+const SchedulesList: React.FC = () => {
   const [schedules, setSchedules] = useState<EquipmentSchedule[]>([]);
-  const [open, setOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<EquipmentSchedule | null>(null);
-  const [startDate, setStartDate] = useState<Dayjs | null>(null);
-  const [endDate, setEndDate] = useState<Dayjs | null>(null);
-  const [notes, setNotes] = useState('');
-  const [openSnackbar, setOpenSnackbar] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [scheduleToDelete, setScheduleToDelete] = useState<string | null>(null);
+  
+  const { data: schedulesData, isLoading, error, refetch } = useSchedules();
 
   useEffect(() => {
-    fetchSchedules();
-  }, []);
-
-  const fetchSchedules = async () => {
-    const { data, error } = await supabase
-      .from('equipment_schedules')
-      .select(`
-        *,
-        equipment:equipment_id(id, name),
-        user:user_id(id, full_name),
-        production:production_id(id, title)
-      `)
-      .order('start_date', { ascending: true });
-
-    if (error) {
-      toast.error('Erro ao carregar agendamentos');
-      return [];
+    if (schedulesData) {
+      // Converte cada schedule para o formato esperado
+      const processedData = schedulesData.map(item => ({
+        ...item,
+        user: item.user || { id: item.user_id, full_name: 'Usuário não encontrado' },
+        equipment: item.equipment || { id: item.equipment_id, name: 'Equipamento não encontrado' },
+        production: item.production || (item.production_id ? { id: item.production_id, title: 'Produção não encontrada' } : null)
+      }));
+      
+      setSchedules(processedData as EquipmentSchedule[]);
     }
+  }, [schedulesData]);
 
-    setSchedules(data || []);
-  };
-
-  const handleOpen = (schedule?: EquipmentSchedule) => {
+  const handleOpenModal = (schedule?: EquipmentSchedule) => {
     setSelectedSchedule(schedule || null);
-    setStartDate(schedule ? dayjs(schedule.start_date) : null);
-    setEndDate(schedule ? dayjs(schedule.end_date) : null);
-    setNotes(schedule ? schedule.notes || '' : '');
-    setOpen(true);
+    setIsModalOpen(true);
   };
 
-  const handleClose = () => {
-    setOpen(false);
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
     setSelectedSchedule(null);
   };
 
-  const handleStartDateChange = (date: Dayjs | null) => {
-    setStartDate(date);
-  };
-
-  const handleEndDateChange = (date: Dayjs | null) => {
-    setEndDate(date);
-  };
-
-  const handleNotesChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setNotes(event.target.value);
-  };
-
-  const handleSubmit = async () => {
-    if (!startDate || !endDate) {
-      setSnackbarMessage('Por favor, preencha todas as datas.');
-      setSnackbarSeverity('error');
-      setOpenSnackbar(true);
-      return;
-    }
-
-    const startDateString = startDate.format('YYYY-MM-DD');
-    const endDateString = endDate.format('YYYY-MM-DD');
-
-    if (selectedSchedule) {
-      // Update existing schedule
-      const { data, error } = await supabase
+  const handleConfirmDelete = async () => {
+    if (!scheduleToDelete) return;
+    
+    try {
+      const { error } = await supabase
         .from('equipment_schedules')
-        .update({
-          start_date: startDateString,
-          end_date: endDateString,
-          notes: notes,
-        })
-        .eq('id', selectedSchedule.id);
+        .delete()
+        .eq('id', scheduleToDelete);
+        
+      if (error) throw error;
+      
+      setSchedules(prevSchedules => 
+        prevSchedules.filter(schedule => schedule.id !== scheduleToDelete)
+      );
+      
+      toast.success('Agendamento excluído com sucesso');
+    } catch (error) {
+      console.error('Erro ao excluir agendamento:', error);
+      toast.error('Erro ao excluir agendamento');
+    } finally {
+      setDeleteDialogOpen(false);
+      setScheduleToDelete(null);
+    }
+  };
 
-      if (error) {
-        setSnackbarMessage('Erro ao atualizar agendamento.');
-        setSnackbarSeverity('error');
-        setOpenSnackbar(true);
-      } else {
-        setSnackbarMessage('Agendamento atualizado com sucesso!');
-        setSnackbarSeverity('success');
-        setOpenSnackbar(true);
-        fetchSchedules();
-      }
+  const handleDelete = (id: string) => {
+    setScheduleToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const getScheduleStatus = (startDate: string, endDate: string) => {
+    const now = new Date();
+    const start = parseISO(startDate);
+    const end = parseISO(endDate);
+    
+    if (isAfter(now, end)) {
+      return 'Concluído';
+    } else if (isAfter(now, start) && isBefore(now, end)) {
+      return 'Em andamento';
     } else {
-      // Create new schedule
-      const { data, error } = await supabase
-        .from('equipment_schedules')
-        .insert([
-          {
-            equipment_id: 'a99a9a9a-aaaa-4a9a-a99a-aaaaaaaaaaaa', // Replace with actual equipment_id
-            user_id: 'a99a9a9a-aaaa-4a9a-a99a-aaaaaaaaaaaa', // Replace with actual user_id
-            start_date: startDateString,
-            end_date: endDateString,
-            notes: notes,
-          },
-        ]);
-
-      if (error) {
-        setSnackbarMessage('Erro ao criar agendamento.');
-        setSnackbarSeverity('error');
-        setOpenSnackbar(true);
-      } else {
-        setSnackbarMessage('Agendamento criado com sucesso!');
-        setSnackbarSeverity('success');
-        setOpenSnackbar(true);
-        fetchSchedules();
-      }
-    }
-
-    handleClose();
-  };
-
-  const handleDelete = async (id: string) => {
-    const { data, error } = await supabase
-      .from('equipment_schedules')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      setSnackbarMessage('Erro ao excluir agendamento.');
-      setSnackbarSeverity('error');
-      setOpenSnackbar(true);
-    } else {
-      setSnackbarMessage('Agendamento excluído com sucesso!');
-      setSnackbarSeverity('success');
-      setOpenSnackbar(true);
-      fetchSchedules();
+      return 'Agendado';
     }
   };
 
-  const handleCloseSnackbar = (event: React.SyntheticEvent | Event, reason?: string) => {
-    if (reason === 'clickaway') {
-      return;
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Concluído':
+        return 'text-green-500';
+      case 'Em andamento':
+        return 'text-[#ff3335]';
+      default:
+        return 'text-yellow-500';
     }
-
-    setOpenSnackbar(false);
   };
+
+  if (isLoading) {
+    return <div className="p-4 text-center">Carregando agendamentos...</div>;
+  }
+
+  if (error) {
+    return <div className="p-4 text-center text-red-500">Erro ao carregar agendamentos</div>;
+  }
 
   return (
-    <div>
-      <IconButton color="primary" aria-label="add" onClick={() => handleOpen()}>
-        <AddIcon />
-      </IconButton>
-
-      <TableContainer component={Paper}>
-        <Table sx={{ minWidth: 650 }} aria-label="simple table">
-          <TableHead>
-            <TableRow>
-              <TableCell>Equipment</TableCell>
-              <TableCell>User</TableCell>
-              <TableCell>Start Date</TableCell>
-              <TableCell>End Date</TableCell>
-              <TableCell>Notes</TableCell>
-              <TableCell>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {schedules.map((schedule) => (
-              <TableRow key={schedule.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                <TableCell component="th" scope="row">
-                  {schedule.equipment?.name}
-                </TableCell>
-                <TableCell>{schedule.user?.full_name}</TableCell>
-                <TableCell>{schedule.start_date}</TableCell>
-                <TableCell>{schedule.end_date}</TableCell>
-                <TableCell>{schedule.notes}</TableCell>
-                <TableCell>
-                  <IconButton aria-label="edit" onClick={() => handleOpen(schedule)}>
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton aria-label="delete" onClick={() => handleDelete(schedule.id)}>
-                    <DeleteIcon />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      <Dialog open={open} onClose={handleClose}>
-        <DialogTitle>{selectedSchedule ? 'Edit Schedule' : 'Create Schedule'}</DialogTitle>
-        <DialogContent>
-          <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <DatePicker
-              label="Start Date"
-              value={startDate}
-              onChange={handleStartDateChange}
-              renderInput={(params) => <TextField {...params} margin="normal" />}
-            />
-            <DatePicker
-              label="End Date"
-              value={endDate}
-              onChange={handleEndDateChange}
-              renderInput={(params) => <TextField {...params} margin="normal" />}
-            />
-          </LocalizationProvider>
-          <TextField
-            label="Notes"
-            multiline
-            rows={4}
-            value={notes}
-            onChange={handleNotesChange}
-            margin="normal"
-            fullWidth
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose}>Cancel</Button>
-          <Button onClick={handleSubmit} color="primary">
-            {selectedSchedule ? 'Update' : 'Create'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Snackbar open={openSnackbar} autoHideDuration={6000} onClose={handleCloseSnackbar}>
-        <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} sx={{ width: '100%' }}>
-          {snackbarMessage}
-        </Alert>
-      </Snackbar>
+    <div className="space-y-4">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold text-white">Agendamentos</h2>
+        <Button 
+          onClick={() => handleOpenModal()} 
+          variant="default" 
+          className="bg-[#ff3335] hover:bg-red-700 text-white"
+        >
+          <Plus className="mr-2 h-4 w-4" /> Novo Agendamento
+        </Button>
+      </div>
+      
+      {schedules.length === 0 ? (
+        <Card className="bg-[#141414] border-0 text-white">
+          <CardContent className="pt-6 text-center">
+            Nenhum agendamento encontrado
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {schedules.map((schedule) => (
+            <Card key={schedule.id} className="bg-[#141414] border-0 text-white overflow-hidden">
+              <CardHeader className="pb-2">
+                <div className="flex justify-between items-start">
+                  <CardTitle className="text-lg font-bold text-white truncate">
+                    {schedule.equipment?.name}
+                  </CardTitle>
+                  <div 
+                    className={`text-sm font-medium ${getStatusColor(
+                      getScheduleStatus(schedule.start_date, schedule.end_date)
+                    )}`}
+                  >
+                    {getScheduleStatus(schedule.start_date, schedule.end_date)}
+                  </div>
+                </div>
+                <div className="text-sm text-gray-400">
+                  {schedule.user?.full_name}
+                </div>
+                {schedule.production?.title && (
+                  <div className="text-sm text-gray-400">
+                    Produção: {schedule.production.title}
+                  </div>
+                )}
+              </CardHeader>
+              
+              <CardContent className="pb-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Início:</span>
+                  <span>{format(new Date(schedule.start_date), 'dd/MM/yyyy')}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Término:</span>
+                  <span>{format(new Date(schedule.end_date), 'dd/MM/yyyy')}</span>
+                </div>
+                
+                {schedule.notes && (
+                  <>
+                    <Separator className="my-2 bg-gray-700" />
+                    <div className="text-sm">
+                      <span className="text-gray-400">Observações:</span>
+                      <p className="mt-1 text-white">{schedule.notes}</p>
+                    </div>
+                  </>
+                )}
+                
+                <div className="flex justify-end gap-2 mt-4">
+                  <Button
+                    onClick={() => handleOpenModal(schedule)}
+                    variant="ghost" 
+                    size="sm"
+                    className="text-white hover:bg-[#333]"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    onClick={() => handleDelete(schedule.id)}
+                    variant="ghost" 
+                    size="sm"
+                    className="text-white hover:bg-[#333]"
+                  >
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+      
+      {isModalOpen && (
+        <ScheduleModal
+          open={isModalOpen}
+          onClose={() => {
+            handleCloseModal();
+            refetch();
+          }}
+          schedule={selectedSchedule}
+        />
+      )}
+      
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="bg-[#141414] text-white border-none">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              Tem certeza que deseja excluir este agendamento? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="text-white bg-gray-700 hover:bg-gray-600">Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-[#ff3335] hover:bg-red-700">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
