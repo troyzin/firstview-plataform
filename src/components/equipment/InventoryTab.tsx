@@ -19,6 +19,7 @@ import { Equipment } from "@/types/equipment";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2, CheckCircle, ArrowDownToLine } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type InventoryTabProps = {
   statusFilter: string;
@@ -47,6 +48,27 @@ const InventoryTab = ({
   openCheckoutModal,
   openReturnModal,
 }: InventoryTabProps) => {
+  const isMobile = useIsMobile();
+  
+  // Function to render status as colored dots on mobile
+  const renderStatusIndicator = (status: string) => {
+    if (!isMobile) {
+      return renderStatus(status);
+    }
+    
+    // On mobile, render dots instead of badges
+    switch (status) {
+      case "disponível":
+        return <div className="w-3 h-3 rounded-full bg-green-500 mx-auto" title="Disponível" />;
+      case "em uso":
+        return <div className="w-3 h-3 rounded-full bg-yellow-500 mx-auto" title="Em Uso" />;
+      case "manutenção":
+        return <div className="w-3 h-3 rounded-full bg-purple-500 mx-auto" title="Manutenção" />;
+      default:
+        return <div className="w-3 h-3 rounded-full bg-gray-500 mx-auto" title="Desconhecido" />;
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 mb-4">
@@ -85,17 +107,19 @@ const InventoryTab = ({
             <TableHeader>
               <TableRow>
                 <TableHead>Nome</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{isMobile ? "Tipo" : "Tipo"}</TableHead>
+                <TableHead className={isMobile ? "text-center" : ""}>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredEquipments.map((equipment) => (
                 <TableRow key={equipment.id}>
-                  <TableCell>{equipment.name}</TableCell>
-                  <TableCell>{renderEquipmentType(equipment.category || '')}</TableCell>
-                  <TableCell>{renderStatus(equipment.status)}</TableCell>
+                  <TableCell className="max-w-[100px] md:max-w-none truncate">{equipment.name}</TableCell>
+                  <TableCell className="max-w-[80px] md:max-w-none truncate">{renderEquipmentType(equipment.category || '')}</TableCell>
+                  <TableCell className={isMobile ? "text-center" : ""}>
+                    {renderStatusIndicator(equipment.status)}
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end space-x-1">
                       {equipment.status === "disponível" && (

@@ -69,9 +69,9 @@ const MainLayout = ({ children }: MainLayoutProps) => {
     
     return (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase();
   };
-
+  
   return (
-    <div className="bg-black text-white font-sans min-h-screen flex">
+    <div className="bg-black text-white font-sans min-h-screen flex overflow-x-hidden">
       {!isMobile && (
         <aside 
           className={`bg-[#141414] border-r border-gray-800 transition-all duration-300 flex flex-col ${
@@ -168,7 +168,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
         </aside>
       )}
 
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col overflow-x-hidden">
         <header className="bg-black p-4 border-b border-gray-800 flex justify-between items-center">
           <h2 className="text-xl font-bold">{getPageTitle()}</h2>
           
@@ -219,7 +219,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
           </div>
         </header>
         
-        <main className={`flex-1 p-6 ${isMobile ? 'pb-20' : ''}`}>
+        <main className={`flex-1 p-6 ${isMobile ? 'pb-24' : ''} overflow-x-hidden`}>
           {children}
         </main>
 

@@ -3,7 +3,6 @@ import React from "react";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -12,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Receipt } from "lucide-react";
 import { Equipment, Receipt as ReceiptType } from "@/types/equipment";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface StatusTablesProps {
   equipments: Equipment[];
@@ -27,6 +27,8 @@ const StatusTables: React.FC<StatusTablesProps> = ({
   openReceiptModal,
   renderEquipmentType,
 }) => {
+  const isMobile = useIsMobile();
+  
   // Get equipment currently in use
   const inUseEquipments = equipments.filter(equipment => equipment.status === "em uso");
   
@@ -47,7 +49,7 @@ const StatusTables: React.FC<StatusTablesProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 max-w-full overflow-hidden">
       {/* In-Use Equipment */}
       <div className="bg-[#141414] rounded-lg overflow-hidden">
         <div className="p-3 bg-[#0e1620] text-white font-medium">
@@ -67,8 +69,8 @@ const StatusTables: React.FC<StatusTablesProps> = ({
                 const receipt = findReceiptForEquipment(equipment.id);
                 return (
                   <TableRow key={`in-use-${equipment.id}`}>
-                    <TableCell>{equipment.name}</TableCell>
-                    <TableCell>{getUserName(receipt)}</TableCell>
+                    <TableCell className="max-w-[120px] md:max-w-none truncate">{equipment.name}</TableCell>
+                    <TableCell className="max-w-[100px] md:max-w-none truncate">{getUserName(receipt)}</TableCell>
                     <TableCell className="text-right">
                       {receipt && (
                         <Button
@@ -113,8 +115,8 @@ const StatusTables: React.FC<StatusTablesProps> = ({
             <TableBody>
               {availableEquipments.map(equipment => (
                 <TableRow key={`available-${equipment.id}`}>
-                  <TableCell>{equipment.name}</TableCell>
-                  <TableCell>
+                  <TableCell className="max-w-[120px] md:max-w-none truncate">{equipment.name}</TableCell>
+                  <TableCell className="max-w-[100px] md:max-w-none truncate">
                     {equipment.brand && equipment.model 
                       ? `${equipment.brand} ${equipment.model}`
                       : renderEquipmentType(equipment.category || '')}
