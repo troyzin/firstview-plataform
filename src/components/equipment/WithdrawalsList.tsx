@@ -61,6 +61,7 @@ const WithdrawalsList: React.FC<WithdrawalsListProps> = ({ equipmentId }) => {
   };
 
   const openReturnModal = (withdrawal: EquipmentWithdrawal) => {
+    console.log("Opening return modal for withdrawal:", withdrawal);
     setSelectedWithdrawal(withdrawal);
     setIsReturnModalOpen(true);
   };

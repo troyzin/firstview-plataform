@@ -82,16 +82,7 @@ export const ReturnModal: React.FC<ReturnModalProps> = ({
           
           const { data: withdrawalData, error } = await supabase
             .from('equipment_withdrawals')
-            .select(`
-              id,
-              expected_return_date,
-              status,
-              withdrawal_date,
-              equipment:equipment_id (
-                id,
-                name
-              )
-            `)
+            .select('*')
             .eq('equipment_id', actualEquipmentId)
             .eq('status', 'withdrawn')
             .order('withdrawal_date', { ascending: false })
@@ -149,19 +140,25 @@ export const ReturnModal: React.FC<ReturnModalProps> = ({
       console.log("Processing return for withdrawal:", withdrawalId);
       
       // Update withdrawal record
+      const returnData = {
+        returned_date: new Date().toISOString(),
+        return_notes: notes,
+        status: isLate ? "returned_late" : "returned"
+      };
+
+      console.log("Return data:", returnData);
+      
       const { error: withdrawalError } = await supabase
         .from("equipment_withdrawals")
-        .update({
-          returned_date: new Date().toISOString(),
-          return_notes: notes,
-          status: isLate ? "returned_late" : "returned",
-        })
+        .update(returnData)
         .eq("id", withdrawalId);
 
       if (withdrawalError) {
         console.error("Error updating withdrawal:", withdrawalError);
         throw withdrawalError;
       }
+
+      console.log("Successfully updated withdrawal, now updating equipment status");
 
       // Update equipment status to "disponível"
       const { error: equipmentError } = await supabase
@@ -176,6 +173,7 @@ export const ReturnModal: React.FC<ReturnModalProps> = ({
         throw equipmentError;
       }
 
+      console.log("Equipment updated successfully");
       toast.success(`${actualEquipmentName || "Equipamento"} devolvido com sucesso!`);
       onSuccess();
       onClose();
@@ -277,4 +275,3 @@ export const ReturnModal: React.FC<ReturnModalProps> = ({
     </Dialog>
   );
 };
-
