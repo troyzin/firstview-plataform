@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Edit, PackageCheck, Trash } from 'lucide-react';
+import { PackageCheck, Trash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
@@ -137,15 +137,17 @@ const WithdrawalsList: React.FC<WithdrawalsListProps> = ({ equipmentId }) => {
       </AlertDialog>
 
       {/* Return Modal */}
-      <ReturnModal
-        isOpen={isReturnModalOpen}
-        onClose={closeReturnModal}
-        equipmentWithdrawal={selectedWithdrawal || undefined}
-        onSuccess={() => {
-          refetch();
-          closeReturnModal();
-        }}
-      />
+      {selectedWithdrawal && (
+        <ReturnModal
+          isOpen={isReturnModalOpen}
+          onClose={closeReturnModal}
+          equipmentWithdrawal={selectedWithdrawal}
+          onSuccess={() => {
+            refetch();
+            closeReturnModal();
+          }}
+        />
+      )}
     </div>
   );
 };

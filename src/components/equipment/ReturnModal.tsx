@@ -14,12 +14,14 @@ import { Input } from "@/components/ui/input";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { EquipmentWithdrawal } from "@/types/equipment";
 
 interface ReturnModalProps {
   isOpen: boolean;
   onClose: () => void;
-  equipmentId: string;
-  equipmentName: string;
+  equipmentId?: string;
+  equipmentName?: string;
+  equipmentWithdrawal?: EquipmentWithdrawal;
   onSuccess: () => void;
 }
 
@@ -28,6 +30,7 @@ export const ReturnModal: React.FC<ReturnModalProps> = ({
   onClose,
   equipmentId,
   equipmentName,
+  equipmentWithdrawal,
   onSuccess,
 }) => {
   const [notes, setNotes] = useState<string>("");
@@ -35,6 +38,22 @@ export const ReturnModal: React.FC<ReturnModalProps> = ({
   const [withdrawalId, setWithdrawalId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<{id: string, full_name: string | null} | null>(null);
   const [isLate, setIsLate] = useState(false);
+  const [actualEquipmentId, setActualEquipmentId] = useState<string | undefined>(equipmentId);
+  const [actualEquipmentName, setActualEquipmentName] = useState<string | undefined>(equipmentName);
+
+  // Initialize from props when component mounts or when props change
+  useEffect(() => {
+    if (equipmentWithdrawal) {
+      setWithdrawalId(equipmentWithdrawal.id);
+      setActualEquipmentId(equipmentWithdrawal.equipment_id);
+      setActualEquipmentName(equipmentWithdrawal.equipment?.name);
+      
+      // Check if return is late
+      const expectedDate = new Date(equipmentWithdrawal.expected_return_date);
+      const now = new Date();
+      setIsLate(now > expectedDate);
+    }
+  }, [equipmentWithdrawal, isOpen]);
 
   // Fetch current user and active withdrawal
   useEffect(() => {
@@ -53,30 +72,33 @@ export const ReturnModal: React.FC<ReturnModalProps> = ({
         }
       }
 
-      // Get active withdrawal for this equipment
-      const { data: withdrawalData } = await supabase
-        .from('equipment_withdrawals')
-        .select('id, expected_return_date, status')
-        .eq('equipment_id', equipmentId)
-        .eq('status', 'withdrawn')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+      // Only fetch withdrawal if not already provided through props
+      if (!equipmentWithdrawal && actualEquipmentId) {
+        // Get active withdrawal for this equipment
+        const { data: withdrawalData } = await supabase
+          .from('equipment_withdrawals')
+          .select('id, expected_return_date, status')
+          .eq('equipment_id', actualEquipmentId)
+          .eq('status', 'withdrawn')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
 
-      if (withdrawalData) {
-        setWithdrawalId(withdrawalData.id);
-        
-        // Check if return is late
-        const expectedDate = new Date(withdrawalData.expected_return_date);
-        const now = new Date();
-        setIsLate(now > expectedDate);
+        if (withdrawalData) {
+          setWithdrawalId(withdrawalData.id);
+          
+          // Check if return is late
+          const expectedDate = new Date(withdrawalData.expected_return_date);
+          const now = new Date();
+          setIsLate(now > expectedDate);
+        }
       }
     };
 
     if (isOpen) {
       fetchData();
     }
-  }, [isOpen, equipmentId]);
+  }, [isOpen, actualEquipmentId, equipmentWithdrawal]);
 
   const handleSubmit = async () => {
     if (!withdrawalId) {
@@ -86,6 +108,11 @@ export const ReturnModal: React.FC<ReturnModalProps> = ({
 
     if (!currentUser) {
       toast.error("Usuário não encontrado");
+      return;
+    }
+
+    if (!actualEquipmentId) {
+      toast.error("ID do equipamento não encontrado");
       return;
     }
 
@@ -110,11 +137,11 @@ export const ReturnModal: React.FC<ReturnModalProps> = ({
         .update({
           status: "disponível",
         })
-        .eq("id", equipmentId);
+        .eq("id", actualEquipmentId);
 
       if (equipmentError) throw equipmentError;
 
-      toast.success(`${equipmentName} devolvido com sucesso!`);
+      toast.success(`${actualEquipmentName || "Equipamento"} devolvido com sucesso!`);
       onSuccess();
       onClose();
     } catch (error) {
@@ -131,8 +158,8 @@ export const ReturnModal: React.FC<ReturnModalProps> = ({
         <DialogHeader>
           <DialogTitle className="text-xl">Devolver Equipamento</DialogTitle>
           <DialogDescription className="text-gray-400">
-            {equipmentName
-              ? `Confirmar devolução de: ${equipmentName}`
+            {actualEquipmentName
+              ? `Confirmar devolução de: ${actualEquipmentName}`
               : "Confirme a devolução deste equipamento"}
           </DialogDescription>
         </DialogHeader>

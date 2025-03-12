@@ -3,6 +3,7 @@ export interface ScheduleModalProps {
   isOpen: boolean;
   onClose: () => void;
   equipmentId: string;
+  equipmentName?: string;
   scheduleToEdit?: EquipmentSchedule;
   onSuccess: () => void;
 }
@@ -10,6 +11,8 @@ export interface ScheduleModalProps {
 export interface ReturnModalProps {
   isOpen: boolean;
   onClose: () => void;
+  equipmentId?: string;
+  equipmentName?: string;
   equipmentWithdrawal?: EquipmentWithdrawal;
   onSuccess: () => void;
 }

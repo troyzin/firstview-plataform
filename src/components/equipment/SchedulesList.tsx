@@ -134,16 +134,18 @@ const SchedulesList: React.FC<SchedulesListProps> = ({ equipmentId }) => {
       </AlertDialog>
 
       {/* Edit Schedule Modal */}
-      <ScheduleModal
-        isOpen={isEditModalOpen}
-        onClose={handleCloseEditModal}
-        equipmentId={equipmentId}
-        scheduleToEdit={scheduleToEdit || undefined}
-        onSuccess={() => {
-          refetch();
-          handleCloseEditModal();
-        }}
-      />
+      {scheduleToEdit && (
+        <ScheduleModal
+          isOpen={isEditModalOpen}
+          onClose={handleCloseEditModal}
+          equipmentId={equipmentId}
+          scheduleToEdit={scheduleToEdit}
+          onSuccess={() => {
+            refetch();
+            handleCloseEditModal();
+          }}
+        />
+      )}
     </div>
   );
 };

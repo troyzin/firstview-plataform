@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
+import { EquipmentSchedule } from "@/types/equipment";
 
 interface Production {
   id: string;
@@ -41,7 +42,8 @@ interface ScheduleModalProps {
   isOpen: boolean;
   onClose: () => void;
   equipmentId: string;
-  equipmentName: string;
+  equipmentName?: string;
+  scheduleToEdit?: EquipmentSchedule;
   onSuccess: () => void;
 }
 
@@ -49,7 +51,8 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
   isOpen,
   onClose,
   equipmentId,
-  equipmentName,
+  equipmentName = "",
+  scheduleToEdit,
   onSuccess,
 }) => {
   const [startDate, setStartDate] = useState<Date | undefined>(new Date());
@@ -60,6 +63,22 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
   const [notes, setNotes] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentUser, setCurrentUser] = useState<{id: string, full_name: string | null} | null>(null);
+
+  // Set form values when editing
+  useEffect(() => {
+    if (scheduleToEdit) {
+      setStartDate(new Date(scheduleToEdit.start_date));
+      setEndDate(new Date(scheduleToEdit.end_date));
+      setSelectedProduction(scheduleToEdit.production_id || "");
+      setNotes(scheduleToEdit.notes || "");
+    } else {
+      // Reset form for new schedule
+      setStartDate(new Date());
+      setEndDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+      setSelectedProduction("");
+      setNotes("");
+    }
+  }, [scheduleToEdit, isOpen]);
 
   // Fetch current user
   useEffect(() => {
@@ -114,23 +133,39 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
     setIsSubmitting(true);
 
     try {
-      // Create a schedule record
-      const { error } = await supabase
-        .from("equipment_schedules")
-        .insert([
-          {
-            equipment_id: equipmentId,
-            user_id: currentUser.id,
+      if (scheduleToEdit) {
+        // Update existing schedule
+        const { error } = await supabase
+          .from("equipment_schedules")
+          .update({
             production_id: selectedProduction,
             start_date: startDate.toISOString(),
             end_date: endDate.toISOString(),
             notes: notes,
-          },
-        ]);
+          })
+          .eq('id', scheduleToEdit.id);
 
-      if (error) throw error;
+        if (error) throw error;
+        toast.success(`Agendamento atualizado com sucesso!`);
+      } else {
+        // Create a new schedule record
+        const { error } = await supabase
+          .from("equipment_schedules")
+          .insert([
+            {
+              equipment_id: equipmentId,
+              user_id: currentUser.id,
+              production_id: selectedProduction,
+              start_date: startDate.toISOString(),
+              end_date: endDate.toISOString(),
+              notes: notes,
+            },
+          ]);
 
-      toast.success(`${equipmentName} agendado com sucesso!`);
+        if (error) throw error;
+        toast.success(`${equipmentName || "Equipamento"} agendado com sucesso!`);
+      }
+      
       onSuccess();
       onClose();
     } catch (error) {
@@ -141,15 +176,18 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
     }
   };
 
+  const title = scheduleToEdit ? "Editar Agendamento" : "Agendar Equipamento";
+  const buttonText = scheduleToEdit ? "Salvar Alterações" : "Agendar";
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="bg-[#000000] border border-[#141414] text-white sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="text-xl">Agendar Equipamento</DialogTitle>
+          <DialogTitle className="text-xl">{title}</DialogTitle>
           <DialogDescription className="text-gray-400">
             {equipmentName
-              ? `Agendamento para: ${equipmentName}`
-              : "Agende a utilização deste equipamento"}
+              ? `${scheduleToEdit ? 'Editar agendamento' : 'Agendamento'} para: ${equipmentName}`
+              : scheduleToEdit ? "Editar agendamento" : "Agende a utilização deste equipamento"}
           </DialogDescription>
         </DialogHeader>
 
@@ -187,7 +225,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                     selected={startDate}
                     onSelect={setStartDate}
                     initialFocus
-                    disabled={(date) => date < new Date()}
+                    disabled={(date) => date < new Date() && !scheduleToEdit}
                     className={cn("p-3 pointer-events-auto bg-[#141414]")}
                   />
                 </PopoverContent>
@@ -272,7 +310,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
             ) : (
               <>
                 <Calendar className="h-4 w-4 mr-2" />
-                Agendar
+                {buttonText}
               </>
             )}
           </Button>
