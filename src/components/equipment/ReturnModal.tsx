@@ -143,28 +143,32 @@ export const ReturnModal: React.FC<ReturnModalProps> = ({
       const returnData = {
         returned_date: new Date().toISOString(),
         return_notes: notes,
-        status: isLate ? "returned_late" : "returned"
+        status: isLate ? "returned_late" : "returned",
       };
 
       console.log("Return data:", returnData);
       
-      const { error: withdrawalError } = await supabase
+      const { data: updatedWithdrawal, error: withdrawalError } = await supabase
         .from("equipment_withdrawals")
         .update(returnData)
-        .eq("id", withdrawalId);
+        .eq("id", withdrawalId)
+        .select()
+        .single();
 
       if (withdrawalError) {
         console.error("Error updating withdrawal:", withdrawalError);
         throw withdrawalError;
       }
 
-      console.log("Successfully updated withdrawal, now updating equipment status");
+      console.log("Successfully updated withdrawal:", updatedWithdrawal);
+      console.log("Now updating equipment status");
 
       // Update equipment status to "disponível"
       const { error: equipmentError } = await supabase
         .from("equipment")
-        .update({
+        .update({ 
           status: "disponível",
+          updated_at: new Date().toISOString()
         })
         .eq("id", actualEquipmentId);
 
