@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
@@ -26,7 +27,7 @@ const EquipmentPage = () => {
   const { hasAction } = useAuth();
 
   // Fetch equipments using react-query
-  const { data: equipments, refetch, isLoading } = useQuery({
+  const { data: equipments = [], refetch, isLoading } = useQuery({
     queryKey: ['equipments'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -116,13 +117,21 @@ const EquipmentPage = () => {
     (equipment.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
   );
 
-  // Estatísticas de equipamentos
+  // Equipment statistics - with null checks to prevent the length error
   const equipmentStats = {
-    total: equipments.length,
-    available: equipments.filter(eq => eq.status === 'disponível').length,
-    inUse: equipments.filter(eq => eq.status === 'em uso').length,
-    maintenance: equipments.filter(eq => eq.status === 'manutenção').length,
+    total: equipments?.length || 0,
+    available: equipments?.filter(eq => eq.status === 'disponível')?.length || 0,
+    inUse: equipments?.filter(eq => eq.status === 'em uso')?.length || 0,
+    maintenance: equipments?.filter(eq => eq.status === 'manutenção')?.length || 0,
   };
+
+  if (isLoading) {
+    return (
+      <div className="container py-8 flex justify-center items-center min-h-[60vh]">
+        <p className="text-lg font-medium text-gray-400">Carregando equipamentos...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="container py-8">
