@@ -1,124 +1,182 @@
 
 import React from "react";
-import { ReceiptText } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Receipt as ReceiptType } from "@/types/equipment";
+import { Edit, ReceiptText, Package, Calendar, LogOut } from "lucide-react";
 import { Equipment } from "@/types/equipment";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
-type StatusTablesProps = {
+interface StatusTablesProps {
   equipments: Equipment[];
-  receipts: ReceiptType[];
-  openReceiptModal: (receipt: ReceiptType) => void;
-  findEquipmentProduction: (equipmentId: string) => string;
-  renderEquipmentType: (type: string) => string;
-};
+  onEditEquipment: (equipment: Equipment) => void;
+  onScheduleEquipment: (equipment: Equipment) => void;
+  onCheckoutEquipment: (equipment: Equipment) => void;
+  onReturnEquipment: (equipment: Equipment) => void;
+}
 
-const StatusTables = ({
+const StatusTables: React.FC<StatusTablesProps> = ({
   equipments,
-  receipts,
-  openReceiptModal,
-  findEquipmentProduction,
-  renderEquipmentType,
-}: StatusTablesProps) => {
+  onEditEquipment,
+  onScheduleEquipment,
+  onCheckoutEquipment,
+  onReturnEquipment,
+}) => {
+  // Filter equipments by status
+  const availableEquipments = equipments.filter(
+    (equipment) => equipment.status === "disponível"
+  );
+  const inUseEquipments = equipments.filter(
+    (equipment) => equipment.status === "em uso"
+  );
+  const maintenanceEquipments = equipments.filter(
+    (equipment) => equipment.status === "manutenção"
+  );
+
+  const renderCategoryBadge = (category: string | null) => {
+    if (!category) return null;
+    
+    const categoryLabels: {[key: string]: string} = {
+      'camera': 'Câmera',
+      'lens': 'Lente',
+      'stabilizer': 'Estabilizador',
+      'audio': 'Áudio',
+      'lighting': 'Iluminação',
+      'support': 'Suporte',
+      'accessory': 'Acessório',
+    };
+    
+    const label = categoryLabels[category] || category;
+    
+    return (
+      <Badge variant="outline" className="border-gray-600 text-gray-400">
+        {label}
+      </Badge>
+    );
+  };
+
+  const renderEquipmentRow = (equipment: Equipment, actionButtons: React.ReactNode) => (
+    <tr key={equipment.id} className="border-b border-[#141414]">
+      <td className="py-3 pl-4">
+        <div className="flex flex-col">
+          <span className="font-medium">{equipment.name}</span>
+          <div className="flex items-center gap-2 mt-1">
+            {renderCategoryBadge(equipment.category)}
+            {equipment.brand && (
+              <span className="text-xs text-gray-500">
+                {equipment.brand} {equipment.model && `- ${equipment.model}`}
+              </span>
+            )}
+          </div>
+        </div>
+      </td>
+      <td className="py-3 px-4">
+        <div className="flex justify-end space-x-2">
+          {actionButtons}
+        </div>
+      </td>
+    </tr>
+  );
+
+  const renderStatusTable = (
+    title: string,
+    items: Equipment[],
+    renderAction: (equipment: Equipment) => React.ReactNode,
+    emptyMessage: string,
+    className: string = ""
+  ) => (
+    <Card className={`bg-[#000000] border-[#141414] ${className}`}>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-lg">{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <ScrollArea className="h-[300px] w-full">
+          {items.length > 0 ? (
+            <table className="w-full">
+              <tbody>
+                {items.map((item) => renderEquipmentRow(item, renderAction(item)))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="py-8 px-4 text-center text-gray-500">{emptyMessage}</div>
+          )}
+        </ScrollArea>
+      </CardContent>
+    </Card>
+  );
+
   return (
-    <div className="mb-6">
-      <h2 className="text-lg font-medium mb-3">Status de Disponibilidade</h2>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Tabela de equipamentos em uso */}
-        <div className="bg-[#141414] rounded-lg p-4">
-          <h3 className="text-md font-medium mb-2 text-[#ff3335]">Equipamentos em Uso</h3>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Equipamento</TableHead>
-                  <TableHead>Produção</TableHead>
-                  <TableHead className="text-right">Recibo</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {equipments
-                  .filter(e => e.status === "em uso")
-                  .map(equipment => {
-                    const receipt = receipts.find(
-                      r => r.equipment?.id === equipment.id && r.status === 'withdrawn'
-                    );
-                    
-                    return (
-                      <TableRow key={`in-use-${equipment.id}`}>
-                        <TableCell>{equipment.name}</TableCell>
-                        <TableCell>
-                          {findEquipmentProduction(equipment.id)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {receipt && (
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              onClick={() => openReceiptModal(receipt)}
-                              className="h-8 w-8 rounded-full hover:bg-gray-700"
-                            >
-                              <ReceiptText className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                {equipments.filter(e => e.status === "em uso").length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={3} className="text-center text-gray-500">
-                      Nenhum equipamento em uso
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
-        
-        {/* Tabela de equipamentos disponíveis */}
-        <div className="bg-[#141414] rounded-lg p-4">
-          <h3 className="text-md font-medium mb-2 text-green-400">Equipamentos Disponíveis</h3>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Equipamento</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead className="text-right">Quantidade</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {equipments
-                  .filter(e => e.status === "disponível")
-                  .map(equipment => (
-                    <TableRow key={`available-${equipment.id}`}>
-                      <TableCell>{equipment.name}</TableCell>
-                      <TableCell>{renderEquipmentType(equipment.category || '')}</TableCell>
-                      <TableCell className="text-right">{equipment.quantity}</TableCell>
-                    </TableRow>
-                  ))}
-                {equipments.filter(e => e.status === "disponível").length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={3} className="text-center text-gray-500">
-                      Nenhum equipamento disponível
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
-      </div>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+      {renderStatusTable(
+        "Disponíveis",
+        availableEquipments,
+        (equipment) => (
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              className="bg-[#141414] border-[#141414] hover:bg-[#292929] h-8"
+              onClick={() => onScheduleEquipment(equipment)}
+            >
+              <Calendar className="h-3.5 w-3.5 mr-1" />
+              Agendar
+            </Button>
+            <Button
+              size="sm"
+              className="bg-[#ff3335] hover:bg-[#ff3335]/80 h-8"
+              onClick={() => onCheckoutEquipment(equipment)}
+            >
+              <Package className="h-3.5 w-3.5 mr-1" />
+              Retirar
+            </Button>
+          </>
+        ),
+        "Nenhum equipamento disponível"
+      )}
+
+      {renderStatusTable(
+        "Em Uso",
+        inUseEquipments,
+        (equipment) => (
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              className="bg-[#141414] border-[#141414] hover:bg-[#292929] h-8"
+              onClick={() => onEditEquipment(equipment)}
+            >
+              <Edit className="h-3.5 w-3.5 mr-1" />
+              Editar
+            </Button>
+            <Button
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700 h-8"
+              onClick={() => onReturnEquipment(equipment)}
+            >
+              <LogOut className="h-3.5 w-3.5 mr-1" />
+              Devolver
+            </Button>
+          </>
+        ),
+        "Nenhum equipamento em uso"
+      )}
+
+      {renderStatusTable(
+        "Manutenção",
+        maintenanceEquipments,
+        (equipment) => (
+          <Button
+            size="sm"
+            variant="outline"
+            className="bg-[#141414] border-[#141414] hover:bg-[#292929] h-8"
+            onClick={() => onEditEquipment(equipment)}
+          >
+            <Edit className="h-3.5 w-3.5 mr-1" />
+            Editar
+          </Button>
+        ),
+        "Nenhum equipamento em manutenção"
+      )}
     </div>
   );
 };
