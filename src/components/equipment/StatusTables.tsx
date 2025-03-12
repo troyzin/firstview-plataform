@@ -104,7 +104,7 @@ const StatusTables = ({
                     <TableRow key={`available-${equipment.id}`}>
                       <TableCell>{equipment.name}</TableCell>
                       <TableCell>{renderEquipmentType(equipment.category || '')}</TableCell>
-                      <TableCell className="text-right">{equipment.quantity}</TableCell>
+                      <TableCell className="text-right">{equipment.quantity || 1}</TableCell>
                     </TableRow>
                   ))}
                 {equipments.filter(e => e.status === "disponível").length === 0 && (

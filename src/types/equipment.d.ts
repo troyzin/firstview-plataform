@@ -1,4 +1,3 @@
-
 export interface Equipment {
   id: string;
   name: string;
@@ -10,6 +9,7 @@ export interface Equipment {
   brand?: string;
   model?: string;
   image_url?: string;
+  quantity?: number;
 }
 
 export interface EquipmentSchedule {
