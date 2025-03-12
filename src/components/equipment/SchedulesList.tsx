@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Edit, Trash } from 'lucide-react';
@@ -7,16 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { toast } from 'sonner';
 import { ScheduleModal } from '@/components/equipment/ScheduleModal';
 import { Badge } from '@/components/ui/badge';
-import { 
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { EquipmentSchedule } from '@/types/equipment';
 import { useSchedules } from '@/hooks/useSchedules';
@@ -26,8 +17,8 @@ interface SchedulesListProps {
 }
 
 const SchedulesList: React.FC<SchedulesListProps> = ({ equipmentId }) => {
-  const { schedules, isLoading, refetch } = useSchedules(equipmentId);
-  const [open, setOpen] = React.useState(false);
+  const { data: schedules = [], isLoading, refetch } = useSchedules(equipmentId);
+  const [open, setOpen] = useState(false);
   const [scheduleToDelete, setScheduleToDelete] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [scheduleToEdit, setScheduleToEdit] = useState<EquipmentSchedule | null>(null);
@@ -146,8 +137,11 @@ const SchedulesList: React.FC<SchedulesListProps> = ({ equipmentId }) => {
         isOpen={isEditModalOpen}
         onClose={handleCloseEditModal}
         equipmentId={equipmentId}
-        schedule={scheduleToEdit}
-        onSuccess={refetch}
+        scheduleToEdit={scheduleToEdit || undefined}
+        onSuccess={() => {
+          refetch();
+          handleCloseEditModal();
+        }}
       />
     </div>
   );
