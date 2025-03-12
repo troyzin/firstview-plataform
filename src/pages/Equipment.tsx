@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Plus, Search, Filter, Package, Calendar, LogOut, CheckCircle, AlertTriangle, ShoppingCart, History, Users, Edit, ArrowLeft, FileText, Info, Receipt, ReceiptText } from "lucide-react";
 import MainLayout from "@/components/layout/MainLayout";
@@ -23,7 +22,6 @@ import ReceiptModal from "@/components/equipment/ReceiptModal";
 import { WithdrawalModal } from "@/components/equipment/WithdrawalModal";
 import { ReturnModal } from "@/components/equipment/ReturnModal";
 import { ScheduleModal } from "@/components/equipment/ScheduleModal";
-
 // Component imports
 import EquipmentHeader from "@/components/equipment/EquipmentHeader";
 import EquipmentStats from "@/components/equipment/EquipmentStats";
@@ -492,6 +490,7 @@ const Equipment = () => {
 
   // Função para agendar um equipamento
   const openScheduleModal = (equipment: EquipmentType) => {
+    // This function is kept but will not be called anymore
     setSelectedEquipment(equipment);
     setSelectedDate(new Date());
     setScheduleEndDate(new Date());
@@ -572,7 +571,6 @@ const Equipment = () => {
         <Tabs defaultValue="inventory" value={currentTab} onValueChange={setCurrentTab} className="w-full">
           <TabsList className="mb-4 flex overflow-x-auto md:flex-nowrap">
             <TabsTrigger value="inventory">Inventário</TabsTrigger>
-            <TabsTrigger value="schedules">Agendamentos</TabsTrigger>
             <TabsTrigger value="receipts">Recibos</TabsTrigger>
             <TabsTrigger value="history">Histórico</TabsTrigger>
           </TabsList>
@@ -592,10 +590,6 @@ const Equipment = () => {
               openReturnModal={openReturnModal}
               openScheduleModal={openScheduleModal}
             />
-          </TabsContent>
-          
-          <TabsContent value="schedules">
-            <SchedulesList equipmentId={selectedEquipment?.id} />
           </TabsContent>
           
           <TabsContent value="receipts">
@@ -652,16 +646,6 @@ const Equipment = () => {
             onSuccess={() => {
               refetch();
               refetchReceipts();
-            }}
-          />
-          
-          <ScheduleModal
-            isOpen={isScheduleModalOpen}
-            onClose={closeScheduleModal}
-            equipmentId={selectedEquipment.id}
-            equipmentName={selectedEquipment.name}
-            onSuccess={() => {
-              queryClient.invalidateQueries({queryKey: ['schedules']});
             }}
           />
         </>

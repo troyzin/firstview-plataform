@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/table";
 import { Equipment } from "@/types/equipment";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, CheckCircle, ArrowDownToLine, Calendar } from "lucide-react";
+import { Edit, Trash2, CheckCircle, ArrowDownToLine } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 type InventoryTabProps = {
@@ -101,26 +101,15 @@ const InventoryTab = ({
                   <TableCell className="text-right">
                     <div className="flex justify-end space-x-1">
                       {equipment.status === "disponível" && (
-                        <>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => openCheckoutModal(equipment)}
-                            className="h-8 w-8 rounded-full hover:bg-gray-700 border-gray-700"
-                            title="Retirar equipamento"
-                          >
-                            <ArrowDownToLine className="h-4 w-4 text-white" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => openScheduleModal(equipment)}
-                            className="h-8 w-8 rounded-full hover:bg-gray-700 border-gray-700"
-                            title="Agendar equipamento"
-                          >
-                            <Calendar className="h-4 w-4 text-white" />
-                          </Button>
-                        </>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => openCheckoutModal(equipment)}
+                          className="h-8 w-8 rounded-full hover:bg-gray-700 border-gray-700"
+                          title="Retirar equipamento"
+                        >
+                          <ArrowDownToLine className="h-4 w-4 text-white" />
+                        </Button>
                       )}
                       {equipment.status === "em uso" && (
                         <Button
