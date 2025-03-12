@@ -16,12 +16,20 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { Receipt as ReceiptType, Equipment as EquipmentType, HistoryEvent } from "@/types/equipment";
 import SchedulesList from "@/components/equipment/SchedulesList";
-import WithdrawalsList from "@/components/equipment/WithdrawalList";
+import WithdrawalsList from "@/components/equipment/WithdrawalsList";
 import EquipmentModal from "@/components/equipment/EquipmentModal";
 import ReceiptModal from "@/components/equipment/ReceiptModal";
 import { WithdrawalModal } from "@/components/equipment/WithdrawalModal";
 import { ReturnModal } from "@/components/equipment/ReturnModal";
 import { ScheduleModal } from "@/components/equipment/ScheduleModal";
+
+// Component imports
+import EquipmentHeader from "@/components/equipment/EquipmentHeader";
+import EquipmentStats from "@/components/equipment/EquipmentStats";
+import StatusTables from "@/components/equipment/StatusTables";
+import InventoryTab from "@/components/equipment/InventoryTab";
+import HistoryTab from "@/components/equipment/HistoryTab";
+import ReceiptsTab from "@/components/equipment/ReceiptsTab";
 
 // Função para buscar equipamentos do Supabase
 const fetchEquipments = async (): Promise<EquipmentType[]> => {
