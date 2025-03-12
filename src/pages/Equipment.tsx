@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
@@ -16,7 +15,7 @@ import EquipmentModal from '@/components/equipment/EquipmentModal';
 import KitWithdrawalModal from '@/components/equipment/KitWithdrawalModal';
 import { ReturnModal } from '@/components/equipment/ReturnModal';
 import { useAuth } from '@/contexts/AuthContext';
-import WithdrawalModal from '@/components/equipment/WithdrawalModal';
+import { WithdrawalModal } from '@/components/equipment/WithdrawalModal';
 
 const EquipmentPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
