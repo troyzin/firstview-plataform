@@ -37,9 +37,30 @@ export const KitWithdrawalModal: React.FC<KitWithdrawalModalProps> = ({
   const [notes, setNotes] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPersonalUse, setIsPersonalUse] = useState(false);
+  const [currentUser, setCurrentUser] = useState<{id: string, full_name: string | null} | null>(null);
+
+  // Fetch current user
+  React.useEffect(() => {
+    const fetchCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .eq('id', user.id)
+          .single();
+        
+        if (data) {
+          setCurrentUser(data);
+        }
+      }
+    };
+
+    fetchCurrentUser();
+  }, []);
 
   // Fetch available equipment
-  const { data: availableEquipments = [] } = useQuery<Equipment[]>({
+  const { data: availableEquipments = [], isLoading: isLoadingEquipment } = useQuery<Equipment[]>({
     queryKey: ["available-equipments"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -83,17 +104,19 @@ export const KitWithdrawalModal: React.FC<KitWithdrawalModalProps> = ({
       return;
     }
 
+    if (!currentUser) {
+      toast.error("Usuário não encontrado");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("User not found");
-
       // Create withdrawals for each selected equipment
       for (const equipmentId of selectedEquipments) {
         const withdrawalData = {
           equipment_id: equipmentId,
-          user_id: user.id,
+          user_id: currentUser.id,
           production_id: isPersonalUse ? null : selectedProduction,
           expected_return_date: returnDate.toISOString(),
           notes: notes,
@@ -148,28 +171,47 @@ export const KitWithdrawalModal: React.FC<KitWithdrawalModalProps> = ({
         </DialogHeader>
 
         <div className="space-y-4 my-4">
-          <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
-            {availableEquipments.map((equipment) => (
-              <div key={equipment.id} className="flex items-center space-x-2">
-                <Checkbox
-                  id={equipment.id}
-                  checked={selectedEquipments.includes(equipment.id)}
-                  onCheckedChange={(checked) => {
-                    setSelectedEquipments(prev =>
-                      checked
-                        ? [...prev, equipment.id]
-                        : prev.filter(id => id !== equipment.id)
-                    );
-                  }}
-                />
-                <Label htmlFor={equipment.id} className="cursor-pointer">
-                  {equipment.name}
-                </Label>
+          <div className="space-y-2">
+            <Label className="text-lg font-medium border-b border-[#141414] pb-2 w-full block">
+              Equipamentos Disponíveis
+            </Label>
+            {isLoadingEquipment ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-[#ff3335]" />
               </div>
-            ))}
+            ) : availableEquipments.length === 0 ? (
+              <div className="text-center py-8 text-gray-400">
+                Não há equipamentos disponíveis para retirada no momento
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[250px] overflow-y-auto pr-2 py-2">
+                {availableEquipments.map((equipment) => (
+                  <div key={equipment.id} className="flex items-center space-x-2 p-2 rounded bg-[#141414] hover:bg-[#1f1f1f] transition-colors">
+                    <Checkbox
+                      id={equipment.id}
+                      checked={selectedEquipments.includes(equipment.id)}
+                      onCheckedChange={(checked) => {
+                        setSelectedEquipments(prev =>
+                          checked
+                            ? [...prev, equipment.id]
+                            : prev.filter(id => id !== equipment.id)
+                        );
+                      }}
+                      className="border-[#ff3335] data-[state=checked]:bg-[#ff3335] data-[state=checked]:border-[#ff3335]"
+                    />
+                    <Label 
+                      htmlFor={equipment.id} 
+                      className="cursor-pointer flex-1 text-sm truncate"
+                    >
+                      {equipment.name}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          <div>
+          <div className="pt-4 border-t border-[#141414]">
             <Label className="text-sm font-medium mb-1 block">Tipo de Uso</Label>
             <Select
               value={isPersonalUse ? "personal" : "production"}
@@ -246,30 +288,41 @@ export const KitWithdrawalModal: React.FC<KitWithdrawalModalProps> = ({
         </div>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={handleClose}
-            className="bg-gray-800 text-white hover:bg-gray-700 border-gray-700"
-          >
-            Cancelar
-          </Button>
-          <Button
-            className="bg-[#ff3335] hover:bg-red-700"
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Processando...
-              </>
-            ) : (
-              <>
-                <Package className="h-4 w-4 mr-2" />
-                Confirmar Retirada
-              </>
-            )}
-          </Button>
+          <div className="flex w-full justify-between items-center">
+            <div className="text-sm">
+              {selectedEquipments.length > 0 ? (
+                <span className="text-[#ff3335] font-medium">{selectedEquipments.length} equipamento(s) selecionado(s)</span>
+              ) : (
+                <span className="text-gray-400">Nenhum equipamento selecionado</span>
+              )}
+            </div>
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                onClick={handleClose}
+                className="bg-gray-800 text-white hover:bg-gray-700 border-gray-700"
+              >
+                Cancelar
+              </Button>
+              <Button
+                className="bg-[#ff3335] hover:bg-red-700"
+                onClick={handleSubmit}
+                disabled={isSubmitting || selectedEquipments.length === 0}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Processando...
+                  </>
+                ) : (
+                  <>
+                    <Package className="h-4 w-4 mr-2" />
+                    Confirmar Retirada
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
