@@ -21,12 +21,27 @@ type ReceiptsTabProps = {
 };
 
 const ReceiptsTab = ({ receipts, openReceiptModal, renderReceiptStatus }: ReceiptsTabProps) => {
+  
+  // Format IDs to display as #0001, #0002, etc.
+  const formatID = (id: string) => {
+    if (!id) return '#0000';
+    
+    // Try to extract a numeric portion from the UUID
+    const parts = id.split('-');
+    if (!parts || parts.length === 0) return `#${id.substring(0, 4)}`;
+    
+    // Try to parse the first part as a number or use a fallback
+    const numericId = parseInt(parts[0], 16) % 10000 || 0;
+    return `#${numericId.toString().padStart(4, '0')}`;
+  };
+  
   return (
     <div className="bg-[#141414] rounded-lg p-4">
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>ID</TableHead>
               <TableHead>Data</TableHead>
               <TableHead>Equipamento</TableHead>
               <TableHead>Produção</TableHead>
@@ -38,6 +53,7 @@ const ReceiptsTab = ({ receipts, openReceiptModal, renderReceiptStatus }: Receip
           <TableBody>
             {receipts.map((receipt) => (
               <TableRow key={receipt.id}>
+                <TableCell>{formatID(receipt.id)}</TableCell>
                 <TableCell>
                   {receipt.withdrawal_date 
                     ? format(new Date(receipt.withdrawal_date), "dd/MM/yyyy", { locale: ptBR })
@@ -47,7 +63,9 @@ const ReceiptsTab = ({ receipts, openReceiptModal, renderReceiptStatus }: Receip
                 <TableCell>
                   {receipt.is_personal_use 
                     ? "Uso Pessoal" 
-                    : receipt.production?.title || "N/A"}
+                    : receipt.production 
+                      ? formatID(receipt.production.id)
+                      : "N/A"}
                 </TableCell>
                 <TableCell>{receipt.user?.full_name || "N/A"}</TableCell>
                 <TableCell>{renderReceiptStatus(receipt.status)}</TableCell>
@@ -65,7 +83,7 @@ const ReceiptsTab = ({ receipts, openReceiptModal, renderReceiptStatus }: Receip
             ))}
             {receipts.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-gray-500 py-8">
+                <TableCell colSpan={7} className="text-center text-gray-500 py-8">
                   Nenhum recibo encontrado
                 </TableCell>
               </TableRow>
