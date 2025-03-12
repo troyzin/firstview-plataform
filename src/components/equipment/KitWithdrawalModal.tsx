@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -39,7 +39,7 @@ export const KitWithdrawalModal: React.FC<KitWithdrawalModalProps> = ({
   const [currentUser, setCurrentUser] = useState<{id: string, full_name: string | null} | null>(null);
 
   // Fetch current user
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchCurrentUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -59,7 +59,7 @@ export const KitWithdrawalModal: React.FC<KitWithdrawalModalProps> = ({
   }, []);
 
   // Fetch available equipment
-  const { data: availableEquipments = [], isLoading: isLoadingEquipment } = useQuery<Equipment[]>({
+  const { data: availableEquipments = [], isLoading: isLoadingEquipment, refetch: refetchEquipment } = useQuery<Equipment[]>({
     queryKey: ["available-equipments"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -71,7 +71,15 @@ export const KitWithdrawalModal: React.FC<KitWithdrawalModalProps> = ({
       if (error) throw error;
       return data || [];
     },
+    enabled: isOpen, // Only fetch when modal is open
   });
+
+  // Refetch equipment when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      refetchEquipment();
+    }
+  }, [isOpen, refetchEquipment]);
 
   // Fetch productions
   const { data: productions = [] } = useQuery({
@@ -159,9 +167,10 @@ export const KitWithdrawalModal: React.FC<KitWithdrawalModalProps> = ({
     onClose();
   };
 
-  // Make sure the modal is properly rendered when opened
+  // Debug logs
   console.log("KitWithdrawalModal isOpen:", isOpen);
   console.log("Available equipments:", availableEquipments?.length);
+  console.log("Equipment loading state:", isLoadingEquipment);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -173,26 +182,39 @@ export const KitWithdrawalModal: React.FC<KitWithdrawalModalProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 my-4">
-          {/* Equipment Selection Section - THIS MUST BE VISIBLE */}
+        <div className="space-y-4 mt-4">
+          {/* Equipment Selection Section */}
           <div className="space-y-2">
             <Label className="text-lg font-medium border-b border-[#141414] pb-2 w-full block">
-              Equipamentos Disponíveis
+              Equipamentos Disponíveis ({availableEquipments.length})
             </Label>
+            
             {isLoadingEquipment ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-[#ff3335]" />
+                <span className="ml-2">Carregando equipamentos...</span>
               </div>
             ) : availableEquipments.length === 0 ? (
-              <div className="text-center py-8 text-gray-400">
-                Não há equipamentos disponíveis para retirada no momento
+              <div className="text-center py-8 text-gray-400 border border-dashed border-[#141414] rounded-md">
+                <Package className="h-12 w-12 mx-auto mb-2 text-gray-500" />
+                <p>Não há equipamentos disponíveis para retirada no momento</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[250px] overflow-y-auto pr-2 py-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[250px] overflow-y-auto pr-2 py-2 border border-[#141414] rounded-md p-3">
                 {availableEquipments.map((equipment) => (
-                  <div key={equipment.id} className="flex items-center space-x-2 p-2 rounded bg-[#141414] hover:bg-[#1f1f1f] transition-colors">
+                  <div 
+                    key={equipment.id} 
+                    className="flex items-center space-x-2 p-2 rounded bg-[#141414] hover:bg-[#1f1f1f] transition-colors"
+                    onClick={() => {
+                      setSelectedEquipments(prev =>
+                        prev.includes(equipment.id)
+                          ? prev.filter(id => id !== equipment.id)
+                          : [...prev, equipment.id]
+                      );
+                    }}
+                  >
                     <Checkbox
-                      id={equipment.id}
+                      id={`equipment-${equipment.id}`}
                       checked={selectedEquipments.includes(equipment.id)}
                       onCheckedChange={(checked) => {
                         setSelectedEquipments(prev =>
@@ -204,7 +226,7 @@ export const KitWithdrawalModal: React.FC<KitWithdrawalModalProps> = ({
                       className="border-[#ff3335] data-[state=checked]:bg-[#ff3335] data-[state=checked]:border-[#ff3335]"
                     />
                     <Label 
-                      htmlFor={equipment.id} 
+                      htmlFor={`equipment-${equipment.id}`} 
                       className="cursor-pointer flex-1 text-sm truncate"
                     >
                       {equipment.name}
@@ -291,7 +313,7 @@ export const KitWithdrawalModal: React.FC<KitWithdrawalModalProps> = ({
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="mt-4">
           <div className="flex w-full justify-between items-center">
             <div className="text-sm">
               {selectedEquipments.length > 0 ? (
@@ -302,9 +324,8 @@ export const KitWithdrawalModal: React.FC<KitWithdrawalModalProps> = ({
             </div>
             <div className="flex space-x-2">
               <Button
-                variant="outline"
+                variant="secondary"
                 onClick={handleClose}
-                className="bg-gray-800 text-white hover:bg-gray-700 border-gray-700"
               >
                 Cancelar
               </Button>
