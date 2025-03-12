@@ -1,58 +1,51 @@
 
 import React from "react";
-import { Plus, Search, Filter, ShoppingCart } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-type EquipmentHeaderProps = {
+interface EquipmentHeaderProps {
   searchTerm: string;
   setSearchTerm: (value: string) => void;
   openKitModal: () => void;
   openNewEquipmentModal: () => void;
-};
+}
 
-const EquipmentHeader = ({
+const EquipmentHeader: React.FC<EquipmentHeaderProps> = ({
   searchTerm,
   setSearchTerm,
   openKitModal,
   openNewEquipmentModal,
-}: EquipmentHeaderProps) => {
+}) => {
   return (
-    <div className="flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
-      <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-        <h1 className="text-2xl font-bold">Equipamentos</h1>
-        
-        <div className="flex items-center bg-[#141414] rounded-md px-3 py-2 w-full md:w-auto">
-          <Search className="h-5 w-5 text-gray-400 mr-2" />
+    <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+      <h1 className="text-2xl font-bold">Equipamentos</h1>
+      <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+        <div className="relative w-full sm:w-64">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
           <Input
+            type="search"
             placeholder="Buscar equipamentos..."
+            className="pl-8 bg-[#141414] border-[#141414]"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full md:w-60"
           />
         </div>
-        
-        <Button variant="outline" className="bg-[#141414] border-gray-700 w-full md:w-auto">
-          <Filter className="h-4 w-4 mr-2" />
-          Filtros
-        </Button>
-      </div>
-      
-      <div className="flex space-x-3 w-full md:w-auto">
-        <Button 
-          onClick={openKitModal}
-          className="bg-[#141414] hover:bg-[#141414]/90 text-white w-full md:w-auto"
-        >
-          <ShoppingCart className="h-4 w-4 mr-2" />
-          Retirar KIT
-        </Button>
-        <Button 
-          onClick={openNewEquipmentModal} 
-          className="bg-[#ff3335] hover:bg-[#ff3335]/90 text-white w-full md:w-auto"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Novo Equipamento
-        </Button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button
+            className="bg-[#ff3335] hover:bg-red-700 flex-1 sm:flex-none"
+            onClick={openKitModal}
+          >
+            Retirar KIT
+          </Button>
+          <Button
+            className="bg-[#141414] hover:bg-gray-800 flex-1 sm:flex-none"
+            onClick={openNewEquipmentModal}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Novo
+          </Button>
+        </div>
       </div>
     </div>
   );

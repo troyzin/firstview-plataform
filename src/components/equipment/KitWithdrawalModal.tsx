@@ -159,6 +159,10 @@ export const KitWithdrawalModal: React.FC<KitWithdrawalModalProps> = ({
     onClose();
   };
 
+  // Make sure the modal is properly rendered when opened
+  console.log("KitWithdrawalModal isOpen:", isOpen);
+  console.log("Available equipments:", availableEquipments?.length);
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="bg-[#000000] border border-[#141414] text-white sm:max-w-[600px]">
@@ -170,7 +174,7 @@ export const KitWithdrawalModal: React.FC<KitWithdrawalModalProps> = ({
         </DialogHeader>
 
         <div className="space-y-4 my-4">
-          {/* Equipment Selection Section */}
+          {/* Equipment Selection Section - THIS MUST BE VISIBLE */}
           <div className="space-y-2">
             <Label className="text-lg font-medium border-b border-[#141414] pb-2 w-full block">
               Equipamentos Disponíveis

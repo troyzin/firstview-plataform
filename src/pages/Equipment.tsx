@@ -498,6 +498,7 @@ const Equipment = () => {
   // Funções para abrir/fechar modais
   const openKitModal = () => {
     setIsKitModalOpen(true);
+    console.log("Opening Kit Modal");
   };
 
   // Função para fechar o modal de kit
@@ -629,7 +630,10 @@ const Equipment = () => {
       {/* Modal for Kit Withdrawal */}
       <KitWithdrawalModal 
         isOpen={isKitModalOpen}
-        onClose={() => setIsKitModalOpen(false)}
+        onClose={() => {
+          console.log("Closing Kit Modal");
+          setIsKitModalOpen(false);
+        }}
         onSuccess={() => {
           refetch();
           refetchReceipts();
