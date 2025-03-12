@@ -40,6 +40,7 @@ export const ReturnModal: React.FC<ReturnModalProps> = ({
   const [isLate, setIsLate] = useState(false);
   const [actualEquipmentId, setActualEquipmentId] = useState<string | undefined>(equipmentId);
   const [actualEquipmentName, setActualEquipmentName] = useState<string | undefined>(equipmentName);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Initialize from props when component mounts or when props change
   useEffect(() => {
@@ -52,46 +53,63 @@ export const ReturnModal: React.FC<ReturnModalProps> = ({
       const expectedDate = new Date(equipmentWithdrawal.expected_return_date);
       const now = new Date();
       setIsLate(now > expectedDate);
+      setIsLoading(false);
     }
   }, [equipmentWithdrawal, isOpen]);
 
   // Fetch current user and active withdrawal
   useEffect(() => {
     const fetchData = async () => {
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('id, full_name')
-          .eq('id', user.id)
-          .single();
-        
-        if (profileData) {
-          setCurrentUser(profileData);
-        }
-      }
-
-      // Only fetch withdrawal if not already provided through props
-      if (!equipmentWithdrawal && actualEquipmentId) {
-        // Get active withdrawal for this equipment
-        const { data: withdrawalData } = await supabase
-          .from('equipment_withdrawals')
-          .select('id, expected_return_date, status')
-          .eq('equipment_id', actualEquipmentId)
-          .eq('status', 'withdrawn')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (withdrawalData) {
-          setWithdrawalId(withdrawalData.id);
+      setIsLoading(true);
+      try {
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('id, full_name')
+            .eq('id', user.id)
+            .single();
           
-          // Check if return is late
-          const expectedDate = new Date(withdrawalData.expected_return_date);
-          const now = new Date();
-          setIsLate(now > expectedDate);
+          if (profileData) {
+            setCurrentUser(profileData);
+          }
         }
+
+        // Only fetch withdrawal if not already provided through props
+        if (!equipmentWithdrawal && actualEquipmentId) {
+          console.log("Fetching active withdrawal for equipment ID:", actualEquipmentId);
+          
+          // Get active withdrawal for this equipment
+          const { data: withdrawalData, error } = await supabase
+            .from('equipment_withdrawals')
+            .select('id, expected_return_date, status')
+            .eq('equipment_id', actualEquipmentId)
+            .eq('status', 'withdrawn')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (error) {
+            console.error("Error fetching withdrawal:", error);
+            toast.error("Erro ao buscar retirada ativa");
+          }
+
+          console.log("Withdrawal data found:", withdrawalData);
+          
+          if (withdrawalData) {
+            setWithdrawalId(withdrawalData.id);
+            
+            // Check if return is late
+            const expectedDate = new Date(withdrawalData.expected_return_date);
+            const now = new Date();
+            setIsLate(now > expectedDate);
+          }
+        }
+      } catch (error) {
+        console.error("Error in fetchData:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -173,35 +191,51 @@ export const ReturnModal: React.FC<ReturnModalProps> = ({
         </DialogHeader>
 
         <div className="space-y-4 my-4">
-          {isLate && (
-            <div className="p-3 bg-[#ff3335]/10 border border-[#ff3335]/20 rounded-md text-[#ff3335]">
-              <p className="text-sm">
-                <strong>Atenção:</strong> Esta devolução está atrasada em relação à data esperada.
-              </p>
+          {isLoading ? (
+            <div className="flex justify-center py-4">
+              <Loader2 className="h-6 w-6 animate-spin text-[#ff3335]" />
             </div>
+          ) : (
+            <>
+              {isLate && (
+                <div className="p-3 bg-[#ff3335]/10 border border-[#ff3335]/20 rounded-md text-[#ff3335]">
+                  <p className="text-sm">
+                    <strong>Atenção:</strong> Esta devolução está atrasada em relação à data esperada.
+                  </p>
+                </div>
+              )}
+
+              {!withdrawalId && !isLoading && (
+                <div className="p-3 bg-[#ff3335]/10 border border-[#ff3335]/20 rounded-md text-[#ff3335]">
+                  <p className="text-sm">
+                    <strong>Atenção:</strong> Não foi encontrada uma retirada ativa para este equipamento.
+                  </p>
+                </div>
+              )}
+
+              <div>
+                <label className="text-sm font-medium mb-1 block">Responsável</label>
+                <Input
+                  className="bg-[#141414] border-[#141414]"
+                  value={currentUser?.full_name || "Usuário não identificado"}
+                  readOnly
+                  disabled
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-1 block">
+                  Observações sobre a condição do equipamento (opcional)
+                </label>
+                <Textarea
+                  className="bg-[#141414] border-[#141414]"
+                  placeholder="Exemplo: Equipamento em bom estado, pequeno arranhão na lente..."
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                />
+              </div>
+            </>
           )}
-
-          <div>
-            <label className="text-sm font-medium mb-1 block">Responsável</label>
-            <Input
-              className="bg-[#141414] border-[#141414]"
-              value={currentUser?.full_name || "Usuário não identificado"}
-              readOnly
-              disabled
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium mb-1 block">
-              Observações sobre a condição do equipamento (opcional)
-            </label>
-            <Textarea
-              className="bg-[#141414] border-[#141414]"
-              placeholder="Exemplo: Equipamento em bom estado, pequeno arranhão na lente..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
-          </div>
         </div>
 
         <DialogFooter>
@@ -215,7 +249,7 @@ export const ReturnModal: React.FC<ReturnModalProps> = ({
           <Button
             className="bg-[#ff3335] hover:bg-[#cc2a2b]"
             onClick={handleSubmit}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isLoading || !withdrawalId}
           >
             {isSubmitting ? (
               <>

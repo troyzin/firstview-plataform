@@ -24,6 +24,7 @@ const SchedulesList: React.FC<SchedulesListProps> = ({ equipmentId }) => {
   const [scheduleToDelete, setScheduleToDelete] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [scheduleToEdit, setScheduleToEdit] = useState<EquipmentSchedule | null>(null);
+  const [isStartingUse, setIsStartingUse] = useState(false);
   const queryClient = useQueryClient();
 
   const handleOpen = (id: string) => {
@@ -71,6 +72,9 @@ const SchedulesList: React.FC<SchedulesListProps> = ({ equipmentId }) => {
 
   // Function to start using scheduled equipment
   const startUsingEquipment = async (schedule: EquipmentSchedule) => {
+    if (isStartingUse) return;
+    
+    setIsStartingUse(true);
     try {
       // First, check if equipment is available
       const { data: equipmentData, error: equipmentError } = await supabase
@@ -89,7 +93,7 @@ const SchedulesList: React.FC<SchedulesListProps> = ({ equipmentId }) => {
       }
       
       // Create a withdrawal record
-      const { error: withdrawalError } = await supabase
+      const { data: withdrawalData, error: withdrawalError } = await supabase
         .from('equipment_withdrawals')
         .insert({
           equipment_id: schedule.equipment_id,
@@ -99,7 +103,9 @@ const SchedulesList: React.FC<SchedulesListProps> = ({ equipmentId }) => {
           expected_return_date: schedule.end_date,
           notes: schedule.notes || 'Retirado de um agendamento',
           status: 'withdrawn'
-        });
+        })
+        .select()
+        .single();
         
       if (withdrawalError) {
         throw withdrawalError;
@@ -136,6 +142,8 @@ const SchedulesList: React.FC<SchedulesListProps> = ({ equipmentId }) => {
     } catch (error) {
       console.error('Erro ao iniciar uso do equipamento:', error);
       toast.error('Ocorreu um erro ao iniciar o uso do equipamento');
+    } finally {
+      setIsStartingUse(false);
     }
   };
 
@@ -152,7 +160,7 @@ const SchedulesList: React.FC<SchedulesListProps> = ({ equipmentId }) => {
       <h2 className="text-lg font-medium mb-4">Agendamentos</h2>
       {isLoading ? (
         <div className="flex justify-center items-center h-24">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-700"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff3335]"></div>
         </div>
       ) : schedules && schedules.length > 0 ? (
         <div className="overflow-x-auto">
@@ -183,6 +191,7 @@ const SchedulesList: React.FC<SchedulesListProps> = ({ equipmentId }) => {
                         className="text-[#ff3335] hover:text-white hover:bg-[#ff3335]"
                         onClick={() => startUsingEquipment(schedule)}
                         title="Iniciar Uso"
+                        disabled={isStartingUse}
                       >
                         <PlayCircle className="h-4 w-4" />
                       </Button>
@@ -191,7 +200,7 @@ const SchedulesList: React.FC<SchedulesListProps> = ({ equipmentId }) => {
                       <Edit className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon" onClick={() => handleOpen(schedule.id)}>
-                      <Trash className="h-4 w-4 text-red-500" />
+                      <Trash className="h-4 w-4 text-[#ff3335]" />
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -216,10 +225,10 @@ const SchedulesList: React.FC<SchedulesListProps> = ({ equipmentId }) => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleClose} className="bg-gray-800 text-white hover:bg-gray-700 border-gray-700">
+            <AlertDialogCancel onClick={handleClose} className="bg-[#141414] text-white hover:bg-[#292929] border-[#292929]">
               Cancelar
             </AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction onClick={confirmDelete} className="bg-[#ff3335] hover:bg-[#cc2a2b]">
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
