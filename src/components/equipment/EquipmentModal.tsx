@@ -208,7 +208,7 @@ const EquipmentModal: React.FC<EquipmentModalProps> = ({
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteEquipment}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-[#ff3335] hover:bg-red-700"
             >
               Excluir
             </AlertDialogAction>
