@@ -83,10 +83,10 @@ export const ReturnModal: React.FC<ReturnModalProps> = ({
           // Get active withdrawal for this equipment
           const { data: withdrawalData, error } = await supabase
             .from('equipment_withdrawals')
-            .select('id, expected_return_date, status')
+            .select('id, expected_return_date, status, withdrawal_date')
             .eq('equipment_id', actualEquipmentId)
             .eq('status', 'withdrawn')
-            .order('created_at', { ascending: false })
+            .order('withdrawal_date', { ascending: false })
             .limit(1)
             .maybeSingle();
 
