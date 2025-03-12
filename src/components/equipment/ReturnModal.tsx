@@ -82,7 +82,7 @@ export const ReturnModal: React.FC<ReturnModalProps> = ({
           .eq('status', 'withdrawn')
           .order('created_at', { ascending: false })
           .limit(1)
-          .single();
+          .maybeSingle();
 
         if (withdrawalData) {
           setWithdrawalId(withdrawalData.id);
@@ -215,7 +215,7 @@ export const ReturnModal: React.FC<ReturnModalProps> = ({
           <Button
             className="bg-[#ff3335] hover:bg-[#cc2a2b]"
             onClick={handleSubmit}
-            disabled={isSubmitting || !withdrawalId}
+            disabled={isSubmitting}
           >
             {isSubmitting ? (
               <>

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Edit, Trash } from 'lucide-react';
+import { Edit, Trash, PlayCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
@@ -12,6 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { supabase } from '@/integrations/supabase/client';
 import { EquipmentSchedule } from '@/types/equipment';
 import { useSchedules } from '@/hooks/useSchedules';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface SchedulesListProps {
   equipmentId: string | null;
@@ -23,6 +24,7 @@ const SchedulesList: React.FC<SchedulesListProps> = ({ equipmentId }) => {
   const [scheduleToDelete, setScheduleToDelete] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [scheduleToEdit, setScheduleToEdit] = useState<EquipmentSchedule | null>(null);
+  const queryClient = useQueryClient();
 
   const handleOpen = (id: string) => {
     setOpen(true);
@@ -67,6 +69,84 @@ const SchedulesList: React.FC<SchedulesListProps> = ({ equipmentId }) => {
     setScheduleToEdit(null);
   };
 
+  // Function to start using scheduled equipment
+  const startUsingEquipment = async (schedule: EquipmentSchedule) => {
+    try {
+      // First, check if equipment is available
+      const { data: equipmentData, error: equipmentError } = await supabase
+        .from('equipment')
+        .select('status')
+        .eq('id', schedule.equipment_id)
+        .single();
+      
+      if (equipmentError) {
+        throw equipmentError;
+      }
+      
+      if (equipmentData.status !== 'disponível') {
+        toast.error('Este equipamento não está disponível para uso no momento.');
+        return;
+      }
+      
+      // Create a withdrawal record
+      const { error: withdrawalError } = await supabase
+        .from('equipment_withdrawals')
+        .insert({
+          equipment_id: schedule.equipment_id,
+          user_id: schedule.user_id,
+          production_id: schedule.production_id,
+          withdrawal_date: new Date().toISOString(),
+          expected_return_date: schedule.end_date,
+          notes: schedule.notes || 'Retirado de um agendamento',
+          status: 'withdrawn'
+        });
+        
+      if (withdrawalError) {
+        throw withdrawalError;
+      }
+      
+      // Update equipment status to "em uso"
+      const { error: updateError } = await supabase
+        .from('equipment')
+        .update({ status: 'em uso' })
+        .eq('id', schedule.equipment_id);
+        
+      if (updateError) {
+        throw updateError;
+      }
+      
+      // Delete the schedule since it's now being used
+      const { error: deleteError } = await supabase
+        .from('equipment_schedules')
+        .delete()
+        .eq('id', schedule.id);
+        
+      if (deleteError) {
+        throw deleteError;
+      }
+      
+      toast.success(`${schedule.equipment?.name || 'Equipamento'} agora está em uso!`);
+      
+      // Invalidate relevant queries
+      queryClient.invalidateQueries({queryKey: ['schedules']});
+      queryClient.invalidateQueries({queryKey: ['withdrawals']});
+      queryClient.invalidateQueries({queryKey: ['equipments']});
+      queryClient.invalidateQueries({queryKey: ['receipts']});
+      
+    } catch (error) {
+      console.error('Erro ao iniciar uso do equipamento:', error);
+      toast.error('Ocorreu um erro ao iniciar o uso do equipamento');
+    }
+  };
+
+  const isScheduleActive = (schedule: EquipmentSchedule) => {
+    const now = new Date();
+    const startDate = new Date(schedule.start_date);
+    const endDate = new Date(schedule.end_date);
+    
+    return now >= startDate && now <= endDate;
+  };
+
   return (
     <div>
       <h2 className="text-lg font-medium mb-4">Agendamentos</h2>
@@ -95,9 +175,20 @@ const SchedulesList: React.FC<SchedulesListProps> = ({ equipmentId }) => {
                   <TableCell>{schedule.equipment?.name || schedule.equipment_id}</TableCell>
                   <TableCell>{schedule.user?.full_name || schedule.user_id}</TableCell>
                   <TableCell>{schedule.notes || '-'}</TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right space-x-1">
+                    {isScheduleActive(schedule) && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="text-[#ff3335] hover:text-white hover:bg-[#ff3335]"
+                        onClick={() => startUsingEquipment(schedule)}
+                        title="Iniciar Uso"
+                      >
+                        <PlayCircle className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button variant="ghost" size="icon" onClick={() => handleEditSchedule(schedule)}>
-                      <Edit className="h-4 w-4 mr-2" />
+                      <Edit className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon" onClick={() => handleOpen(schedule.id)}>
                       <Trash className="h-4 w-4 text-red-500" />
