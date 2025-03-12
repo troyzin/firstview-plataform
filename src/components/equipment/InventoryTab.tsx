@@ -1,9 +1,12 @@
 
 import React from "react";
-import { Edit, Trash2, Calendar, Package } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Equipment } from "@/types/equipment";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -12,130 +15,156 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Equipment } from "@/types/equipment";
+import { Button } from "@/components/ui/button";
+import { Edit, Trash2, CheckCircle, ArrowDownToLine, Calendar } from "lucide-react";
 
-interface InventoryTabProps {
-  equipments: Equipment[];
-  onEditEquipment: (equipment: Equipment) => void;
-  onDeleteEquipment: (equipment: Equipment) => void;
-  onScheduleEquipment: (equipment: Equipment) => void;
-  onCheckoutEquipment: (equipment: Equipment) => void;
-}
+type InventoryTabProps = {
+  statusFilter: string;
+  setStatusFilter: (value: string) => void;
+  typeFilter: string;
+  setTypeFilter: (value: string) => void;
+  filteredEquipments: Equipment[];
+  handleEditEquipment: (equipment: Equipment) => void;
+  handleDeleteEquipment: (equipment: Equipment) => void;
+  renderStatus: (status: string) => React.ReactNode;
+  renderEquipmentType: (type: string) => string;
+  openCheckoutModal: (equipment: Equipment) => void;
+  openReturnModal: (equipment: Equipment) => void;
+  openScheduleModal: (equipment: Equipment) => void;
+};
 
-const InventoryTab: React.FC<InventoryTabProps> = ({
-  equipments,
-  onEditEquipment,
-  onDeleteEquipment,
-  onScheduleEquipment,
-  onCheckoutEquipment,
-}) => {
-  const renderEquipmentCategory = (category: string | null) => {
-    if (!category) return "N/A";
-    
-    const categoryMap: {[key: string]: string} = {
-      camera: "Câmera",
-      lens: "Lente",
-      stabilizer: "Estabilizador",
-      audio: "Áudio",
-      lighting: "Iluminação",
-      support: "Suporte",
-      accessory: "Acessório",
-    };
-    
-    return categoryMap[category] || category;
-  };
-  
-  const renderStatus = (status: string | null) => {
-    if (!status) return <Badge>Desconhecido</Badge>;
-    
-    switch (status) {
-      case "disponível":
-        return <Badge className="bg-green-600">Disponível</Badge>;
-      case "em uso":
-        return <Badge className="bg-[#ff3335]">Em Uso</Badge>;
-      case "manutenção":
-        return <Badge className="bg-yellow-600">Manutenção</Badge>;
-      default:
-        return <Badge>Desconhecido</Badge>;
-    }
-  };
-  
+const InventoryTab = ({
+  statusFilter,
+  setStatusFilter,
+  typeFilter,
+  setTypeFilter,
+  filteredEquipments,
+  handleEditEquipment,
+  handleDeleteEquipment,
+  renderStatus,
+  renderEquipmentType,
+  openCheckoutModal,
+  openReturnModal,
+  openScheduleModal,
+}: InventoryTabProps) => {
   return (
-    <div className="rounded-md border border-[#141414] bg-[#000000]">
-      <Table>
-        <TableHeader className="bg-[#141414]">
-          <TableRow>
-            <TableHead className="text-gray-400">Nome</TableHead>
-            <TableHead className="text-gray-400">Categoria</TableHead>
-            <TableHead className="text-gray-400">Marca/Modelo</TableHead>
-            <TableHead className="text-gray-400">Número de Série</TableHead>
-            <TableHead className="text-gray-400">Status</TableHead>
-            <TableHead className="text-gray-400 text-right">Ações</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {equipments.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={6} className="h-24 text-center">
-                Nenhum equipamento encontrado.
-              </TableCell>
-            </TableRow>
-          ) : (
-            equipments.map((equipment) => (
-              <TableRow key={equipment.id} className="border-t border-[#141414]">
-                <TableCell className="font-medium">{equipment.name}</TableCell>
-                <TableCell>{renderEquipmentCategory(equipment.category)}</TableCell>
-                <TableCell>
-                  {equipment.brand} {equipment.model && `- ${equipment.model}`}
-                </TableCell>
-                <TableCell>{equipment.serial_number || "N/A"}</TableCell>
-                <TableCell>{renderStatus(equipment.status)}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end space-x-2">
-                    {equipment.status === "disponível" && (
-                      <>
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 mb-4">
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full sm:w-[180px] bg-[#141414] border-gray-700">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent className="bg-[#141414] border-gray-700">
+            <SelectItem value="all">Todos os Status</SelectItem>
+            <SelectItem value="available">Disponível</SelectItem>
+            <SelectItem value="in_use">Em Uso</SelectItem>
+            <SelectItem value="maintenance">Manutenção</SelectItem>
+          </SelectContent>
+        </Select>
+        
+        <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <SelectTrigger className="w-full sm:w-[180px] bg-[#141414] border-gray-700">
+            <SelectValue placeholder="Tipo" />
+          </SelectTrigger>
+          <SelectContent className="bg-[#141414] border-gray-700">
+            <SelectItem value="all">Todos os Tipos</SelectItem>
+            <SelectItem value="camera">Câmera</SelectItem>
+            <SelectItem value="lens">Lente</SelectItem>
+            <SelectItem value="stabilizer">Estabilizador</SelectItem>
+            <SelectItem value="audio">Áudio</SelectItem>
+            <SelectItem value="lighting">Iluminação</SelectItem>
+            <SelectItem value="support">Suporte</SelectItem>
+            <SelectItem value="accessory">Acessório</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      
+      <div className="bg-[#141414] rounded-lg p-4">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nome</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredEquipments.map((equipment) => (
+                <TableRow key={equipment.id}>
+                  <TableCell>{equipment.name}</TableCell>
+                  <TableCell>{renderEquipmentType(equipment.category || '')}</TableCell>
+                  <TableCell>{renderStatus(equipment.status)}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end space-x-1">
+                      {equipment.status === "disponível" && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => openCheckoutModal(equipment)}
+                            className="h-8 w-8 rounded-full hover:bg-gray-700 border-gray-700"
+                            title="Retirar equipamento"
+                          >
+                            <ArrowDownToLine className="h-4 w-4 text-white" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => openScheduleModal(equipment)}
+                            className="h-8 w-8 rounded-full hover:bg-gray-700 border-gray-700"
+                            title="Agendar equipamento"
+                          >
+                            <Calendar className="h-4 w-4 text-white" />
+                          </Button>
+                        </>
+                      )}
+                      {equipment.status === "em uso" && (
                         <Button
                           variant="outline"
-                          size="sm"
-                          className="bg-[#141414] border-[#141414] hover:bg-[#292929]"
-                          onClick={() => onScheduleEquipment(equipment)}
+                          size="icon"
+                          onClick={() => openReturnModal(equipment)}
+                          className="h-8 w-8 rounded-full hover:bg-gray-700 border-gray-700"
+                          title="Devolver equipamento"
                         >
-                          <Calendar className="h-3.5 w-3.5 mr-1" />
-                          Agendar
+                          <CheckCircle className="h-4 w-4 text-white" />
                         </Button>
-                        <Button
-                          size="sm"
-                          className="bg-[#ff3335] hover:bg-[#ff3335]/80"
-                          onClick={() => onCheckoutEquipment(equipment)}
-                        >
-                          <Package className="h-3.5 w-3.5 mr-1" />
-                          Retirar
-                        </Button>
-                      </>
-                    )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="bg-[#141414] border-[#141414] hover:bg-[#292929]"
-                      onClick={() => onEditEquipment(equipment)}
-                    >
-                      <Edit className="h-3.5 w-3.5 mr-1" />
-                      Editar
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="bg-[#141414] border-[#141414] hover:bg-red-900/20 hover:text-red-400"
-                      onClick={() => onDeleteEquipment(equipment)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleEditEquipment(equipment)}
+                        className="h-8 w-8 rounded-full hover:bg-gray-700 border-gray-700"
+                        title="Editar equipamento"
+                      >
+                        <Edit className="h-4 w-4 text-white" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleDeleteEquipment(equipment)}
+                        className="h-8 w-8 rounded-full hover:bg-gray-700 border-gray-700 text-[#ff3335]"
+                        title="Excluir equipamento"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {filteredEquipments.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-gray-500 py-8">
+                    Nenhum equipamento encontrado
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
     </div>
   );
 };

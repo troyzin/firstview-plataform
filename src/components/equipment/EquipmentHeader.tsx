@@ -32,7 +32,7 @@ const EquipmentHeader = ({
           />
         </div>
         
-        <Button variant="outline" className="bg-[#141414] border-[#141414] w-full md:w-auto">
+        <Button variant="outline" className="bg-[#141414] border-gray-700 w-full md:w-auto">
           <Filter className="h-4 w-4 mr-2" />
           Filtros
         </Button>
@@ -41,7 +41,7 @@ const EquipmentHeader = ({
       <div className="flex space-x-3 w-full md:w-auto">
         <Button 
           onClick={openKitModal}
-          className="bg-[#141414] hover:bg-[#292929] text-white w-full md:w-auto"
+          className="bg-blue-600 hover:bg-blue-700 text-white w-full md:w-auto"
         >
           <ShoppingCart className="h-4 w-4 mr-2" />
           Retirar KIT
