@@ -149,6 +149,7 @@ export type Database = {
           return_notes: string | null
           returned_date: string | null
           status: string
+          updated_at: string | null
           user_id: string
           user_profile_id: string | null
           withdrawal_date: string | null
@@ -163,6 +164,7 @@ export type Database = {
           return_notes?: string | null
           returned_date?: string | null
           status?: string
+          updated_at?: string | null
           user_id: string
           user_profile_id?: string | null
           withdrawal_date?: string | null
@@ -177,6 +179,7 @@ export type Database = {
           return_notes?: string | null
           returned_date?: string | null
           status?: string
+          updated_at?: string | null
           user_id?: string
           user_profile_id?: string | null
           withdrawal_date?: string | null
