@@ -14,8 +14,7 @@ export const useWithdrawals = (equipmentId?: string) => {
           .from('equipment_withdrawals')
           .select(`
             *,
-            equipment:equipment_id(*),
-            production:production_id(*)
+            equipment:equipment_id(*)
           `);
 
         if (equipmentId) {
@@ -57,17 +56,38 @@ export const useWithdrawals = (equipmentId?: string) => {
           profilesMap.set(profile.id, profile);
         });
         
+        // Get productions separately
+        const productionIds = [...new Set((data || [])
+          .filter(item => item.production_id)
+          .map(item => item.production_id))];
+          
+        let productionsMap = new Map();
+        
+        if (productionIds.length > 0) {
+          const { data: productionsData, error: productionsError } = await supabase
+            .from('productions')
+            .select('id, title')
+            .in('id', productionIds as string[]);
+            
+          if (productionsError) {
+            console.error("Error fetching productions:", productionsError);
+          } else {
+            (productionsData || []).forEach(prod => {
+              productionsMap.set(prod.id, prod);
+            });
+          }
+        }
+        
         // Format the data with proper relationships
         const processedData = (data || []).map(item => {
           const userProfile = profilesMap.get(item.user_id) || { id: item.user_id, full_name: 'Usuário não encontrado' };
+          const production = item.production_id ? productionsMap.get(item.production_id) : null;
           
           return {
             ...item,
             user: userProfile,
             equipment: item.equipment || { id: item.equipment_id, name: 'Equipamento não encontrado' },
-            production: item.production_id 
-              ? (item.production || { id: item.production_id, title: 'Produção não encontrada' }) 
-              : null,
+            production: production || (item.production_id ? { id: item.production_id, title: 'Produção não encontrada' } : null),
             status: item.status as "withdrawn" | "overdue" | "returned" | "returned_late",
             // Ensure created_at exists
             created_at: item.withdrawal_date || new Date().toISOString(),

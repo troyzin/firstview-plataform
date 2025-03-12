@@ -87,7 +87,6 @@ const InventoryTab = ({
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Tipo</TableHead>
-                <TableHead>Quantidade</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
@@ -97,7 +96,6 @@ const InventoryTab = ({
                 <TableRow key={equipment.id}>
                   <TableCell>{equipment.name}</TableCell>
                   <TableCell>{renderEquipmentType(equipment.category || '')}</TableCell>
-                  <TableCell>{equipment.quantity}</TableCell>
                   <TableCell>{renderStatus(equipment.status)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end space-x-1">
@@ -158,7 +156,7 @@ const InventoryTab = ({
               ))}
               {filteredEquipments.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-gray-500 py-8">
+                  <TableCell colSpan={4} className="text-center text-gray-500 py-8">
                     Nenhum equipamento encontrado
                   </TableCell>
                 </TableRow>

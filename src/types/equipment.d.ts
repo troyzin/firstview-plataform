@@ -7,7 +7,6 @@ export interface Equipment {
   serial_number?: string;
   acquisition_date?: string;
   notes?: string;
-  quantity: number;
   brand?: string;
   model?: string;
   image_url?: string;

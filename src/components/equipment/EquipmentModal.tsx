@@ -43,10 +43,13 @@ const EquipmentModal: React.FC<EquipmentModalProps> = ({
   const handleSubmit = async (data: EquipmentFormData) => {
     setIsSubmitting(true);
     try {
+      // Remove quantity field if it exists in the data
+      const { quantity, ...dataWithoutQuantity } = data as any;
+      
       if (equipment?.id) {
         const { error } = await supabase
           .from('equipment')
-          .update(data)
+          .update(dataWithoutQuantity)
           .eq('id', equipment.id);
 
         if (error) throw error;
@@ -54,7 +57,7 @@ const EquipmentModal: React.FC<EquipmentModalProps> = ({
       } else {
         const { error } = await supabase
           .from('equipment')
-          .insert([data]);
+          .insert([dataWithoutQuantity]);
 
         if (error) throw error;
         toast.success('Equipamento adicionado com sucesso!');

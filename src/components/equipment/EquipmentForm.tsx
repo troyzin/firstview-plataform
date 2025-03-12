@@ -37,7 +37,6 @@ const EquipmentForm: React.FC<EquipmentFormProps> = ({
       acquisition_date: "",
       notes: "",
       status: "disponível",
-      quantity: 1
     }
   );
 
@@ -159,20 +158,6 @@ const EquipmentForm: React.FC<EquipmentFormProps> = ({
           value={formData.acquisition_date || ""}
           onChange={handleChange}
           className="bg-[#141414] border-[#141414]"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="quantity">Quantidade</Label>
-        <Input
-          id="quantity"
-          name="quantity"
-          type="number"
-          min="1"
-          value={formData.quantity}
-          onChange={handleChange}
-          className="bg-[#141414] border-[#141414]"
-          required
         />
       </div>
 
