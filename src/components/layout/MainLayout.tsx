@@ -6,6 +6,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { useAuth } from "../../contexts/AuthContext";
+import { useIsMobile } from "../../hooks/use-mobile";
+import MobileNavBar from "./MobileNavBar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,6 +25,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
+  const isMobile = useIsMobile();
   
   const isActiveRoute = (path: string) => {
     return location.pathname === path;
@@ -69,99 +72,101 @@ const MainLayout = ({ children }: MainLayoutProps) => {
 
   return (
     <div className="bg-black text-white font-sans min-h-screen flex">
-      <aside 
-        className={`bg-[#141414] border-r border-gray-800 transition-all duration-300 flex flex-col ${
-          sidebarCollapsed ? "w-16" : "w-64"
-        }`}
-      >
-        <div className="p-4 border-b border-gray-800 flex items-center justify-between">
-          {!sidebarCollapsed && (
-            <div className="flex items-center space-x-2">
+      {!isMobile && (
+        <aside 
+          className={`bg-[#141414] border-r border-gray-800 transition-all duration-300 flex flex-col ${
+            sidebarCollapsed ? "w-16" : "w-64"
+          }`}
+        >
+          <div className="p-4 border-b border-gray-800 flex items-center justify-between">
+            {!sidebarCollapsed && (
+              <div className="flex items-center space-x-2">
+                <img 
+                  src="/logo.png" 
+                  alt="Logo da empresa" 
+                  className="w-16 h-auto object-contain" 
+                />
+              </div>
+            )}
+            {sidebarCollapsed && (
               <img 
                 src="/logo.png" 
                 alt="Logo da empresa" 
-                className="w-16 h-auto object-contain" 
+                className="w-10 h-10 object-contain mx-auto" 
               />
-            </div>
-          )}
-          {sidebarCollapsed && (
-            <img 
-              src="/logo.png" 
-              alt="Logo da empresa" 
-              className="w-10 h-10 object-contain mx-auto" 
-            />
-          )}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)} 
-            className="hover:bg-gray-800"
-          >
-            <Menu size={20} />
-          </Button>
-        </div>
+            )}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)} 
+              className="hover:bg-gray-800"
+            >
+              <Menu size={20} />
+            </Button>
+          </div>
 
-        <nav className="flex-1 py-6 px-4">
-          <ul className="space-y-6">
-            <li>
-              <NavItem 
-                to="/" 
-                icon="dashboard" 
-                label={sidebarCollapsed ? undefined : "Dashboard"} 
-                isActive={isActiveRoute("/")}
-              />
-            </li>
-            <li>
-              <NavItem 
-                to="/productions" 
-                icon="view_kanban" 
-                label={sidebarCollapsed ? undefined : "Produções"} 
-                isActive={isActiveRoute("/productions")}
-              />
-            </li>
-            <li>
-              <NavItem 
-                to="/edits" 
-                icon="edit" 
-                label={sidebarCollapsed ? undefined : "Edições"} 
-                isActive={isActiveRoute("/edits")}
-              />
-            </li>
-            <li>
-              <NavItem 
-                to="/equipment" 
-                icon="videocam" 
-                label={sidebarCollapsed ? undefined : "Equipamentos"} 
-                isActive={isActiveRoute("/equipment")}
-              />
-            </li>
-            <li>
-              <NavItem 
-                to="/clients" 
-                icon="groups" 
-                label={sidebarCollapsed ? undefined : "Clientes"} 
-                isActive={isActiveRoute("/clients")}
-              />
-            </li>
-            <li>
-              <NavItem 
-                to="/reports" 
-                icon="bar_chart" 
-                label={sidebarCollapsed ? undefined : "Relatórios"} 
-                isActive={isActiveRoute("/reports")}
-              />
-            </li>
-            <li>
-              <NavItem 
-                to="/team" 
-                icon="groups" 
-                label={sidebarCollapsed ? undefined : "Equipe"} 
-                isActive={isActiveRoute("/team")}
-              />
-            </li>
-          </ul>
-        </nav>
-      </aside>
+          <nav className="flex-1 py-6 px-4">
+            <ul className="space-y-6">
+              <li>
+                <NavItem 
+                  to="/" 
+                  icon="dashboard" 
+                  label={sidebarCollapsed ? undefined : "Dashboard"} 
+                  isActive={isActiveRoute("/")}
+                />
+              </li>
+              <li>
+                <NavItem 
+                  to="/productions" 
+                  icon="view_kanban" 
+                  label={sidebarCollapsed ? undefined : "Produções"} 
+                  isActive={isActiveRoute("/productions")}
+                />
+              </li>
+              <li>
+                <NavItem 
+                  to="/edits" 
+                  icon="edit" 
+                  label={sidebarCollapsed ? undefined : "Edições"} 
+                  isActive={isActiveRoute("/edits")}
+                />
+              </li>
+              <li>
+                <NavItem 
+                  to="/equipment" 
+                  icon="videocam" 
+                  label={sidebarCollapsed ? undefined : "Equipamentos"} 
+                  isActive={isActiveRoute("/equipment")}
+                />
+              </li>
+              <li>
+                <NavItem 
+                  to="/clients" 
+                  icon="groups" 
+                  label={sidebarCollapsed ? undefined : "Clientes"} 
+                  isActive={isActiveRoute("/clients")}
+                />
+              </li>
+              <li>
+                <NavItem 
+                  to="/reports" 
+                  icon="bar_chart" 
+                  label={sidebarCollapsed ? undefined : "Relatórios"} 
+                  isActive={isActiveRoute("/reports")}
+                />
+              </li>
+              <li>
+                <NavItem 
+                  to="/team" 
+                  icon="groups" 
+                  label={sidebarCollapsed ? undefined : "Equipe"} 
+                  isActive={isActiveRoute("/team")}
+                />
+              </li>
+            </ul>
+          </nav>
+        </aside>
+      )}
 
       <div className="flex-1 flex flex-col">
         <header className="bg-black p-4 border-b border-gray-800 flex justify-between items-center">
@@ -214,9 +219,11 @@ const MainLayout = ({ children }: MainLayoutProps) => {
           </div>
         </header>
         
-        <main className="flex-1 p-6">
+        <main className={`flex-1 p-6 ${isMobile ? 'pb-20' : ''}`}>
           {children}
         </main>
+
+        {isMobile && <MobileNavBar />}
       </div>
     </div>
   );
