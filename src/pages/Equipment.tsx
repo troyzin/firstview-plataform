@@ -22,6 +22,12 @@ import ReceiptModal from "@/components/equipment/ReceiptModal";
 import { WithdrawalModal } from "@/components/equipment/WithdrawalModal";
 import { ReturnModal } from "@/components/equipment/ReturnModal";
 import { ScheduleModal } from "@/components/equipment/ScheduleModal";
+import EquipmentHeader from "@/components/equipment/EquipmentHeader";
+import EquipmentStats from "@/components/equipment/EquipmentStats";
+import StatusTables from "@/components/equipment/StatusTables";
+import InventoryTab from "@/components/equipment/InventoryTab";
+import ReceiptsTab from "@/components/equipment/ReceiptsTab";
+import HistoryTab from "@/components/equipment/HistoryTab";
 
 // Função para buscar equipamentos do Supabase
 const fetchEquipments = async (): Promise<EquipmentType[]> => {

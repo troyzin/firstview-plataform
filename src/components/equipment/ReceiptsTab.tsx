@@ -1,5 +1,9 @@
 
 import React from "react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Info } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -8,44 +12,29 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { ReceiptText } from "lucide-react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { Receipt as ReceiptType } from "@/types/equipment";
+import { Receipt } from "@/types/equipment";
 
 type ReceiptsTabProps = {
-  receipts: ReceiptType[];
-  openReceiptModal: (receipt: ReceiptType) => void;
+  receipts: Receipt[];
+  openReceiptModal: (receipt: Receipt) => void;
   renderReceiptStatus: (status: string) => React.ReactNode;
 };
 
-const ReceiptsTab = ({ receipts, openReceiptModal, renderReceiptStatus }: ReceiptsTabProps) => {
-  
-  // Format IDs to display as #0001, #0002, etc.
-  const formatID = (id: string) => {
-    if (!id) return '#0000';
-    
-    // Try to extract a numeric portion from the UUID
-    const parts = id.split('-');
-    if (!parts || parts.length === 0) return `#${id.substring(0, 4)}`;
-    
-    // Try to parse the first part as a number or use a fallback
-    const numericId = parseInt(parts[0], 16) % 10000 || 0;
-    return `#${numericId.toString().padStart(4, '0')}`;
-  };
-  
+const ReceiptsTab: React.FC<ReceiptsTabProps> = ({
+  receipts,
+  openReceiptModal,
+  renderReceiptStatus,
+}) => {
   return (
     <div className="bg-[#141414] rounded-lg p-4">
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>ID</TableHead>
               <TableHead>Data</TableHead>
               <TableHead>Equipamento</TableHead>
-              <TableHead>Produção</TableHead>
               <TableHead>Responsável</TableHead>
+              <TableHead>Produção</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
@@ -53,37 +42,34 @@ const ReceiptsTab = ({ receipts, openReceiptModal, renderReceiptStatus }: Receip
           <TableBody>
             {receipts.map((receipt) => (
               <TableRow key={receipt.id}>
-                <TableCell>{formatID(receipt.id)}</TableCell>
                 <TableCell>
-                  {receipt.withdrawal_date 
-                    ? format(new Date(receipt.withdrawal_date), "dd/MM/yyyy", { locale: ptBR })
-                    : "N/A"}
+                  {receipt.withdrawal_date && format(new Date(receipt.withdrawal_date), "dd/MM/yyyy", { locale: ptBR })}
                 </TableCell>
-                <TableCell>{receipt.equipment?.name || "N/A"}</TableCell>
+                <TableCell>{receipt.equipment?.name || receipt.equipment_id}</TableCell>
+                <TableCell>{receipt.user?.full_name || receipt.user_id}</TableCell>
                 <TableCell>
-                  {receipt.is_personal_use 
-                    ? "Uso Pessoal" 
-                    : receipt.production 
-                      ? formatID(receipt.production.id)
-                      : "N/A"}
+                  {receipt.is_personal_use ? (
+                    <span className="text-gray-400">Uso Pessoal</span>
+                  ) : (
+                    receipt.production?.title || <span className="text-gray-400">Sem produção</span>
+                  )}
                 </TableCell>
-                <TableCell>{receipt.user?.full_name || "N/A"}</TableCell>
                 <TableCell>{renderReceiptStatus(receipt.status)}</TableCell>
                 <TableCell className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="icon"
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
                     onClick={() => openReceiptModal(receipt)}
-                    className="h-8 w-8 rounded-full hover:bg-gray-700"
+                    className="hover:bg-[#141414]"
                   >
-                    <ReceiptText className="h-4 w-4" />
+                    <Info className="h-4 w-4 text-[#ff3335]" />
                   </Button>
                 </TableCell>
               </TableRow>
             ))}
             {receipts.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-gray-500 py-8">
+                <TableCell colSpan={6} className="text-center text-gray-500 py-8">
                   Nenhum recibo encontrado
                 </TableCell>
               </TableRow>
