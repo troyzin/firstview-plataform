@@ -2,111 +2,31 @@ import React, { useState, useEffect } from "react";
 import { Plus, Search, Filter, Package, Calendar, LogOut, CheckCircle, AlertTriangle, ShoppingCart, History, Users, Edit, ArrowLeft, FileText, Info, Receipt, ReceiptText } from "lucide-react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { Textarea } from "@/components/ui/textarea";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { cn } from "@/lib/utils";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import EquipmentModal from "@/components/equipment/EquipmentModal";
-import ReceiptModal from "@/components/equipment/ReceiptModal";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
-import { Receipt as ReceiptType } from "@/types/equipment";
+import { Receipt as ReceiptType, Equipment as EquipmentType, HistoryEvent } from "@/types/equipment";
 import SchedulesList from "@/components/equipment/SchedulesList";
 import WithdrawalsList from "@/components/equipment/WithdrawalsList";
+import EquipmentModal from "@/components/equipment/EquipmentModal";
+import ReceiptModal from "@/components/equipment/ReceiptModal";
 
-// Tipo de equipamento
-type Equipment = {
-  id: string;
-  name: string;
-  category: string;
-  status: string;
-  serial_number?: string;
-  acquisition_date?: string;
-  notes?: string;
-  image_url?: string;
-  quantity: number;
-  brand?: string;
-  model?: string;
-};
-
-// Tipo de registro de uso
-type UsageRecord = {
-  id: string;
-  equipmentId: string;
-  equipmentName: string;
-  startDate: Date;
-  endDate: Date;
-  productionId?: string;
-  productionName?: string;
-  responsibleName: string;
-  status: "scheduled" | "in_progress" | "returned" | "overdue";
-  notes?: string;
-  returnedDate?: Date;
-};
-
-// Tipo para histórico de eventos
-type HistoryEvent = {
-  id: string;
-  equipmentId: string;
-  equipmentName: string;
-  eventType: "checkout" | "return" | "schedule" | "maintenance";
-  date: Date;
-  responsibleName: string;
-  productionName?: string;
-  notes?: string;
-};
+// Component imports
+import EquipmentHeader from "@/components/equipment/EquipmentHeader";
+import EquipmentStats from "@/components/equipment/EquipmentStats";
+import StatusTables from "@/components/equipment/StatusTables";
+import InventoryTab from "@/components/equipment/InventoryTab";
+import HistoryTab from "@/components/equipment/HistoryTab";
+import ReceiptsTab from "@/components/equipment/ReceiptsTab";
 
 // Dados de exemplo para produções
 const productionOptions = [
@@ -117,7 +37,7 @@ const productionOptions = [
 ];
 
 // Função para buscar equipamentos do Supabase
-const fetchEquipments = async (): Promise<Equipment[]> => {
+const fetchEquipments = async (): Promise<EquipmentType[]> => {
   const { data, error } = await supabase
     .from("equipment")
     .select("*")
@@ -209,8 +129,8 @@ const Equipment = () => {
   // Estados para modais
   const [isNewEquipmentModalOpen, setIsNewEquipmentModalOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
-  const [equipmentToEdit, setEquipmentToEdit] = useState<Equipment | null>(null);
+  const [selectedEquipment, setSelectedEquipment] = useState<EquipmentType | null>(null);
+  const [equipmentToEdit, setEquipmentToEdit] = useState<EquipmentType | null>(null);
   
   // Estados para os novos modais
   const [isKitModalOpen, setIsKitModalOpen] = useState(false);
@@ -323,9 +243,14 @@ const Equipment = () => {
   });
   
   // Manipuladores de eventos
-  const handleEditEquipment = (equipment: Equipment) => {
+  const handleEditEquipment = (equipment: EquipmentType) => {
     setEquipmentToEdit(equipment);
     setIsNewEquipmentModalOpen(true);
+  };
+
+  const confirmDeleteEquipment = (equipment: EquipmentType) => {
+    setSelectedEquipment(equipment);
+    setIsDeleteConfirmOpen(true);
   };
 
   const handleDeleteEquipment = async () => {
@@ -424,7 +349,7 @@ const Equipment = () => {
   };
 
   // Função para abrir o modal de retirada
-  const openCheckoutModal = (equipment: Equipment) => {
+  const openCheckoutModal = (equipment: EquipmentType) => {
     if (equipment.status !== "disponível") {
       toast.error("Este equipamento não está disponível para retirada");
       return;
@@ -493,7 +418,7 @@ const Equipment = () => {
   };
 
   // Função para abrir o modal de devolução
-  const openReturnModal = (equipment: Equipment) => {
+  const openReturnModal = (equipment: EquipmentType) => {
     if (equipment.status !== "em uso") {
       toast.error("Este equipamento não está em uso para ser devolvido");
       return;
@@ -618,7 +543,7 @@ const Equipment = () => {
     setIsKitModalOpen(true);
   };
   
-  const openScheduleModal = (equipment: Equipment) => {
+  const openScheduleModal = (equipment: EquipmentType) => {
     setSelectedEquipment(equipment);
     setIsScheduleModalOpen(true);
   };
@@ -644,7 +569,7 @@ const Equipment = () => {
     setIsReceiptModalOpen(false);
   };
 
-  // Update the closeKitModal function
+  // Função para fechar o modal de kit
   const closeKitModal = () => {
     setIsKitModalOpen(false);
   };
@@ -658,179 +583,36 @@ const Equipment = () => {
     return withdrawalForEquipment?.production?.title || 'Uso Pessoal';
   };
 
+  // Função para abrir modal de novo equipamento
+  const openNewEquipmentModal = () => {
+    setEquipmentToEdit(null);
+    setIsNewEquipmentModalOpen(true);
+  };
+
   return (
     <MainLayout>
       <div className="flex flex-col h-full">
+        <EquipmentHeader 
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          openKitModal={openKitModal}
+          openNewEquipmentModal={openNewEquipmentModal}
+        />
         
-        <div className="flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
-          <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-            <h1 className="text-2xl font-bold">Equipamentos</h1>
-            
-            <div className="flex items-center bg-[#141414] rounded-md px-3 py-2 w-full md:w-auto">
-              <Search className="h-5 w-5 text-gray-400 mr-2" />
-              <Input
-                placeholder="Buscar equipamentos..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full md:w-60"
-              />
-            </div>
-            
-            <Button variant="outline" className="bg-[#141414] border-gray-700 w-full md:w-auto">
-              <Filter className="h-4 w-4 mr-2" />
-              Filtros
-            </Button>
-          </div>
-          
-          <div className="flex space-x-3 w-full md:w-auto">
-            <Button 
-              variant="secondary"
-              className="w-full md:w-auto bg-blue-600 hover:bg-blue-700"
-              onClick={openKitModal}
-            >
-              <ShoppingCart className="h-4 w-4 mr-2" />
-              Retirar KIT
-            </Button>
-            <Button 
-              onClick={() => {
-                setEquipmentToEdit(null);
-                setIsNewEquipmentModalOpen(true);
-              }} 
-              className="bg-[#ff3335] hover:bg-red-700 w-full md:w-auto"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Equipamento
-            </Button>
-          </div>
-        </div>
+        <EquipmentStats 
+          total={equipmentStats.total}
+          available={equipmentStats.available}
+          inUse={equipmentStats.inUse}
+          maintenance={equipmentStats.maintenance}
+        />
         
-        {/* Dashboard de Status */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-[#141414] rounded-lg p-4 flex items-center justify-between">
-            <div>
-              <p className="text-gray-400 text-sm">Total de Equipamentos</p>
-              <p className="text-2xl font-bold">{equipmentStats.total}</p>
-            </div>
-            <Package className="h-8 w-8 text-gray-500" />
-          </div>
-          
-          <div className="bg-[#141414] rounded-lg p-4 flex items-center justify-between">
-            <div>
-              <p className="text-gray-400 text-sm">Disponíveis</p>
-              <p className="text-2xl font-bold text-green-500">{equipmentStats.available}</p>
-            </div>
-            <CheckCircle className="h-8 w-8 text-green-500" />
-          </div>
-          
-          <div className="bg-[#141414] rounded-lg p-4 flex items-center justify-between">
-            <div>
-              <p className="text-gray-400 text-sm">Em Uso</p>
-              <p className="text-2xl font-bold text-[#ff3335]">{equipmentStats.inUse}</p>
-            </div>
-            <Users className="h-8 w-8 text-[#ff3335]" />
-          </div>
-          
-          <div className="bg-[#141414] rounded-lg p-4 flex items-center justify-between">
-            <div>
-              <p className="text-gray-400 text-sm">Em Manutenção</p>
-              <p className="text-2xl font-bold text-yellow-500">{equipmentStats.maintenance}</p>
-            </div>
-            <AlertTriangle className="h-8 w-8 text-yellow-500" />
-          </div>
-        </div>
-        
-        {/* Lista de equipamentos em uso e disponíveis */}
-        <div className="mb-6">
-          <h2 className="text-lg font-medium mb-3">Status de Disponibilidade</h2>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Tabela de equipamentos em uso */}
-            <div className="bg-[#141414] rounded-lg p-4">
-              <h3 className="text-md font-medium mb-2 text-[#ff3335]">Equipamentos em Uso</h3>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Equipamento</TableHead>
-                      <TableHead>Produção</TableHead>
-                      <TableHead className="text-right">Recibo</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {equipments
-                      .filter(e => e.status === "em uso")
-                      .map(equipment => {
-                        const receipt = receipts.find(
-                          r => r.equipment?.id === equipment.id && r.status === 'withdrawn'
-                        );
-                        
-                        return (
-                          <TableRow key={`in-use-${equipment.id}`}>
-                            <TableCell>{equipment.name}</TableCell>
-                            <TableCell>
-                              {findEquipmentProduction(equipment.id)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {receipt && (
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon"
-                                  onClick={() => openReceiptModal(receipt)}
-                                  className="h-8 w-8 rounded-full hover:bg-gray-700"
-                                >
-                                  <ReceiptText className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    {equipments.filter(e => e.status === "em uso").length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={3} className="text-center text-gray-500">
-                          Nenhum equipamento em uso
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-            
-            {/* Tabela de equipamentos disponíveis */}
-            <div className="bg-[#141414] rounded-lg p-4">
-              <h3 className="text-md font-medium mb-2 text-green-400">Equipamentos Disponíveis</h3>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Equipamento</TableHead>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead className="text-right">Quantidade</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {equipments
-                      .filter(e => e.status === "disponível")
-                      .map(equipment => (
-                        <TableRow key={`available-${equipment.id}`}>
-                          <TableCell>{equipment.name}</TableCell>
-                          <TableCell>{renderEquipmentType(equipment.category || '')}</TableCell>
-                          <TableCell className="text-right">{equipment.quantity}</TableCell>
-                        </TableRow>
-                      ))}
-                    {equipments.filter(e => e.status === "disponível").length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={3} className="text-center text-gray-500">
-                          Nenhum equipamento disponível
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-          </div>
-        </div>
+        <StatusTables 
+          equipments={equipments}
+          receipts={receipts}
+          openReceiptModal={openReceiptModal}
+          findEquipmentProduction={findEquipmentProduction}
+          renderEquipmentType={renderEquipmentType}
+        />
         
         <Tabs defaultValue="inventory" value={currentTab} onValueChange={setCurrentTab} className="w-full">
           <TabsList className="mb-4 flex overflow-x-auto md:flex-nowrap">
@@ -840,18 +622,61 @@ const Equipment = () => {
             <TabsTrigger value="history">Histórico</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="inventory" className="space-y-4">
-            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 mb-4">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[180px] bg-[#141414] border-gray-700">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent className="bg-[#141414] border-gray-700">
-                  <SelectItem value="all">Todos os Status</SelectItem>
-                  <SelectItem value="available">Disponível</SelectItem>
-                  <SelectItem value="in_use">Em Uso</SelectItem>
-                  <SelectItem value="maintenance">Manutenção</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <TabsContent value="inventory">
+            <InventoryTab 
+              statusFilter={statusFilter}
+              setStatusFilter={setStatusFilter}
+              typeFilter={typeFilter}
+              setTypeFilter={setTypeFilter}
+              filteredEquipments={filteredEquipments}
+              handleEditEquipment={handleEditEquipment}
+              handleDeleteEquipment={confirmDeleteEquipment}
+              renderStatus={renderStatus}
+              renderEquipmentType={renderEquipmentType}
+              openCheckoutModal={openCheckoutModal}
+              openReturnModal={openReturnModal}
+              openScheduleModal={openScheduleModal}
+            />
+          </TabsContent>
+          
+          <TabsContent value="schedules">
+            <SchedulesList equipmentId={selectedEquipment?.id} />
+          </TabsContent>
+          
+          <TabsContent value="receipts">
+            <ReceiptsTab 
+              receipts={filteredReceipts}
+              openReceiptModal={openReceiptModal}
+              renderReceiptStatus={renderReceiptStatus}
+            />
+          </TabsContent>
+          
+          <TabsContent value="history">
+            <HistoryTab 
+              historyEvents={filteredHistoryEvents}
+              renderEventType={renderEventType}
+            />
+          </TabsContent>
+        </Tabs>
+      </div>
+      
+      {/* Modals */}
+      <EquipmentModal 
+        open={isNewEquipmentModalOpen}
+        onOpenChange={setIsNewEquipmentModalOpen}
+        equipmentToEdit={equipmentToEdit}
+        refetchEquipments={refetch}
+      />
+      
+      <ReceiptModal
+        open={isReceiptModalOpen}
+        onOpenChange={closeReceiptModal}
+        receipt={selectedReceipt}
+      />
+      
+      {/* Other modals would go here */}
+    </MainLayout>
+  );
+};
+
+export default Equipment;

@@ -1,105 +1,91 @@
-
-export interface ScheduleModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  equipmentId: string;
-  equipmentName?: string;
-  scheduleToEdit?: EquipmentSchedule;
-  onSuccess: () => void;
-  isScheduling?: boolean;  // Add this to distinguish between scheduling and withdrawal
-}
-
-export interface WithdrawalType {
+export interface Equipment {
   id: string;
-  formatted_id: string;  // For #0001 format
+  name: string;
+  category: string;
+  status: string;
+  serial_number?: string;
+  acquisition_date?: string;
+  notes?: string;
+  image_url?: string;
+  quantity: number;
+  brand?: string;
+  model?: string;
 }
 
-export interface ReturnModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  equipmentId?: string;
-  equipmentName?: string;
-  equipmentWithdrawal?: EquipmentWithdrawal;
-  onSuccess: () => void;
-  withdrawalType?: 'schedule' | 'immediate';
+export interface UsageRecord {
+  id: string;
+  equipmentId: string;
+  equipmentName: string;
+  startDate: Date;
+  endDate: Date;
+  productionId?: string;
+  productionName?: string;
+  responsibleName: string;
+  status: "scheduled" | "in_progress" | "returned" | "overdue";
+  notes?: string;
+  returnedDate?: Date;
 }
 
-export interface ReceiptModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  withdrawal?: any;  // We'll keep this for backward compatibility
-  receipt?: Receipt;  // Add this new property
+export interface HistoryEvent {
+  id: string;
+  equipmentId: string;
+  equipmentName: string;
+  eventType: "checkout" | "return" | "schedule" | "maintenance";
+  date: Date;
+  responsibleName: string;
+  productionName?: string;
+  notes?: string;
 }
 
 export interface Receipt {
   id: string;
   withdrawal_date: string;
-  equipment: {
-    name: string;
-    id: string;
-  };
-  user: {
-    full_name: string;
-    id: string;
-  };
-  production?: {
-    title: string;
-    id: string;
-  } | null;
-  expected_return_date: string;
-  is_personal_use: boolean;
-  notes: string | null;
-  created_at: string;
-  return_notes: string | null;
-  returned_date: string | null;
-  status: "withdrawn" | "overdue" | "returned" | "returned_late";
-}
-
-export interface EquipmentSchedule {
-  id: string;
   equipment_id: string;
-  user_id: string;
-  production_id?: string | null;
-  start_date: string;
-  end_date: string;
-  notes: string | null;
-  created_at: string | null;
   equipment?: {
     id: string;
     name: string;
   };
+  user_id: string;
   user?: {
     id: string;
     full_name: string;
   };
+  production_id: string;
   production?: {
     id: string;
     title: string;
-  } | null;
+  };
+  expected_return_date: string;
+  returned_date?: string;
+  is_personal_use: boolean;
+  notes?: string;
+  status: "withdrawn" | "overdue" | "returned" | "returned_late";
+  created_at: string;
 }
 
 export interface EquipmentWithdrawal {
   id: string;
+  withdrawal_date: string;
   equipment_id: string;
-  user_id: string;
-  production_id?: string | null;
-  withdrawal_date: string | null;
-  expected_return_date: string;
-  returned_date: string | null;
-  status: "withdrawn" | "overdue" | "returned" | "returned_late";
-  notes: string | null;
-  is_personal_use: boolean | null;
   equipment?: {
     id: string;
     name: string;
   };
+  user_id: string;
   user?: {
     id: string;
     full_name: string;
   };
+  production_id: string;
   production?: {
     id: string;
     title: string;
-  } | null;
-  is_scheduled?: boolean;
+  };
+  expected_return_date: string;
+  returned_date?: string;
+  is_personal_use: boolean;
+  notes?: string;
+  status: "withdrawn" | "overdue" | "returned" | "returned_late";
+  created_at: string;
+  is_scheduled: boolean;
 }
