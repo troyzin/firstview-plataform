@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Plus, Search, Filter, Package, Calendar, LogOut, CheckCircle, AlertTriangle, ShoppingCart, History, Users, Edit, ArrowLeft, FileText, Info, Receipt, ReceiptText } from "lucide-react";
 import MainLayout from "@/components/layout/MainLayout";
@@ -16,7 +17,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { Receipt as ReceiptType, Equipment as EquipmentType, HistoryEvent } from "@/types/equipment";
 import SchedulesList from "@/components/equipment/SchedulesList";
-import WithdrawalsList from "@/components/equipment/WithdrawalList";
+import WithdrawalsList from "@/components/equipment/WithdrawalsList";
 import EquipmentModal from "@/components/equipment/EquipmentModal";
 import ReceiptModal from "@/components/equipment/ReceiptModal";
 import { WithdrawalModal } from "@/components/equipment/WithdrawalModal";
