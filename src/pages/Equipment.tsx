@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Plus, Search, Filter, Package, Calendar, LogOut, CheckCircle, AlertTriangle, ShoppingCart, History, Users, Edit, ArrowLeft, FileText, Info, Receipt, ReceiptText } from "lucide-react";
 import MainLayout from "@/components/layout/MainLayout";
@@ -23,14 +22,6 @@ import ReceiptModal from "@/components/equipment/ReceiptModal";
 import { WithdrawalModal } from "@/components/equipment/WithdrawalModal";
 import { ReturnModal } from "@/components/equipment/ReturnModal";
 import { ScheduleModal } from "@/components/equipment/ScheduleModal";
-
-// Component imports
-import EquipmentHeader from "@/components/equipment/EquipmentHeader";
-import EquipmentStats from "@/components/equipment/EquipmentStats";
-import StatusTables from "@/components/equipment/StatusTables";
-import InventoryTab from "@/components/equipment/InventoryTab";
-import HistoryTab from "@/components/equipment/HistoryTab";
-import ReceiptsTab from "@/components/equipment/ReceiptsTab";
 
 // Função para buscar equipamentos do Supabase
 const fetchEquipments = async (): Promise<EquipmentType[]> => {
@@ -490,14 +481,8 @@ const Equipment = () => {
     setIsReturnModalOpen(false);
   };
 
-  // Função para agendar um equipamento
   const openScheduleModal = (equipment: EquipmentType) => {
-    setSelectedEquipment(equipment);
-    setSelectedDate(new Date());
-    setScheduleEndDate(new Date());
-    setSelectedProduction("");
-    setScheduleNotes("");
-    setIsScheduleModalOpen(true);
+    toast.error('Agendamentos temporariamente desativados');
   };
 
   const closeScheduleModal = () => {
