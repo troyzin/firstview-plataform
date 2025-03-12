@@ -12,13 +12,41 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { HistoryEvent } from "@/types/equipment";
+import { useEquipmentHistory } from "@/hooks/useEquipmentHistory";
+import { LogOut, CheckCircle } from "lucide-react";
 
-type HistoryTabProps = {
-  historyEvents: HistoryEvent[];
-  renderEventType: (eventType: HistoryEvent["eventType"]) => React.ReactNode;
-};
+const HistoryTab = () => {
+  const { data: historyEvents = [], isLoading } = useEquipmentHistory();
 
-const HistoryTab = ({ historyEvents, renderEventType }: HistoryTabProps) => {
+  const renderEventType = (eventType: HistoryEvent["eventType"]) => {
+    switch (eventType) {
+      case "checkout":
+        return (
+          <Badge variant="red" className="flex gap-1 items-center">
+            <LogOut className="h-3 w-3" />
+            Retirada
+          </Badge>
+        );
+      case "return":
+        return (
+          <Badge variant="green" className="flex gap-1 items-center">
+            <CheckCircle className="h-3 w-3" />
+            Devolução
+          </Badge>
+        );
+      default:
+        return <Badge>Desconhecido</Badge>;
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-48 text-gray-400">
+        Carregando histórico...
+      </div>
+    );
+  }
+
   return (
     <div className="bg-[#141414] rounded-lg p-4">
       <div className="overflow-x-auto">

@@ -27,6 +27,7 @@ import StatusTables from "@/components/equipment/StatusTables";
 import InventoryTab from "@/components/equipment/InventoryTab";
 import HistoryTab from "@/components/equipment/HistoryTab";
 import ReceiptsTab from "@/components/equipment/ReceiptsTab";
+import { KitWithdrawalModal } from "@/components/equipment/KitWithdrawalModal";
 
 // Função para buscar equipamentos do Supabase
 const fetchEquipments = async (): Promise<EquipmentType[]> => {
@@ -628,17 +629,14 @@ const Equipment = () => {
         </>
       )}
 
-      {/* Modal para retirada de Kit */}
-      <WithdrawalModal 
+      {/* Modal for Kit Withdrawal */}
+      <KitWithdrawalModal 
         isOpen={isKitModalOpen}
-        onClose={closeKitModal}
-        equipmentId=""
-        equipmentName="Kit de Equipamentos"
+        onClose={() => setIsKitModalOpen(false)}
         onSuccess={() => {
           refetch();
           refetchReceipts();
         }}
-        isPersonalUse={false}
       />
     </MainLayout>
   );
