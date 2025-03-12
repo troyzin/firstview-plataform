@@ -2,139 +2,105 @@
 import React, { useState } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import StatCard from "@/components/dashboard/StatCard";
-import WorkloadCard from "@/components/dashboard/WorkloadCard";
 import DeadlineCard from "@/components/dashboard/DeadlineCard";
-import KanbanBoard from "@/components/kanban/KanbanBoard";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { FilterIcon, PlusIcon } from "lucide-react";
 import ProductionModal from "@/components/productions/ProductionModal";
 import { useNavigate } from "react-router-dom";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import TodayProductions from "@/components/dashboard/TodayProductions";
+import ProductionsRanking from "@/components/dashboard/ProductionsRanking";
+import { useDashboardData } from "@/hooks/useDashboardData";
 
 const Dashboard = () => {
   const [filter, setFilter] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { 
+    productionsCount, 
+    todayProductions, 
+    topProductions, 
+    isLoading,
+    error 
+  } = useDashboardData();
   const navigate = useNavigate();
 
   const stats = [
     {
       title: "Total de Produções",
-      value: "32",
+      value: productionsCount.toString(),
       icon: "movie",
       color: "red" as const,
-      trend: { value: "+12%", label: "em relação ao mês anterior", positive: true },
+      trend: { value: "Mês Atual", label: "", neutral: true },
     },
     {
-      title: "Em Produção",
-      value: "14",
-      icon: "pending",
-      color: "blue" as const,
-      trend: { value: "5", label: "com prazo próximo", neutral: true },
-    },
-    {
-      title: "Tempo Médio de Edição",
-      value: "3.2 dias",
+      title: "Tempo Médio de Edição do Time",
+      value: "--",
       icon: "timer",
       color: "yellow" as const,
-      trend: { value: "+0.5 dias", label: "comparado ao último mês", negative: true },
+      trend: { value: "Em breve", label: "", neutral: true },
     },
     {
       title: "Taxa de Entrega no Prazo",
-      value: "92%",
+      value: "--",
       icon: "done_all",
       color: "green" as const,
-      trend: { value: "+5%", label: "em relação ao mês anterior", positive: true },
+      trend: { value: "Em breve", label: "", neutral: true },
     },
   ];
 
-  const workloads = [
-    { name: "Filipe Silva", initials: "FS", current: 2, max: 4 },
-    { name: "Arthur Fernandes", initials: "AF", current: 3, max: 4 },
-    { name: "João Gustavo", initials: "JG", current: 4, max: 4 },
-    { name: "Iago Tarangino", initials: "IT", current: 1, max: 4 },
-    { name: "Matheus Worish", initials: "MW", current: 3, max: 4 },
-  ];
-
-  const deadlines = [
-    {
-      title: "Campanha Nova Marca",
-      dueDate: "Vence em 2 dias",
-      priority: "high" as const,
-      status: "pending" as const,
-    },
-    {
-      title: "Documentário",
-      dueDate: "Atrasado por 1 dia",
-      priority: "medium" as const,
-      status: "overdue" as const,
-    },
-    {
-      title: "Teaser Evento",
-      dueDate: "Vence em 5 dias",
-      priority: "low" as const,
-      status: "pending" as const,
-    },
-  ];
-
-  const handleAddProduction = (production: any) => {
-    // Aqui você pode adicionar lógica para salvar a produção
-    // Por enquanto, vamos apenas navegar para a página de produções após criar
+  const handleAddProduction = () => {
     navigate('/productions');
   };
 
+  const handleFilterChange = (newFilter: string) => {
+    setFilter(newFilter);
+  };
+
+  // Add a timeout to prevent infinite loading states
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+  
+  React.useEffect(() => {
+    // If still loading after 10 seconds, show the dashboard anyway
+    const timer = setTimeout(() => {
+      if (isLoading) {
+        setLoadingTimeout(true);
+      }
+    }, 10000);
+    
+    return () => clearTimeout(timer);
+  }, [isLoading]);
+
+  // Either timed out or finished loading
+  if (isLoading && !loadingTimeout) {
+    return (
+      <MainLayout>
+        <div className="flex justify-center items-center h-full py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-600 mr-2"></div>
+          <p>Carregando...</p>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  // Show error state if there was an error
+  if (error && !loadingTimeout) {
+    return (
+      <MainLayout>
+        <div className="flex flex-col justify-center items-center h-full py-12 text-center">
+          <div className="text-red-600 text-2xl mb-2">⚠️</div>
+          <p className="text-lg font-medium mb-2">Não foi possível carregar os dados</p>
+          <p className="text-sm text-gray-500">{error.message}</p>
+        </div>
+      </MainLayout>
+    );
+  }
+
   return (
     <MainLayout>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold">Dashboard</h2>
-        <div className="flex space-x-4">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="secondary" className="bg-gray-800 text-white hover:bg-gray-700">
-                <FilterIcon className="mr-2 h-4 w-4" />
-                Filtrar
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700">
-              <DropdownMenuItem 
-                className="hover:bg-gray-700"
-                onClick={() => setFilter("all")}
-              >
-                Todos os projetos
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                className="hover:bg-gray-700"
-                onClick={() => setFilter("mine")}
-              >
-                Meus projetos
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                className="hover:bg-gray-700"
-                onClick={() => setFilter("late")}
-              >
-                Em atraso
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                className="hover:bg-gray-700"
-                onClick={() => setFilter("completed")}
-              >
-                Concluídos
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+      <DashboardHeader 
+        onFilterChange={handleFilterChange}
+        onAddProduction={() => setIsModalOpen(true)}
+      />
 
-          <Button className="bg-red-600 hover:bg-red-700" onClick={() => setIsModalOpen(true)}>
-            <PlusIcon className="mr-2 h-4 w-4" />
-            Nova Produção
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         {stats.map((stat, index) => (
           <StatCard key={index} {...stat} />
         ))}
@@ -142,19 +108,15 @@ const Dashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <div className="bg-gray-900 rounded-lg p-6">
-            <h3 className="text-lg font-semibold mb-4">Hoje</h3>
-            <KanbanBoard />
-          </div>
+          <TodayProductions productions={todayProductions} />
         </div>
 
         <div className="space-y-6">
-          <WorkloadCard workloads={workloads} />
-          <DeadlineCard deadlines={deadlines} />
+          <ProductionsRanking productions={topProductions} />
+          <DeadlineCard deadlines={[]} />
         </div>
       </div>
 
-      {/* Modal para nova produção */}
       <ProductionModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

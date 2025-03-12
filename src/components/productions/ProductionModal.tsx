@@ -1,4 +1,3 @@
-
 import React from "react";
 import { X, Calendar, Clock, Users, FileText, MapPin, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
@@ -30,6 +29,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Label } from "../ui/label";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 type TeamMember = {
   id: string;
@@ -49,7 +49,7 @@ type Production = {
   briefingFile: string | null;
   teamMembers: TeamMember[];
   createdAt: Date;
-}
+};
 
 type ProductionModalProps = {
   isOpen: boolean;
@@ -68,6 +68,11 @@ const ProductionModal = ({
   editMode = false,
   production
 }: ProductionModalProps) => {
+  const { hasAction } = useAuth();
+  const canEdit = hasAction('edit_production');
+  const canAdd = hasAction('add_production');
+  const canCancel = hasAction('cancel_production');
+
   const [productionName, setProductionName] = React.useState("");
   const [clientName, setClientName] = React.useState("");
   const [date, setDate] = React.useState<Date | undefined>(new Date());
@@ -80,7 +85,6 @@ const ProductionModal = ({
   const [selectedMember, setSelectedMember] = React.useState("");
   const [newMemberRole, setNewMemberRole] = React.useState("filmmaker");
 
-  // Membros pré-cadastrados
   const availableTeamMembers = [
     { id: "1", name: "Filipe Silva" },
     { id: "2", name: "Joao Gustavo" },
@@ -98,7 +102,6 @@ const ProductionModal = ({
     { value: "storymaker", label: "Storymaker" },
   ];
 
-  // Inicializar dados se estiver em modo de edição
   React.useEffect(() => {
     if (editMode && production) {
       setProductionName(production.name);
@@ -120,7 +123,6 @@ const ProductionModal = ({
     const memberToAdd = availableTeamMembers.find(m => m.id === selectedMember);
     if (!memberToAdd) return;
     
-    // Verificar se o membro já está na equipe
     if (teamMembers.some(member => member.id === memberToAdd.id)) {
       toast.error("Este membro já foi adicionado à equipe");
       return;
@@ -147,6 +149,12 @@ const ProductionModal = ({
   };
 
   const handleSubmit = () => {
+    if ((editMode && !canEdit) || (!editMode && !canAdd)) {
+      toast.error("Você não tem permissão para realizar esta ação");
+      onClose();
+      return;
+    }
+
     const productionData = {
       id: editMode && production ? production.id : Date.now().toString(),
       name: productionName,
@@ -168,6 +176,11 @@ const ProductionModal = ({
   };
 
   const handleDelete = () => {
+    if (!canCancel) {
+      toast.error("Você não tem permissão para cancelar produções");
+      return;
+    }
+
     if (onDelete && production) {
       onDelete(production.id);
       toast.success("Produção cancelada com sucesso!");
@@ -188,6 +201,8 @@ const ProductionModal = ({
     setSelectedMember("");
     setNewMemberRole("filmmaker");
   };
+
+  const isFormDisabled = (editMode && !canEdit) || (!editMode && !canAdd);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -215,6 +230,7 @@ const ProductionModal = ({
                 className="bg-gray-800 border-gray-700"
                 placeholder="Nome da produção"
                 required
+                disabled={isFormDisabled}
               />
             </div>
             
@@ -229,6 +245,7 @@ const ProductionModal = ({
                 className="bg-gray-800 border-gray-700"
                 placeholder="Nome do cliente"
                 required
+                disabled={isFormDisabled}
               />
             </div>
             
@@ -244,6 +261,7 @@ const ProductionModal = ({
                       "w-full justify-start text-left font-normal bg-gray-800 border-gray-700",
                       !date && "text-muted-foreground"
                     )}
+                    disabled={isFormDisabled}
                   >
                     <Calendar className="mr-2 h-4 w-4" />
                     {date ? format(date, "dd/MM/yyyy") : <span>Escolha uma data</span>}
@@ -256,6 +274,7 @@ const ProductionModal = ({
                     onSelect={setDate}
                     initialFocus
                     className="p-3 pointer-events-auto"
+                    disabled={isFormDisabled}
                   />
                 </PopoverContent>
               </Popover>
@@ -274,6 +293,7 @@ const ProductionModal = ({
                     value={startTime}
                     onChange={(e) => setStartTime(e.target.value)}
                     className="bg-gray-800 border-gray-700 pl-10"
+                    disabled={isFormDisabled}
                   />
                 </div>
               </div>
@@ -290,6 +310,7 @@ const ProductionModal = ({
                     value={endTime}
                     onChange={(e) => setEndTime(e.target.value)}
                     className="bg-gray-800 border-gray-700 pl-10"
+                    disabled={isFormDisabled}
                   />
                 </div>
               </div>
@@ -307,6 +328,7 @@ const ProductionModal = ({
                   onChange={(e) => setLocation(e.target.value)}
                   className="bg-gray-800 border-gray-700 pl-10"
                   placeholder="Endereço do local"
+                  disabled={isFormDisabled}
                 />
               </div>
             </div>
@@ -320,6 +342,7 @@ const ProductionModal = ({
                 type="file"
                 onChange={handleFileChange}
                 className="bg-gray-800 border-gray-700"
+                disabled={isFormDisabled}
               />
               {(briefingFile || (production && production.briefingFile)) && (
                 <p className="text-xs mt-1 text-gray-400">
@@ -335,7 +358,7 @@ const ProductionModal = ({
                 Adicionar Equipe
               </label>
               <div className="flex gap-2 mb-2">
-                <Select value={selectedMember} onValueChange={setSelectedMember}>
+                <Select value={selectedMember} onValueChange={setSelectedMember} disabled={isFormDisabled}>
                   <SelectTrigger className="bg-gray-800 border-gray-700">
                     <SelectValue placeholder="Selecionar membro" />
                   </SelectTrigger>
@@ -347,7 +370,7 @@ const ProductionModal = ({
                     ))}
                   </SelectContent>
                 </Select>
-                <Select value={newMemberRole} onValueChange={setNewMemberRole}>
+                <Select value={newMemberRole} onValueChange={setNewMemberRole} disabled={isFormDisabled}>
                   <SelectTrigger className="w-[180px] bg-gray-800 border-gray-700">
                     <SelectValue placeholder="Função" />
                   </SelectTrigger>
@@ -359,7 +382,7 @@ const ProductionModal = ({
                     ))}
                   </SelectContent>
                 </Select>
-                <Button type="button" onClick={handleAddTeamMember} size="icon">
+                <Button type="button" onClick={handleAddTeamMember} size="icon" disabled={isFormDisabled}>
                   +
                 </Button>
               </div>
@@ -386,6 +409,7 @@ const ProductionModal = ({
                         size="icon"
                         onClick={() => handleRemoveTeamMember(member.id)}
                         className="h-6 w-6"
+                        disabled={isFormDisabled}
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -405,6 +429,7 @@ const ProductionModal = ({
                 onChange={(e) => setNotes(e.target.value)}
                 className="bg-gray-800 border-gray-700 min-h-[150px]"
                 placeholder="Informações adicionais sobre a produção..."
+                disabled={isFormDisabled}
               />
             </div>
           </div>
@@ -412,7 +437,7 @@ const ProductionModal = ({
         
         <DialogFooter className="flex justify-between">
           <div className="flex space-x-2">
-            {editMode && onDelete && (
+            {editMode && onDelete && canCancel && (
               <Button 
                 variant="destructive" 
                 onClick={handleDelete}
@@ -431,7 +456,7 @@ const ProductionModal = ({
             </DialogClose>
             <Button 
               onClick={handleSubmit}
-              disabled={!productionName || !clientName || !date || !startTime || !endTime}
+              disabled={!productionName || !clientName || !date || !startTime || !endTime || isFormDisabled}
               className="bg-red-600 hover:bg-red-700"
             >
               Salvar Produção
