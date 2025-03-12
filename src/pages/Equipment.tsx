@@ -257,17 +257,6 @@ const Equipment = () => {
     if (!selectedEquipment) return;
 
     try {
-      // Se houver uma imagem, exclui do storage
-      if (selectedEquipment.image_url) {
-        const imagePath = selectedEquipment.image_url.split('/').pop();
-        if (imagePath) {
-          await supabase.storage
-            .from('equipment')
-            .remove([imagePath]);
-        }
-      }
-
-      // Exclui o equipamento do banco de dados
       const { error } = await supabase
         .from('equipment')
         .delete()
@@ -662,15 +651,15 @@ const Equipment = () => {
       
       {/* Modals */}
       <EquipmentModal 
-        open={isNewEquipmentModalOpen}
-        onOpenChange={setIsNewEquipmentModalOpen}
-        equipmentToEdit={equipmentToEdit}
-        refetchEquipments={refetch}
+        isOpen={isNewEquipmentModalOpen}
+        onClose={() => setIsNewEquipmentModalOpen(false)}
+        equipment={equipmentToEdit}
+        onSuccess={refetch}
       />
       
       <ReceiptModal
-        open={isReceiptModalOpen}
-        onOpenChange={closeReceiptModal}
+        isOpen={isReceiptModalOpen}
+        onClose={() => closeReceiptModal()}
         receipt={selectedReceipt}
       />
       

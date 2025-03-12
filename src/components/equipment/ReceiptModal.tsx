@@ -33,9 +33,9 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, withdrawal
         is_personal_use: withdrawal?.is_personal_use || false,
         notes: withdrawal?.notes || null,
         created_at: new Date().toISOString(),
+        status: "withdrawn",
         return_notes: null,
-        returned_date: null,
-        status: "withdrawn"
+        production_id: withdrawal?.production_id || ''
       });
     }
   }, [withdrawal, receivedReceipt]);
