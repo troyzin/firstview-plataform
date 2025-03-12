@@ -579,10 +579,7 @@ const Equipment = () => {
           </TabsContent>
           
           <TabsContent value="history">
-            <HistoryTab 
-              historyEvents={filteredHistoryEvents}
-              renderEventType={renderEventType}
-            />
+            <HistoryTab />
           </TabsContent>
         </Tabs>
       </div>
