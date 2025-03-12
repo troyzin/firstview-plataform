@@ -104,50 +104,50 @@ const InventoryTab = ({
                       {equipment.status === "disponível" && (
                         <>
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="icon"
                             onClick={() => openCheckoutModal(equipment)}
-                            className="h-8 w-8 rounded-full hover:bg-gray-700"
+                            className="h-8 w-8 rounded-full hover:bg-gray-700 border-gray-700"
                             title="Retirar equipamento"
                           >
-                            <ArrowDownToLine className="h-4 w-4" />
+                            <ArrowDownToLine className="h-4 w-4 text-white" />
                           </Button>
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="icon"
                             onClick={() => openScheduleModal(equipment)}
-                            className="h-8 w-8 rounded-full hover:bg-gray-700"
+                            className="h-8 w-8 rounded-full hover:bg-gray-700 border-gray-700"
                             title="Agendar equipamento"
                           >
-                            <Calendar className="h-4 w-4" />
+                            <Calendar className="h-4 w-4 text-white" />
                           </Button>
                         </>
                       )}
                       {equipment.status === "em uso" && (
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="icon"
                           onClick={() => openReturnModal(equipment)}
-                          className="h-8 w-8 rounded-full hover:bg-gray-700"
+                          className="h-8 w-8 rounded-full hover:bg-gray-700 border-gray-700"
                           title="Devolver equipamento"
                         >
-                          <CheckCircle className="h-4 w-4" />
+                          <CheckCircle className="h-4 w-4 text-white" />
                         </Button>
                       )}
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="icon"
                         onClick={() => handleEditEquipment(equipment)}
-                        className="h-8 w-8 rounded-full hover:bg-gray-700"
+                        className="h-8 w-8 rounded-full hover:bg-gray-700 border-gray-700"
                         title="Editar equipamento"
                       >
-                        <Edit className="h-4 w-4" />
+                        <Edit className="h-4 w-4 text-white" />
                       </Button>
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="icon"
                         onClick={() => handleDeleteEquipment(equipment)}
-                        className="h-8 w-8 rounded-full hover:bg-gray-700 text-red-500 hover:text-red-400"
+                        className="h-8 w-8 rounded-full hover:bg-gray-700 border-gray-700 text-[#ff3335]"
                         title="Excluir equipamento"
                       >
                         <Trash2 className="h-4 w-4" />

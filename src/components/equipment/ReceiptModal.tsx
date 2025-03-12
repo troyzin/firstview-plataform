@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Receipt, ReceiptModalProps } from '@/types/equipment';
+import { Receipt, ReceiptModalProps, EquipmentWithdrawal } from '@/types/equipment';
 
 const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, withdrawal, receipt: receivedReceipt }) => {
   const [receipt, setReceipt] = useState<Receipt | null>(null);
