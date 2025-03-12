@@ -93,6 +93,108 @@ export type Database = {
         }
         Relationships: []
       }
+      equipment_schedules: {
+        Row: {
+          created_at: string | null
+          end_date: string
+          equipment_id: string
+          id: string
+          notes: string | null
+          production_id: string | null
+          start_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          end_date: string
+          equipment_id: string
+          id?: string
+          notes?: string | null
+          production_id?: string | null
+          start_date: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          end_date?: string
+          equipment_id?: string
+          id?: string
+          notes?: string | null
+          production_id?: string | null
+          start_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_schedules_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipment_schedules_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      equipment_withdrawals: {
+        Row: {
+          equipment_id: string
+          expected_return_date: string
+          id: string
+          is_personal_use: boolean | null
+          notes: string | null
+          production_id: string | null
+          returned_date: string | null
+          status: string
+          user_id: string
+          withdrawal_date: string | null
+        }
+        Insert: {
+          equipment_id: string
+          expected_return_date: string
+          id?: string
+          is_personal_use?: boolean | null
+          notes?: string | null
+          production_id?: string | null
+          returned_date?: string | null
+          status?: string
+          user_id: string
+          withdrawal_date?: string | null
+        }
+        Update: {
+          equipment_id?: string
+          expected_return_date?: string
+          id?: string
+          is_personal_use?: boolean | null
+          notes?: string | null
+          production_id?: string | null
+          returned_date?: string | null
+          status?: string
+          user_id?: string
+          withdrawal_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_withdrawals_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipment_withdrawals_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       productions: {
         Row: {
           briefing_file: string | null
