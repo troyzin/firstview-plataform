@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Plus, Search, Filter, Package, Calendar, LogOut, CheckCircle, AlertTriangle, ShoppingCart, History, Users, Edit, ArrowLeft, FileText, Info, Receipt, ReceiptText } from "lucide-react";
+import { Plus, Search, Filter, Package, LogOut, CheckCircle, AlertTriangle, ShoppingCart, History, Users, Edit, ArrowLeft, FileText, Info, Receipt, ReceiptText } from "lucide-react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,13 +15,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { Receipt as ReceiptType, Equipment as EquipmentType, HistoryEvent } from "@/types/equipment";
-import SchedulesList from "@/components/equipment/SchedulesList";
 import WithdrawalsList from "@/components/equipment/WithdrawalsList";
 import EquipmentModal from "@/components/equipment/EquipmentModal";
 import ReceiptModal from "@/components/equipment/ReceiptModal";
 import { WithdrawalModal } from "@/components/equipment/WithdrawalModal";
 import { ReturnModal } from "@/components/equipment/ReturnModal";
-import { ScheduleModal } from "@/components/equipment/ScheduleModal";
 // Component imports
 import EquipmentHeader from "@/components/equipment/EquipmentHeader";
 import EquipmentStats from "@/components/equipment/EquipmentStats";
@@ -150,16 +148,12 @@ const Equipment = () => {
   
   // Estados para os novos modais
   const [isKitModalOpen, setIsKitModalOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [scheduleEndDate, setScheduleEndDate] = useState<Date | undefined>(new Date());
   const [selectedProduction, setSelectedProduction] = useState<string>("");
-  const [scheduleNotes, setScheduleNotes] = useState<string>("");
   const [isPersonalUse, setIsPersonalUse] = useState<boolean>(false);
   
   // Estados para os modais de retirada e devolução
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
-  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [checkoutProduction, setCheckoutProduction] = useState<string>("");
   const [checkoutNotes, setCheckoutNotes] = useState<string>("");
   
@@ -169,7 +163,7 @@ const Equipment = () => {
   
   // Add a new state for withdrawal type selection
   const [isWithdrawalTypeModalOpen, setIsWithdrawalTypeModalOpen] = useState(false);
-  const [withdrawalType, setWithdrawalType] = useState<'schedule' | 'immediate'>('immediate');
+  const [withdrawalType, setWithdrawalType] = useState<'immediate'>('immediate');
   
   // Efeito para adicionar HistoryEvents
   useEffect(() => {
@@ -487,22 +481,6 @@ const Equipment = () => {
     setSelectedEquipment(null);
     setIsReturnModalOpen(false);
   };
-
-  // Função para agendar um equipamento
-  const openScheduleModal = (equipment: EquipmentType) => {
-    // This function is kept but will not be called anymore
-    setSelectedEquipment(equipment);
-    setSelectedDate(new Date());
-    setScheduleEndDate(new Date());
-    setSelectedProduction("");
-    setScheduleNotes("");
-    setIsScheduleModalOpen(true);
-  };
-
-  const closeScheduleModal = () => {
-    setSelectedEquipment(null);
-    setIsScheduleModalOpen(false);
-  };
   
   // Função para abrir o modal de recibo
   const openReceiptModal = (receipt: ReceiptType) => {
@@ -588,7 +566,6 @@ const Equipment = () => {
               renderEquipmentType={renderEquipmentType}
               openCheckoutModal={openCheckoutModal}
               openReturnModal={openReturnModal}
-              openScheduleModal={openScheduleModal}
             />
           </TabsContent>
           

@@ -32,7 +32,6 @@ type InventoryTabProps = {
   renderEquipmentType: (type: string) => string;
   openCheckoutModal: (equipment: Equipment) => void;
   openReturnModal: (equipment: Equipment) => void;
-  openScheduleModal: (equipment: Equipment) => void;
 };
 
 const InventoryTab = ({
@@ -47,7 +46,6 @@ const InventoryTab = ({
   renderEquipmentType,
   openCheckoutModal,
   openReturnModal,
-  openScheduleModal,
 }: InventoryTabProps) => {
   return (
     <div className="space-y-4">
