@@ -16,6 +16,7 @@ import EquipmentModal from '@/components/equipment/EquipmentModal';
 import KitWithdrawalModal from '@/components/equipment/KitWithdrawalModal';
 import { ReturnModal } from '@/components/equipment/ReturnModal';
 import { useAuth } from '@/contexts/AuthContext';
+import WithdrawalModal from '@/components/equipment/WithdrawalModal';
 
 const EquipmentPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -23,7 +24,9 @@ const EquipmentPage = () => {
   const [isKitModalOpen, setIsKitModalOpen] = useState(false);
   const [selectedEquipment, setSelectedEquipment] = useState<Equipment | undefined>(undefined);
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
+  const [isWithdrawalModalOpen, setIsWithdrawalModalOpen] = useState(false);
   const [equipmentToReturn, setEquipmentToReturn] = useState<{ id?: string; name?: string }>({});
+  const [equipmentToWithdraw, setEquipmentToWithdraw] = useState<Equipment | null>(null);
   const { hasAction } = useAuth();
 
   // Fetch equipments using react-query
@@ -46,7 +49,11 @@ const EquipmentPage = () => {
   });
 
   // Handlers to open modals
-  const openNewEquipmentModal = () => setIsNewEquipmentModalOpen(true);
+  const openNewEquipmentModal = useCallback(() => {
+    setSelectedEquipment(undefined); // Clear any selected equipment
+    setIsNewEquipmentModalOpen(true);
+  }, []);
+  
   const openKitModal = () => setIsKitModalOpen(true);
   const closeNewEquipmentModal = () => setIsNewEquipmentModalOpen(false);
   const closeKitModal = () => setIsKitModalOpen(false);
@@ -62,10 +69,10 @@ const EquipmentPage = () => {
     toast.info(`Agendamento para ${equipment.name} em breve!`);
   };
 
-  // Handler to checkout equipment
+  // Handler to checkout equipment (withdraw)
   const onCheckoutEquipment = (equipment: Equipment) => {
-    setEquipmentToReturn({ id: equipment.id, name: equipment.name });
-    setIsReturnModalOpen(true);
+    setEquipmentToWithdraw(equipment);
+    setIsWithdrawalModalOpen(true);
   };
 
   // Handler to return equipment
@@ -99,10 +106,15 @@ const EquipmentPage = () => {
     }
   };
 
-  // Close return modal
+  // Close modals
   const closeReturnModal = () => {
     setIsReturnModalOpen(false);
     setEquipmentToReturn({});
+  };
+
+  const closeWithdrawalModal = () => {
+    setIsWithdrawalModalOpen(false);
+    setEquipmentToWithdraw(null);
   };
 
   // Function to handle successful equipment operations
@@ -143,9 +155,19 @@ const EquipmentPage = () => {
       />
 
       <Tabs defaultValue="inventory" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="inventory">Inventário</TabsTrigger>
-          <TabsTrigger value="status">Status</TabsTrigger>
+        <TabsList className="bg-[#141414]">
+          <TabsTrigger 
+            value="inventory" 
+            className="data-[state=active]:bg-[#000000] data-[state=active]:text-white"
+          >
+            Inventário
+          </TabsTrigger>
+          <TabsTrigger 
+            value="status" 
+            className="data-[state=active]:bg-[#000000] data-[state=active]:text-white"
+          >
+            Status
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="inventory" className="outline-none">
           <InventoryTab
@@ -186,6 +208,13 @@ const EquipmentPage = () => {
         onClose={closeReturnModal}
         equipmentId={equipmentToReturn.id}
         equipmentName={equipmentToReturn.name}
+        onSuccess={handleEquipmentSuccess}
+      />
+
+      <WithdrawalModal
+        isOpen={isWithdrawalModalOpen}
+        onClose={closeWithdrawalModal}
+        equipment={equipmentToWithdraw}
         onSuccess={handleEquipmentSuccess}
       />
     </div>

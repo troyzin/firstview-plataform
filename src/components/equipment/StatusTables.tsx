@@ -150,7 +150,7 @@ const StatusTables: React.FC<StatusTablesProps> = ({
             </Button>
             <Button
               size="sm"
-              className="bg-blue-600 hover:bg-blue-700 h-8"
+              className="bg-[#ff3335] hover:bg-[#ff3335]/80 h-8"
               onClick={() => onReturnEquipment(equipment)}
             >
               <LogOut className="h-3.5 w-3.5 mr-1" />
