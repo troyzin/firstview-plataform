@@ -14,7 +14,6 @@ export const useSchedules = (equipmentId?: string | null) => {
         .select(`
           *,
           equipment:equipment_id(id, name),
-          user:user_id(id, full_name),
           production:production_id(id, title)
         `);
 
@@ -58,16 +57,19 @@ export const useSchedules = (equipmentId?: string | null) => {
             ...item,
             user: userProfile,
             equipment: item.equipment || { id: item.equipment_id, name: 'Equipamento não encontrado' },
-            production: item.production_id 
-              ? (item.production || { id: item.production_id, title: 'Produção não encontrada' }) 
-              : null
+            production: item.production || null
           };
         });
         
         return processedData as EquipmentSchedule[];
       }
       
-      return (data || []) as EquipmentSchedule[];
+      return (data || []).map(item => ({
+        ...item,
+        user: { id: item.user_id, full_name: 'Usuário não encontrado' },
+        equipment: item.equipment || { id: item.equipment_id, name: 'Equipamento não encontrado' },
+        production: item.production || null
+      }));
     },
   });
 };
