@@ -6,10 +6,28 @@ export interface Equipment {
   serial_number?: string;
   acquisition_date?: string;
   notes?: string;
-  image_url?: string;
   quantity: number;
   brand?: string;
   model?: string;
+}
+
+export interface EquipmentSchedule {
+  id: string;
+  equipment_id: string;
+  user_id: string;
+  production_id?: string;
+  start_date: string;
+  end_date: string;
+  notes?: string;
+  created_at: string;
+  equipment?: {
+    id: string;
+    name: string;
+  };
+  production?: {
+    id: string;
+    title: string;
+  };
 }
 
 export interface UsageRecord {

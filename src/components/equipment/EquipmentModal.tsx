@@ -1,6 +1,5 @@
 
 import React, { useState } from "react";
-import { v4 as uuidv4 } from "uuid";
 import {
   Dialog,
   DialogContent,
@@ -22,13 +21,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Equipment } from "@/types/equipment";
 
 interface EquipmentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  equipment?: EquipmentFormData;
+  equipment?: Equipment;
   onSuccess: () => void;
 }
 
@@ -41,73 +40,26 @@ const EquipmentModal: React.FC<EquipmentModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
 
-  const handleSubmit = async (data: EquipmentFormData, file: File | null) => {
+  const handleSubmit = async (data: EquipmentFormData) => {
     setIsSubmitting(true);
     try {
-      let imageUrl = data.image_url;
-
-      // Se tiver um arquivo para upload, faz o upload da imagem
-      if (file) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${uuidv4()}.${fileExt}`;
-        const filePath = `${fileName}`;
-
-        const { error: uploadError, data: uploadData } = await supabase.storage
-          .from('equipment')
-          .upload(filePath, file);
-
-        if (uploadError) {
-          console.error('Erro ao fazer upload da imagem:', uploadError);
-          toast.error('Erro ao fazer upload da imagem');
-          setIsSubmitting(false);
-          return;
-        }
-
-        // Obter a URL pública da imagem
-        const { data: { publicUrl } } = supabase.storage
-          .from('equipment')
-          .getPublicUrl(filePath);
-
-        imageUrl = publicUrl;
-      }
-
-      // Prepara os dados para salvar
-      const equipmentData = {
-        ...data,
-        image_url: imageUrl,
-      };
-
-      // Verifica se é uma atualização ou criação
       if (equipment?.id) {
-        // Atualiza o equipamento existente
         const { error } = await supabase
           .from('equipment')
-          .update(equipmentData)
+          .update(data)
           .eq('id', equipment.id);
 
-        if (error) {
-          console.error('Erro ao atualizar equipamento:', error);
-          toast.error('Erro ao atualizar equipamento');
-          return;
-        }
-
+        if (error) throw error;
         toast.success('Equipamento atualizado com sucesso!');
       } else {
-        // Cria um novo equipamento
         const { error } = await supabase
           .from('equipment')
-          .insert([equipmentData]);
+          .insert([data]);
 
-        if (error) {
-          console.error('Erro ao adicionar equipamento:', error);
-          toast.error('Erro ao adicionar equipamento');
-          return;
-        }
-
+        if (error) throw error;
         toast.success('Equipamento adicionado com sucesso!');
       }
 
-      // Fecha o modal e atualiza a lista
       onSuccess();
       onClose();
     } catch (error) {
@@ -123,25 +75,12 @@ const EquipmentModal: React.FC<EquipmentModalProps> = ({
 
     setIsSubmitting(true);
     try {
-      // Se houver uma imagem, exclui do storage
-      if (equipment.image_url) {
-        const imagePath = equipment.image_url.split('/').pop();
-        if (imagePath) {
-          await supabase.storage
-            .from('equipment')
-            .remove([imagePath]);
-        }
-      }
-
-      // Exclui o equipamento do banco de dados
       const { error } = await supabase
         .from('equipment')
         .delete()
         .eq('id', equipment.id);
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       toast.success('Equipamento excluído com sucesso!');
       onSuccess();
