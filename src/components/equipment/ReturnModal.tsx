@@ -80,10 +80,18 @@ export const ReturnModal: React.FC<ReturnModalProps> = ({
         if (!equipmentWithdrawal && actualEquipmentId) {
           console.log("Fetching active withdrawal for equipment ID:", actualEquipmentId);
           
-          // Get active withdrawal for this equipment
           const { data: withdrawalData, error } = await supabase
             .from('equipment_withdrawals')
-            .select('id, expected_return_date, status, withdrawal_date')
+            .select(`
+              id,
+              expected_return_date,
+              status,
+              withdrawal_date,
+              equipment:equipment_id (
+                id,
+                name
+              )
+            `)
             .eq('equipment_id', actualEquipmentId)
             .eq('status', 'withdrawn')
             .order('withdrawal_date', { ascending: false })
@@ -93,6 +101,7 @@ export const ReturnModal: React.FC<ReturnModalProps> = ({
           if (error) {
             console.error("Error fetching withdrawal:", error);
             toast.error("Erro ao buscar retirada ativa");
+            return;
           }
 
           console.log("Withdrawal data found:", withdrawalData);
@@ -137,7 +146,8 @@ export const ReturnModal: React.FC<ReturnModalProps> = ({
     setIsSubmitting(true);
 
     try {
-      console.log("Updating withdrawal record:", withdrawalId);
+      console.log("Processing return for withdrawal:", withdrawalId);
+      
       // Update withdrawal record
       const { error: withdrawalError } = await supabase
         .from("equipment_withdrawals")
@@ -153,7 +163,6 @@ export const ReturnModal: React.FC<ReturnModalProps> = ({
         throw withdrawalError;
       }
 
-      console.log("Updating equipment status:", actualEquipmentId);
       // Update equipment status to "disponível"
       const { error: equipmentError } = await supabase
         .from("equipment")
@@ -268,3 +277,4 @@ export const ReturnModal: React.FC<ReturnModalProps> = ({
     </Dialog>
   );
 };
+

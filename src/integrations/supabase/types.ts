@@ -146,6 +146,7 @@ export type Database = {
           is_personal_use: boolean | null
           notes: string | null
           production_id: string | null
+          return_notes: string | null
           returned_date: string | null
           status: string
           user_id: string
@@ -159,6 +160,7 @@ export type Database = {
           is_personal_use?: boolean | null
           notes?: string | null
           production_id?: string | null
+          return_notes?: string | null
           returned_date?: string | null
           status?: string
           user_id: string
@@ -172,6 +174,7 @@ export type Database = {
           is_personal_use?: boolean | null
           notes?: string | null
           production_id?: string | null
+          return_notes?: string | null
           returned_date?: string | null
           status?: string
           user_id?: string
