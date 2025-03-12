@@ -18,6 +18,7 @@ import {
 import { Equipment } from "@/types/equipment";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2, CheckCircle, ArrowDownToLine, Calendar } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 type InventoryTabProps = {
   statusFilter: string;

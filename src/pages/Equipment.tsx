@@ -16,7 +16,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { Receipt as ReceiptType, Equipment as EquipmentType, HistoryEvent } from "@/types/equipment";
 import SchedulesList from "@/components/equipment/SchedulesList";
-import WithdrawalsList from "@/components/equipment/WithdrawalsList";
+import WithdrawalsList from "@/components/equipment/WithdrawalList";
 import EquipmentModal from "@/components/equipment/EquipmentModal";
 import ReceiptModal from "@/components/equipment/ReceiptModal";
 import { WithdrawalModal } from "@/components/equipment/WithdrawalModal";
@@ -298,11 +298,11 @@ const Equipment = () => {
   const renderStatus = (status: string) => {
     switch (status) {
       case "disponível":
-        return <Badge className="bg-green-600">Disponível</Badge>;
+        return <Badge variant="green">Disponível</Badge>;
       case "em uso":
-        return <Badge className="bg-[#ff3335]">Em Uso</Badge>;
+        return <Badge variant="yellow">Em Uso</Badge>;
       case "manutenção":
-        return <Badge className="bg-yellow-600">Manutenção</Badge>;
+        return <Badge variant="purple">Manutenção</Badge>;
       default:
         return <Badge>Desconhecido</Badge>;
     }
@@ -312,13 +312,13 @@ const Equipment = () => {
   const renderReceiptStatus = (status: string) => {
     switch (status) {
       case "withdrawn":
-        return <Badge className="bg-[#ff3335]">Em Uso</Badge>;
+        return <Badge variant="yellow">Em Uso</Badge>;
       case "returned":
-        return <Badge className="bg-green-600">Devolvido</Badge>;
+        return <Badge variant="green">Devolvido</Badge>;
       case "overdue":
-        return <Badge className="bg-yellow-600">Atrasado</Badge>;
+        return <Badge variant="yellow">Atrasado</Badge>;
       case "returned_late":
-        return <Badge className="bg-purple-600">Devolvido com Atraso</Badge>;
+        return <Badge variant="purple">Devolvido com Atraso</Badge>;
       default:
         return <Badge>Desconhecido</Badge>;
     }
@@ -328,13 +328,13 @@ const Equipment = () => {
   const renderEventType = (eventType: HistoryEvent["eventType"]) => {
     switch (eventType) {
       case "checkout":
-        return <Badge className="bg-[#ff3335]">Retirada</Badge>;
+        return <Badge variant="red">Retirada</Badge>;
       case "return":
-        return <Badge className="bg-green-600">Devolução</Badge>;
+        return <Badge variant="green">Devolução</Badge>;
       case "schedule":
-        return <Badge className="bg-purple-600">Agendamento</Badge>;
+        return <Badge variant="purple">Agendamento</Badge>;
       case "maintenance":
-        return <Badge className="bg-yellow-600">Manutenção</Badge>;
+        return <Badge variant="yellow">Manutenção</Badge>;
       default:
         return <Badge>Desconhecido</Badge>;
     }
