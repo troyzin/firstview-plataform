@@ -85,7 +85,7 @@ export interface Receipt {
   notes?: string;
   status: "withdrawn" | "overdue" | "returned" | "returned_late";
   created_at: string;
-  return_notes?: string; // Added return_notes property
+  return_notes?: string;
 }
 
 export interface EquipmentWithdrawal {
@@ -111,11 +111,12 @@ export interface EquipmentWithdrawal {
   is_personal_use: boolean;
   notes?: string;
   status: "withdrawn" | "overdue" | "returned" | "returned_late";
-  created_at: string; // Added created_at property
+  created_at: string;
   is_scheduled: boolean;
+  return_notes?: string; // Added return_notes property
 }
 
-// Adding ReceiptModalProps interface
+// ReceiptModalProps interface
 export interface ReceiptModalProps {
   isOpen: boolean;
   onClose: () => void;

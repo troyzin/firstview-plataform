@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -9,6 +10,7 @@ import { ReturnModal } from '@/components/equipment/ReturnModal';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { EquipmentWithdrawal } from '@/types/equipment';
 import { useWithdrawals } from '@/hooks/useWithdrawals';
+import { supabase } from '@/integrations/supabase/client';
 
 interface WithdrawalsListProps {
   equipmentId: string;
@@ -35,14 +37,14 @@ const WithdrawalsList: React.FC<WithdrawalsListProps> = ({ equipmentId }) => {
     if (!withdrawalToDelete) return;
 
     try {
-      // const { error } = await supabase
-      //   .from('equipment_withdrawals')
-      //   .delete()
-      //   .eq('id', withdrawalToDelete);
+      const { error } = await supabase
+        .from('equipment_withdrawals')
+        .delete()
+        .eq('id', withdrawalToDelete);
 
-      // if (error) {
-      //   throw error;
-      // }
+      if (error) {
+        throw error;
+      }
 
       toast.success('Retirada excluída com sucesso!');
       refetch();
@@ -65,7 +67,10 @@ const WithdrawalsList: React.FC<WithdrawalsListProps> = ({ equipmentId }) => {
   };
 
   const formatWithdrawalId = (id: string) => {
-    const numericId = parseInt(id.split('-')[0], 10);
+    if (!id) return '#0000';
+    const parts = id.split('-');
+    if (!parts || parts.length === 0) return `#${id.substring(0, 4)}`;
+    const numericId = parseInt(parts[0], 10) || 0;
     return `#${numericId.toString().padStart(4, '0')}`;
   };
 
@@ -74,7 +79,7 @@ const WithdrawalsList: React.FC<WithdrawalsListProps> = ({ equipmentId }) => {
       <h2 className="text-lg font-medium mb-4">Retiradas</h2>
       {isLoading ? (
         <div className="flex justify-center items-center h-24">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-700"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff3335]"></div>
         </div>
       ) : withdrawals && withdrawals.length > 0 ? (
         <div className="overflow-x-auto">
@@ -105,11 +110,21 @@ const WithdrawalsList: React.FC<WithdrawalsListProps> = ({ equipmentId }) => {
                   <TableCell>{withdrawal.user?.full_name || withdrawal.user_id}</TableCell>
                   <TableCell>{withdrawal.notes || '-'}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => openReturnModal(withdrawal)}>
-                      <PackageCheck className="h-4 w-4 mr-2" />
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => openReturnModal(withdrawal)}
+                      className="hover:bg-[#141414]"
+                    >
+                      <PackageCheck className="h-4 w-4 text-[#ff3335]" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleOpen(withdrawal.id)}>
-                      <Trash className="h-4 w-4 text-red-500" />
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => handleOpen(withdrawal.id)}
+                      className="hover:bg-[#141414]"
+                    >
+                      <Trash className="h-4 w-4 text-[#ff3335]" />
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -134,10 +149,10 @@ const WithdrawalsList: React.FC<WithdrawalsListProps> = ({ equipmentId }) => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleClose} className="bg-gray-800 text-white hover:bg-gray-700 border-gray-700">
+            <AlertDialogCancel onClick={handleClose} className="bg-[#141414] text-white hover:bg-[#292929] border-[#292929]">
               Cancelar
             </AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction onClick={confirmDelete} className="bg-[#ff3335] hover:bg-[#cc2a2b]">
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>

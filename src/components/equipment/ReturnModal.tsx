@@ -200,12 +200,12 @@ export const ReturnModal: React.FC<ReturnModalProps> = ({
           <Button
             variant="outline"
             onClick={onClose}
-            className="bg-gray-800 text-white hover:bg-gray-700 border-gray-700"
+            className="bg-[#141414] text-white hover:bg-[#292929] border-[#292929]"
           >
             Cancelar
           </Button>
           <Button
-            className="bg-green-600 hover:bg-green-700"
+            className="bg-[#ff3335] hover:bg-[#cc2a2b]"
             onClick={handleSubmit}
             disabled={isSubmitting || !withdrawalId}
           >
