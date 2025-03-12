@@ -21,7 +21,15 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ withdrawalId, onClose }) =>
     expected_return_date: '',
     status: '',
     created_at: '',
-    return_notes: ''
+    return_notes: '',
+    equipment: undefined,
+    user: undefined,
+    production: undefined,
+    withdrawal_date: '',
+    returned_date: undefined,
+    notes: null,
+    production_id: null,
+    is_personal_use: false
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -45,16 +53,15 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ withdrawalId, onClose }) =>
           
         if (error) throw error;
         
-        // Tratamento para lidar com possíveis erros nas relações
-        const equipment_name = data.equipment?.name || 'Equipamento não encontrado';
-        const user_name = data.user?.full_name || 'Usuário não encontrado';
-        const production_name = data.production?.title || '';
+        // Handling possible null values or errors in relations
+        const userName = data.user && !('error' in data.user) ? data.user.full_name : 'Usuário não encontrado';
         
         setReceipt({
           ...data,
-          equipment_name,
-          user_name,
-          production_name,
+          user: {
+            id: data.user_id,
+            full_name: userName
+          },
           created_at: data.withdrawal_date || new Date().toISOString(),
           return_notes: ''
         });
@@ -108,10 +115,10 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ withdrawalId, onClose }) =>
                 </div>
               </div>
               
-              {receipt.production_id && (
+              {receipt.production_id && receipt.production && (
                 <div>
                   <p className="text-gray-400">Produção:</p>
-                  <p className="font-medium">{receipt.production?.title}</p>
+                  <p className="font-medium">{receipt.production.title}</p>
                 </div>
               )}
               
