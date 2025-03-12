@@ -40,16 +40,15 @@ const EquipmentHeader = ({
       
       <div className="flex space-x-3 w-full md:w-auto">
         <Button 
-          variant="secondary"
-          className="w-full md:w-auto bg-[#141414] hover:bg-[#1e1e1e]"
           onClick={openKitModal}
+          className="bg-[#141414] hover:bg-[#1e1e1e] text-white w-full md:w-auto"
         >
           <ShoppingCart className="h-4 w-4 mr-2" />
           Retirar KIT
         </Button>
         <Button 
           onClick={openNewEquipmentModal} 
-          className="bg-[#ff3335] hover:bg-red-700 w-full md:w-auto"
+          className="bg-[#ff3335] hover:bg-[#ff3335]/90 w-full md:w-auto"
         >
           <Plus className="h-4 w-4 mr-2" />
           Novo Equipamento
