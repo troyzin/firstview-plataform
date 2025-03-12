@@ -17,25 +17,28 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, withdrawal
       setReceipt({
         id: withdrawal?.id || '',
         withdrawal_date: withdrawal?.withdrawal_date || new Date().toISOString(),
+        equipment_id: withdrawal?.equipment_id || '',  // Added equipment_id
         equipment: {
           name: withdrawal?.equipment?.name || '',
           id: withdrawal?.equipment?.id || ''
         },
+        user_id: withdrawal?.user_id || '',  // Added user_id
         user: {
           full_name: withdrawal?.user?.full_name || 'Usuário não encontrado',
           id: withdrawal?.user?.id || ''
         },
+        production_id: withdrawal?.production_id || '',
         production: withdrawal?.production ? {
           title: withdrawal.production.title,
           id: withdrawal.production.id
-        } : null,
+        } : undefined,
         expected_return_date: withdrawal?.expected_return_date || new Date().toISOString(),
+        returned_date: withdrawal?.returned_date,
         is_personal_use: withdrawal?.is_personal_use || false,
         notes: withdrawal?.notes || null,
-        created_at: new Date().toISOString(),
-        status: "withdrawn",
-        return_notes: null,
-        production_id: withdrawal?.production_id || ''
+        created_at: withdrawal?.created_at || new Date().toISOString(),
+        status: withdrawal?.status || "withdrawn",
+        return_notes: withdrawal?.return_notes || null
       });
     }
   }, [withdrawal, receivedReceipt]);
@@ -55,14 +58,14 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, withdrawal
         <div id="receipt-printable" className="py-4">
           <div className="mb-4">
             <h3 className="text-md font-semibold">Equipamento</h3>
-            <p><strong>Nome:</strong> {receipt.equipment.name}</p>
-            <p><strong>ID:</strong> {receipt.equipment.id}</p>
+            <p><strong>Nome:</strong> {receipt.equipment?.name}</p>
+            <p><strong>ID:</strong> {receipt.equipment?.id}</p>
           </div>
 
           <div className="mb-4">
             <h3 className="text-md font-semibold">Usuário</h3>
-            <p><strong>Nome:</strong> {receipt.user.full_name}</p>
-            <p><strong>ID:</strong> {receipt.user.id}</p>
+            <p><strong>Nome:</strong> {receipt.user?.full_name}</p>
+            <p><strong>ID:</strong> {receipt.user?.id}</p>
           </div>
 
           {receipt.production && (
