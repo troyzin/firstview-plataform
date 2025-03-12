@@ -4,7 +4,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
@@ -171,6 +170,7 @@ export const KitWithdrawalModal: React.FC<KitWithdrawalModalProps> = ({
         </DialogHeader>
 
         <div className="space-y-4 my-4">
+          {/* Equipment Selection Section */}
           <div className="space-y-2">
             <Label className="text-lg font-medium border-b border-[#141414] pb-2 w-full block">
               Equipamentos Disponíveis
