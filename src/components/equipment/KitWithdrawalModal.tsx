@@ -41,6 +41,9 @@ const formSchema = z.object({
     message: "O nome do projeto é obrigatório",
   }),
   notes: z.string().optional(),
+  expected_return_date: z.string().min(1, {
+    message: "A data de devolução é obrigatória",
+  }),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -58,6 +61,7 @@ const KitWithdrawalModal: React.FC<KitWithdrawalModalProps> = ({
       withdrawer_name: '',
       project_name: '',
       notes: '',
+      expected_return_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Default to 7 days from now
     },
   });
 
@@ -65,14 +69,34 @@ const KitWithdrawalModal: React.FC<KitWithdrawalModalProps> = ({
     try {
       setIsSubmitting(true);
       
-      // Example implementation - create a withdrawal record
+      // For kit withdrawal we'll create a placeholder equipment entry
+      // to track the kit as a whole since there's no direct kit table
+      const { data: equipmentData, error: equipmentError } = await supabase
+        .from('equipment')
+        .insert({
+          name: `Kit para ${data.project_name}`,
+          category: 'kit',
+          status: 'em uso',
+          notes: `Kit retirado por ${data.withdrawer_name}`
+        })
+        .select('id')
+        .single();
+
+      if (equipmentError) {
+        console.error("Error creating kit placeholder:", equipmentError);
+        toast.error("Erro ao registrar kit");
+        return;
+      }
+
+      // Now create the withdrawal record using the created equipment id
       const { error } = await supabase
         .from('equipment_withdrawals')
         .insert({
-          withdrawer_name: data.withdrawer_name,
-          project_name: data.project_name,
-          notes: data.notes,
-          withdrawal_type: 'kit',
+          equipment_id: equipmentData.id,
+          user_id: '00000000-0000-0000-0000-000000000000', // Placeholder user ID for now
+          expected_return_date: data.expected_return_date,
+          notes: `Projeto: ${data.project_name}. Retirado por: ${data.withdrawer_name}. ${data.notes || ''}`,
+          is_personal_use: false,
         });
 
       if (error) {
@@ -140,6 +164,24 @@ const KitWithdrawalModal: React.FC<KitWithdrawalModalProps> = ({
                   <FormControl>
                     <Input 
                       placeholder="Nome do projeto" 
+                      {...field} 
+                      className="bg-[#141414] border-[#1f1f1f]"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="expected_return_date"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Data de Devolução</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="date" 
                       {...field} 
                       className="bg-[#141414] border-[#1f1f1f]"
                     />
