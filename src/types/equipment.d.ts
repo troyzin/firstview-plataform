@@ -17,6 +17,13 @@ export interface ReturnModalProps {
   onSuccess: () => void;
 }
 
+export interface ReceiptModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  withdrawal?: any;  // We'll keep this for backward compatibility
+  receipt?: Receipt;  // Add this new property
+}
+
 export interface Receipt {
   id: string;
   withdrawal_date: string;

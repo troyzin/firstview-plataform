@@ -1,61 +1,46 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { CheckCircle2, PackageOpen } from 'lucide-react';
-import { ReturnModalProps } from '@/types/equipment';
+import { Receipt, ReceiptModalProps } from '@/types/equipment';
 
-interface ReceiptModalProps extends ReturnModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  withdrawal: any;
-}
+const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, withdrawal, receipt: receivedReceipt }) => {
+  const [receipt, setReceipt] = useState<Receipt | null>(null);
 
-interface Receipt {
-  id: string;
-  withdrawal_date: string;
-  equipment: {
-    name: string;
-    id: string;
-  };
-  user: {
-    full_name: string;
-    id: string;
-  };
-  production?: {
-    title: string;
-    id: string;
-  } | null;
-  expected_return_date: string;
-  is_personal_use: boolean;
-  notes: string | null;
-  created_at: string;
-  return_notes: string | null;
-}
+  useEffect(() => {
+    // Initialize receipt from either the received receipt or the withdrawal
+    if (receivedReceipt) {
+      setReceipt(receivedReceipt);
+    } else if (withdrawal) {
+      setReceipt({
+        id: withdrawal?.id || '',
+        withdrawal_date: withdrawal?.withdrawal_date || new Date().toISOString(),
+        equipment: {
+          name: withdrawal?.equipment?.name || '',
+          id: withdrawal?.equipment?.id || ''
+        },
+        user: {
+          full_name: withdrawal?.user?.full_name || 'Usuário não encontrado',
+          id: withdrawal?.user?.id || ''
+        },
+        production: withdrawal?.production ? {
+          title: withdrawal.production.title,
+          id: withdrawal.production.id
+        } : null,
+        expected_return_date: withdrawal?.expected_return_date || new Date().toISOString(),
+        is_personal_use: withdrawal?.is_personal_use || false,
+        notes: withdrawal?.notes || null,
+        created_at: new Date().toISOString(),
+        return_notes: null,
+        returned_date: null,
+        status: "withdrawn"
+      });
+    }
+  }, [withdrawal, receivedReceipt]);
 
-const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, withdrawal }) => {
-  const [receipt, setReceipt] = useState<Receipt>({
-    id: withdrawal?.id || '',
-    withdrawal_date: withdrawal?.withdrawal_date || new Date().toISOString(),
-    equipment: {
-      name: withdrawal?.equipment?.name || '',
-      id: withdrawal?.equipment?.id || ''
-    },
-    user: {
-      full_name: withdrawal?.user?.full_name || 'Usuário não encontrado',
-      id: withdrawal?.user?.id || ''
-    },
-    production: withdrawal?.production ? {
-      title: withdrawal.production.title,
-      id: withdrawal.production.id
-    } : null,
-    expected_return_date: withdrawal?.expected_return_date || new Date().toISOString(),
-    is_personal_use: withdrawal?.is_personal_use || false,
-    notes: withdrawal?.notes || null,
-    created_at: new Date().toISOString(),
-    return_notes: null
-  });
+  if (!receipt) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -94,6 +79,14 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, withdrawal
             <p><strong>Data de Retorno Esperada:</strong> {format(new Date(receipt.expected_return_date), "dd/MM/yyyy", { locale: ptBR })}</p>
             <p><strong>Uso Pessoal:</strong> {receipt.is_personal_use ? 'Sim' : 'Não'}</p>
             <p><strong>Observações:</strong> {receipt.notes || 'Nenhuma'}</p>
+            
+            {receipt.returned_date && (
+              <p><strong>Data de Devolução:</strong> {format(new Date(receipt.returned_date), "dd/MM/yyyy HH:mm", { locale: ptBR })}</p>
+            )}
+            
+            {receipt.return_notes && (
+              <p><strong>Observações da Devolução:</strong> {receipt.return_notes}</p>
+            )}
           </div>
         </div>
 
