@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { PackageCheck, Trash } from 'lucide-react';
+import { PackageCheck, Trash, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
@@ -65,6 +64,11 @@ const WithdrawalsList: React.FC<WithdrawalsListProps> = ({ equipmentId }) => {
     setSelectedWithdrawal(null);
   };
 
+  const formatWithdrawalId = (id: string) => {
+    const numericId = parseInt(id.split('-')[0], 10);
+    return `#${numericId.toString().padStart(4, '0')}`;
+  };
+
   return (
     <div>
       <h2 className="text-lg font-medium mb-4">Retiradas</h2>
@@ -77,6 +81,7 @@ const WithdrawalsList: React.FC<WithdrawalsListProps> = ({ equipmentId }) => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>ID</TableHead>
                 <TableHead>Data Retirada</TableHead>
                 <TableHead>Data Esperada</TableHead>
                 <TableHead>Responsável</TableHead>
@@ -87,6 +92,9 @@ const WithdrawalsList: React.FC<WithdrawalsListProps> = ({ equipmentId }) => {
             <TableBody>
               {withdrawals.map((withdrawal) => (
                 <TableRow key={withdrawal.id}>
+                  <TableCell>
+                    {withdrawal.is_scheduled ? '--' : formatWithdrawalId(withdrawal.id)}
+                  </TableCell>
                   <TableCell>
                     {withdrawal.withdrawal_date 
                       ? format(new Date(withdrawal.withdrawal_date), 'dd/MM/yyyy', { locale: ptBR })
@@ -136,7 +144,6 @@ const WithdrawalsList: React.FC<WithdrawalsListProps> = ({ equipmentId }) => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Return Modal */}
       {selectedWithdrawal && (
         <ReturnModal
           isOpen={isReturnModalOpen}

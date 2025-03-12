@@ -11,9 +11,9 @@ export const useWithdrawals = (equipmentId?: string) => {
         .from('equipment_withdrawals')
         .select(`
           *,
-          equipment:equipment_id(id, name),
-          user:user_id(id, full_name),
-          production:production_id(id, title)
+          equipment:equipment_id(*),
+          user:profiles(*),
+          production:production_id(*)
         `);
 
       if (equipmentId) {
@@ -24,7 +24,7 @@ export const useWithdrawals = (equipmentId?: string) => {
 
       if (error) throw error;
       
-      // Ensure all related data is properly formatted
+      // Format the data with proper relationships
       const processedData = (data || []).map(item => ({
         ...item,
         user: item.user || { id: item.user_id, full_name: 'Usuário não encontrado' },
@@ -32,11 +32,11 @@ export const useWithdrawals = (equipmentId?: string) => {
         production: item.production_id 
           ? (item.production || { id: item.production_id, title: 'Produção não encontrada' }) 
           : null,
-        // Ensure status is one of the allowed types
-        status: item.status as "withdrawn" | "overdue" | "returned" | "returned_late"
+        status: item.status as "withdrawn" | "overdue" | "returned" | "returned_late",
+        is_scheduled: !!item.is_scheduled
       }));
       
-      return processedData as EquipmentWithdrawal[];
+      return processedData;
     },
   });
 };

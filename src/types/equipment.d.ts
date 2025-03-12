@@ -1,4 +1,3 @@
-
 export interface ScheduleModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -6,6 +5,12 @@ export interface ScheduleModalProps {
   equipmentName?: string;
   scheduleToEdit?: EquipmentSchedule;
   onSuccess: () => void;
+  isScheduling?: boolean;  // Add this to distinguish between scheduling and withdrawal
+}
+
+export interface WithdrawalType {
+  id: string;
+  formatted_id: string;  // For #0001 format
 }
 
 export interface ReturnModalProps {
@@ -15,6 +20,7 @@ export interface ReturnModalProps {
   equipmentName?: string;
   equipmentWithdrawal?: EquipmentWithdrawal;
   onSuccess: () => void;
+  withdrawalType?: 'schedule' | 'immediate';
 }
 
 export interface ReceiptModalProps {
@@ -94,4 +100,5 @@ export interface EquipmentWithdrawal {
     id: string;
     title: string;
   } | null;
+  is_scheduled?: boolean;
 }
