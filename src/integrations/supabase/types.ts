@@ -56,7 +56,6 @@ export type Database = {
           model: string | null
           name: string
           notes: string | null
-          quantity: number | null
           serial_number: string | null
           status: string | null
           updated_at: string | null
@@ -71,7 +70,6 @@ export type Database = {
           model?: string | null
           name: string
           notes?: string | null
-          quantity?: number | null
           serial_number?: string | null
           status?: string | null
           updated_at?: string | null
@@ -86,7 +84,6 @@ export type Database = {
           model?: string | null
           name?: string
           notes?: string | null
-          quantity?: number | null
           serial_number?: string | null
           status?: string | null
           updated_at?: string | null

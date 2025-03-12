@@ -41,7 +41,7 @@ const EquipmentHeader = ({
       <div className="flex space-x-3 w-full md:w-auto">
         <Button 
           onClick={openKitModal}
-          className="bg-blue-600 hover:bg-blue-700 text-white w-full md:w-auto"
+          className="bg-[#141414] hover:bg-[#141414]/90 text-white w-full md:w-auto"
         >
           <ShoppingCart className="h-4 w-4 mr-2" />
           Retirar KIT

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Plus, Search, Filter, Package, Calendar, LogOut, CheckCircle, AlertTriangle, ShoppingCart, History, Users, Edit, ArrowLeft, FileText, Info, Receipt, ReceiptText } from "lucide-react";
 import MainLayout from "@/components/layout/MainLayout";
@@ -19,6 +20,9 @@ import SchedulesList from "@/components/equipment/SchedulesList";
 import WithdrawalsList from "@/components/equipment/WithdrawalsList";
 import EquipmentModal from "@/components/equipment/EquipmentModal";
 import ReceiptModal from "@/components/equipment/ReceiptModal";
+import { WithdrawalModal } from "@/components/equipment/WithdrawalModal";
+import ReturnModal from "@/components/equipment/ReturnModal";
+import ScheduleModal from "@/components/equipment/ScheduleModal";
 
 // Component imports
 import EquipmentHeader from "@/components/equipment/EquipmentHeader";
@@ -27,14 +31,6 @@ import StatusTables from "@/components/equipment/StatusTables";
 import InventoryTab from "@/components/equipment/InventoryTab";
 import HistoryTab from "@/components/equipment/HistoryTab";
 import ReceiptsTab from "@/components/equipment/ReceiptsTab";
-
-// Dados de exemplo para produções
-const productionOptions = [
-  { id: "1", name: "Campanha de Marketing - Verão 2023", date: new Date(2023, 11, 15) },
-  { id: "2", name: "Vídeo Institucional", date: new Date(2023, 10, 5) },
-  { id: "3", name: "Ensaio Fotográfico Produto", date: new Date(2023, 9, 20) },
-  { id: "4", name: "Documentário Social", date: new Date(2023, 8, 10) },
-];
 
 // Função para buscar equipamentos do Supabase
 const fetchEquipments = async (): Promise<EquipmentType[]> => {
@@ -53,32 +49,54 @@ const fetchEquipments = async (): Promise<EquipmentType[]> => {
 
 // Função para buscar recibos do Supabase
 const fetchReceipts = async (): Promise<ReceiptType[]> => {
-  const { data, error } = await supabase
-    .from("equipment_withdrawals")
-    .select(`
-      id,
-      withdrawal_date,
-      equipment_id,
-      equipment:equipment_id (id, name),
-      user_id,
-      user:user_id (id, full_name),
-      production_id,
-      production:production_id (id, title),
-      expected_return_date,
-      returned_date,
-      is_personal_use,
-      notes,
-      status,
-      created_at:withdrawal_date
-    `)
-    .order("withdrawal_date", { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from("equipment_withdrawals")
+      .select(`
+        id,
+        withdrawal_date,
+        equipment_id,
+        equipment:equipment_id (id, name),
+        user_id,
+        production_id,
+        production:production_id (id, title),
+        expected_return_date,
+        returned_date,
+        is_personal_use,
+        notes,
+        status
+      `)
+      .order("withdrawal_date", { ascending: false });
 
-  if (error) {
-    console.error("Erro ao buscar recibos:", error);
-    throw new Error(error.message);
+    if (error) {
+      console.error("Erro ao buscar recibos:", error);
+      throw new Error(error.message);
+    }
+
+    // Add user data separately since the join is causing issues
+    const receiptsWithUsers = await Promise.all(data.map(async (receipt) => {
+      const { data: userData, error: userError } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .eq("id", receipt.user_id)
+        .maybeSingle();
+      
+      if (userError) {
+        console.error("Erro ao buscar usuário:", userError);
+      }
+      
+      return {
+        ...receipt,
+        user: userData || { id: receipt.user_id, full_name: "Usuário desconhecido" },
+        created_at: receipt.withdrawal_date
+      };
+    }));
+
+    return receiptsWithUsers as unknown as ReceiptType[];
+  } catch (error) {
+    console.error("Erro inesperado ao buscar recibos:", error);
+    return [];
   }
-
-  return (data as unknown as ReceiptType[]) || [];
 };
 
 // Função para buscar produções do Supabase
@@ -200,12 +218,12 @@ const Equipment = () => {
     ]);
   }, []);
   
-  // Estatísticas de equipamentos
+  // Estatísticas de equipamentos - corrigido para não usar operador de coalescência aninhado
   const equipmentStats = {
-    total: equipments.reduce((acc, equipment) => acc + (equipment.quantity || 0), 0),
-    available: equipments.reduce((acc, equipment) => acc + ((equipment.status === 'disponível' ? equipment.quantity : 0) || 0), 0),
-    inUse: equipments.reduce((acc, equipment) => acc + ((equipment.status === 'em uso' ? equipment.quantity : 0) || 0), 0),
-    maintenance: equipments.reduce((acc, equipment) => acc + ((equipment.status === 'manutenção' ? equipment.quantity : 0) || 0), 0),
+    total: equipments.reduce((acc, equipment) => acc + (equipment.quantity || 1), 0),
+    available: equipments.filter(e => e.status === 'disponível').reduce((acc, equipment) => acc + (equipment.quantity || 1), 0),
+    inUse: equipments.filter(e => e.status === 'em uso').reduce((acc, equipment) => acc + (equipment.quantity || 1), 0),
+    maintenance: equipments.filter(e => e.status === 'manutenção').reduce((acc, equipment) => acc + (equipment.quantity || 1), 0),
   };
   
   // Filtragem de equipamentos
@@ -236,7 +254,7 @@ const Equipment = () => {
   // Filtragem de recibos
   const filteredReceipts = receipts.filter((receipt) => {
     const matchesSearch = searchTerm === "" || 
-      receipt.equipment?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (receipt.equipment?.name && receipt.equipment.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (receipt.production?.title && receipt.production.title.toLowerCase().includes(searchTerm.toLowerCase()));
     
     return matchesSearch;
@@ -345,9 +363,6 @@ const Equipment = () => {
     }
 
     setSelectedEquipment(equipment);
-    setCheckoutProduction("");
-    setCheckoutNotes("");
-    setIsPersonalUse(false);
     setIsCheckoutModalOpen(true);
   };
 
@@ -430,9 +445,13 @@ const Equipment = () => {
         .eq('status', 'withdrawn')
         .order('withdrawal_date', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
       
       if (receiptFetchError) throw receiptFetchError;
+      
+      if (!receiptData) {
+        throw new Error('Recibo não encontrado');
+      }
       
       // Atualiza o recibo
       const { error: receiptUpdateError } = await supabase
@@ -472,77 +491,17 @@ const Equipment = () => {
   };
 
   // Função para agendar um equipamento
-  const handleScheduleEquipment = async () => {
-    if (!selectedEquipment || !user || !selectedDate || !scheduleEndDate) return;
-    
-    try {
-      const scheduleData = {
-        equipment_id: selectedEquipment.id,
-        user_id: user.id,
-        production_id: selectedProduction || null,
-        start_date: selectedDate.toISOString(),
-        end_date: scheduleEndDate.toISOString(),
-        notes: scheduleNotes || null
-      };
-      
-      const { error } = await supabase
-        .from('equipment_schedules')
-        .insert(scheduleData);
-      
-      if (error) throw error;
-      
-      toast.success(`${selectedEquipment.name} agendado com sucesso!`);
-      
-      // Adiciona um novo evento ao histórico
-      const newEvent: HistoryEvent = {
-        id: `h${historyEvents.length + 1}`,
-        equipmentId: selectedEquipment.id,
-        equipmentName: selectedEquipment.name,
-        eventType: "schedule",
-        date: new Date(),
-        responsibleName: profile?.full_name || user.email || "Usuário Atual",
-        productionName: productions.find(p => p.id === selectedProduction)?.title,
-        notes: scheduleNotes
-      };
-      
-      setHistoryEvents(prev => [newEvent, ...prev]);
-      closeScheduleModal();
-      
-      // Atualiza a lista de agendamentos
-      queryClient.invalidateQueries({ queryKey: ['schedules'] });
-    } catch (error) {
-      console.error('Erro ao agendar equipamento:', error);
-      toast.error('Ocorreu um erro ao agendar o equipamento');
-    }
-  };
-
-  // Funções para abrir/fechar modais
-  const openKitModal = () => {
-    setWithdrawalType('immediate'); // Reset to default
-    setIsWithdrawalTypeModalOpen(true);
-  };
-
-  const closeWithdrawalTypeModal = () => {
-    setIsWithdrawalTypeModalOpen(false);
-  };
-
-  const handleWithdrawalTypeSelection = (type: 'schedule' | 'immediate') => {
-    setWithdrawalType(type);
-    setIsWithdrawalTypeModalOpen(false);
-    setIsKitModalOpen(true);
-  };
-  
   const openScheduleModal = (equipment: EquipmentType) => {
     setSelectedEquipment(equipment);
+    setSelectedDate(new Date());
+    setScheduleEndDate(new Date());
+    setSelectedProduction("");
+    setScheduleNotes("");
     setIsScheduleModalOpen(true);
   };
 
   const closeScheduleModal = () => {
     setSelectedEquipment(null);
-    setSelectedDate(new Date());
-    setScheduleEndDate(new Date());
-    setSelectedProduction("");
-    setScheduleNotes("");
     setIsScheduleModalOpen(false);
   };
   
@@ -558,6 +517,11 @@ const Equipment = () => {
     setIsReceiptModalOpen(false);
   };
 
+  // Funções para abrir/fechar modais
+  const openKitModal = () => {
+    setIsKitModalOpen(true);
+  };
+
   // Função para fechar o modal de kit
   const closeKitModal = () => {
     setIsKitModalOpen(false);
@@ -569,7 +533,9 @@ const Equipment = () => {
       receipt => receipt.equipment?.id === equipmentId && receipt.status === 'withdrawn'
     );
     
-    return withdrawalForEquipment?.production?.title || 'Uso Pessoal';
+    if (!withdrawalForEquipment) return 'Não encontrado';
+    
+    return withdrawalForEquipment.production?.title || (withdrawalForEquipment.is_personal_use ? 'Uso Pessoal' : 'Sem produção');
   };
 
   // Função para abrir modal de novo equipamento
@@ -659,11 +625,60 @@ const Equipment = () => {
       
       <ReceiptModal
         isOpen={isReceiptModalOpen}
-        onClose={() => closeReceiptModal()}
+        onClose={closeReceiptModal}
         receipt={selectedReceipt}
       />
       
-      {/* Other modals would go here */}
+      {/* Modals para retirada e devolução */}
+      {selectedEquipment && (
+        <>
+          <WithdrawalModal 
+            isOpen={isCheckoutModalOpen}
+            onClose={closeCheckoutModal}
+            equipmentId={selectedEquipment.id}
+            equipmentName={selectedEquipment.name}
+            onSuccess={() => {
+              refetch();
+              refetchReceipts();
+            }}
+            isPersonalUse={false}
+          />
+          
+          <ReturnModal
+            isOpen={isReturnModalOpen}
+            onClose={closeReturnModal}
+            equipmentId={selectedEquipment.id}
+            equipmentName={selectedEquipment.name}
+            onSuccess={() => {
+              refetch();
+              refetchReceipts();
+            }}
+          />
+          
+          <ScheduleModal
+            isOpen={isScheduleModalOpen}
+            onClose={closeScheduleModal}
+            equipmentId={selectedEquipment.id}
+            equipmentName={selectedEquipment.name}
+            onSuccess={() => {
+              queryClient.invalidateQueries({queryKey: ['schedules']});
+            }}
+          />
+        </>
+      )}
+
+      {/* Modal para retirada de Kit */}
+      <WithdrawalModal 
+        isOpen={isKitModalOpen}
+        onClose={closeKitModal}
+        equipmentId=""
+        equipmentName="Kit de Equipamentos"
+        onSuccess={() => {
+          refetch();
+          refetchReceipts();
+        }}
+        isPersonalUse={false}
+      />
     </MainLayout>
   );
 };
