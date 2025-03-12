@@ -15,7 +15,7 @@ export const useSchedules = () => {
           user:user_id(id, full_name),
           production:production_id(id, title)
         `)
-        .order('start_date', { ascending: true });
+        .returns<EquipmentSchedule[]>();
 
       if (error) throw error;
       return data || [];

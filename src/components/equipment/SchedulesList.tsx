@@ -1,169 +1,263 @@
-
-import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useState, useEffect } from 'react';
 import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
-  TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { supabase } from "@/integrations/supabase/client";
-import { format, isAfter, isBefore } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { Badge } from "@/components/ui/badge";
-import { 
-  Search,
-  Calendar,
-  Clock,
-  CheckCircle
-} from "lucide-react";
-import { Input } from "@/components/ui/input";
+  Paper,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TextField,
+  Snackbar,
+  Alert,
+} from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
+import { DatePicker } from '@mui/x-date-pickers';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs, { Dayjs } from 'dayjs';
+import { supabase } from '@/integrations/supabase/client';
+import { EquipmentSchedule } from '@/types/equipment';
+import { toast } from 'react-toastify';
 
-interface ScheduleData {
-  id: string;
-  equipment_id: string;
-  user_id: string;
-  production_id: string;
-  start_date: string;
-  end_date: string;
-  notes: string | null;
-  created_at: string;
-  equipment: {
-    name: string;
-  };
-  user: {
-    full_name: string;
-  };
-  production: {
-    title: string;
-  };
-}
+const SchedulesList = () => {
+  const [schedules, setSchedules] = useState<EquipmentSchedule[]>([]);
+  const [open, setOpen] = useState(false);
+  const [selectedSchedule, setSelectedSchedule] = useState<EquipmentSchedule | null>(null);
+  const [startDate, setStartDate] = useState<Dayjs | null>(null);
+  const [endDate, setEndDate] = useState<Dayjs | null>(null);
+  const [notes, setNotes] = useState('');
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
 
-export const SchedulesList: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState("");
+  useEffect(() => {
+    fetchSchedules();
+  }, []);
 
-  // Fetch all schedules
-  const { data: schedules = [], isLoading } = useQuery({
-    queryKey: ["equipment_schedules"],
-    queryFn: async () => {
+  const fetchSchedules = async () => {
+    const { data, error } = await supabase
+      .from('equipment_schedules')
+      .select(`
+        *,
+        equipment:equipment_id(id, name),
+        user:user_id(id, full_name),
+        production:production_id(id, title)
+      `)
+      .order('start_date', { ascending: true });
+
+    if (error) {
+      toast.error('Erro ao carregar agendamentos');
+      return [];
+    }
+
+    setSchedules(data || []);
+  };
+
+  const handleOpen = (schedule?: EquipmentSchedule) => {
+    setSelectedSchedule(schedule || null);
+    setStartDate(schedule ? dayjs(schedule.start_date) : null);
+    setEndDate(schedule ? dayjs(schedule.end_date) : null);
+    setNotes(schedule ? schedule.notes || '' : '');
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+    setSelectedSchedule(null);
+  };
+
+  const handleStartDateChange = (date: Dayjs | null) => {
+    setStartDate(date);
+  };
+
+  const handleEndDateChange = (date: Dayjs | null) => {
+    setEndDate(date);
+  };
+
+  const handleNotesChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setNotes(event.target.value);
+  };
+
+  const handleSubmit = async () => {
+    if (!startDate || !endDate) {
+      setSnackbarMessage('Por favor, preencha todas as datas.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+      return;
+    }
+
+    const startDateString = startDate.format('YYYY-MM-DD');
+    const endDateString = endDate.format('YYYY-MM-DD');
+
+    if (selectedSchedule) {
+      // Update existing schedule
       const { data, error } = await supabase
-        .from("equipment_schedules")
-        .select(`
-          *,
-          equipment:equipment_id(name),
-          user:user_id(full_name),
-          production:production_id(title)
-        `)
-        .order("start_date", { ascending: true });
+        .from('equipment_schedules')
+        .update({
+          start_date: startDateString,
+          end_date: endDateString,
+          notes: notes,
+        })
+        .eq('id', selectedSchedule.id);
 
-      if (error) throw error;
-      return data || [];
-    },
-  });
-
-  const filteredSchedules = schedules.filter((schedule) => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      schedule.equipment?.name.toLowerCase().includes(searchLower) ||
-      schedule.user?.full_name.toLowerCase().includes(searchLower) ||
-      schedule.production?.title.toLowerCase().includes(searchLower)
-    );
-  });
-
-  const getScheduleStatus = (startDate: string, endDate: string) => {
-    const now = new Date();
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-
-    if (isAfter(now, end)) {
-      return (
-        <Badge className="bg-gray-600">
-          <CheckCircle className="h-3 w-3 mr-1" /> Concluído
-        </Badge>
-      );
-    } else if (isAfter(now, start) && isBefore(now, end)) {
-      return (
-        <Badge className="bg-[#ff3335]">
-          <Clock className="h-3 w-3 mr-1" /> Em Andamento
-        </Badge>
-      );
+      if (error) {
+        setSnackbarMessage('Erro ao atualizar agendamento.');
+        setSnackbarSeverity('error');
+        setOpenSnackbar(true);
+      } else {
+        setSnackbarMessage('Agendamento atualizado com sucesso!');
+        setSnackbarSeverity('success');
+        setOpenSnackbar(true);
+        fetchSchedules();
+      }
     } else {
-      return (
-        <Badge className="bg-blue-600">
-          <Calendar className="h-3 w-3 mr-1" /> Agendado
-        </Badge>
-      );
+      // Create new schedule
+      const { data, error } = await supabase
+        .from('equipment_schedules')
+        .insert([
+          {
+            equipment_id: 'a99a9a9a-aaaa-4a9a-a99a-aaaaaaaaaaaa', // Replace with actual equipment_id
+            user_id: 'a99a9a9a-aaaa-4a9a-a99a-aaaaaaaaaaaa', // Replace with actual user_id
+            start_date: startDateString,
+            end_date: endDateString,
+            notes: notes,
+          },
+        ]);
+
+      if (error) {
+        setSnackbarMessage('Erro ao criar agendamento.');
+        setSnackbarSeverity('error');
+        setOpenSnackbar(true);
+      } else {
+        setSnackbarMessage('Agendamento criado com sucesso!');
+        setSnackbarSeverity('success');
+        setOpenSnackbar(true);
+        fetchSchedules();
+      }
+    }
+
+    handleClose();
+  };
+
+  const handleDelete = async (id: string) => {
+    const { data, error } = await supabase
+      .from('equipment_schedules')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      setSnackbarMessage('Erro ao excluir agendamento.');
+      setSnackbarSeverity('error');
+      setOpenSnackbar(true);
+    } else {
+      setSnackbarMessage('Agendamento excluído com sucesso!');
+      setSnackbarSeverity('success');
+      setOpenSnackbar(true);
+      fetchSchedules();
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-40">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-red-700" />
-      </div>
-    );
-  }
+  const handleCloseSnackbar = (event: React.SyntheticEvent | Event, reason?: string) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+
+    setOpenSnackbar(false);
+  };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center bg-[#141414] rounded-md px-3 py-2 w-full">
-        <Search className="h-5 w-5 text-gray-400 mr-2" />
-        <Input
-          placeholder="Buscar agendamentos..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full"
-        />
-      </div>
+    <div>
+      <IconButton color="primary" aria-label="add" onClick={() => handleOpen()}>
+        <AddIcon />
+      </IconButton>
 
-      <div className="overflow-x-auto rounded-md border border-[#141414]">
-        <Table>
-          <TableHeader>
+      <TableContainer component={Paper}>
+        <Table sx={{ minWidth: 650 }} aria-label="simple table">
+          <TableHead>
             <TableRow>
-              <TableHead>Equipamento</TableHead>
-              <TableHead>Responsável</TableHead>
-              <TableHead>Produção</TableHead>
-              <TableHead>Início</TableHead>
-              <TableHead>Fim</TableHead>
-              <TableHead>Status</TableHead>
+              <TableCell>Equipment</TableCell>
+              <TableCell>User</TableCell>
+              <TableCell>Start Date</TableCell>
+              <TableCell>End Date</TableCell>
+              <TableCell>Notes</TableCell>
+              <TableCell>Actions</TableCell>
             </TableRow>
-          </TableHeader>
+          </TableHead>
           <TableBody>
-            {filteredSchedules.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-10 text-gray-500">
-                  Nenhum agendamento encontrado
+            {schedules.map((schedule) => (
+              <TableRow key={schedule.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                <TableCell component="th" scope="row">
+                  {schedule.equipment?.name}
+                </TableCell>
+                <TableCell>{schedule.user?.full_name}</TableCell>
+                <TableCell>{schedule.start_date}</TableCell>
+                <TableCell>{schedule.end_date}</TableCell>
+                <TableCell>{schedule.notes}</TableCell>
+                <TableCell>
+                  <IconButton aria-label="edit" onClick={() => handleOpen(schedule)}>
+                    <EditIcon />
+                  </IconButton>
+                  <IconButton aria-label="delete" onClick={() => handleDelete(schedule.id)}>
+                    <DeleteIcon />
+                  </IconButton>
                 </TableCell>
               </TableRow>
-            ) : (
-              filteredSchedules.map((schedule) => (
-                <TableRow key={schedule.id}>
-                  <TableCell className="font-medium">
-                    {schedule.equipment?.name || "N/A"}
-                  </TableCell>
-                  <TableCell>{schedule.user?.full_name || "N/A"}</TableCell>
-                  <TableCell>{schedule.production?.title || "N/A"}</TableCell>
-                  <TableCell>
-                    {format(new Date(schedule.start_date), "dd/MM/yyyy", {
-                      locale: ptBR,
-                    })}
-                  </TableCell>
-                  <TableCell>
-                    {format(new Date(schedule.end_date), "dd/MM/yyyy", {
-                      locale: ptBR,
-                    })}
-                  </TableCell>
-                  <TableCell>
-                    {getScheduleStatus(schedule.start_date, schedule.end_date)}
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
+            ))}
           </TableBody>
         </Table>
-      </div>
+      </TableContainer>
+
+      <Dialog open={open} onClose={handleClose}>
+        <DialogTitle>{selectedSchedule ? 'Edit Schedule' : 'Create Schedule'}</DialogTitle>
+        <DialogContent>
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <DatePicker
+              label="Start Date"
+              value={startDate}
+              onChange={handleStartDateChange}
+              renderInput={(params) => <TextField {...params} margin="normal" />}
+            />
+            <DatePicker
+              label="End Date"
+              value={endDate}
+              onChange={handleEndDateChange}
+              renderInput={(params) => <TextField {...params} margin="normal" />}
+            />
+          </LocalizationProvider>
+          <TextField
+            label="Notes"
+            multiline
+            rows={4}
+            value={notes}
+            onChange={handleNotesChange}
+            margin="normal"
+            fullWidth
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>Cancel</Button>
+          <Button onClick={handleSubmit} color="primary">
+            {selectedSchedule ? 'Update' : 'Create'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar open={openSnackbar} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+        <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} sx={{ width: '100%' }}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </div>
   );
 };
+
+export default SchedulesList;

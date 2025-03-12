@@ -15,7 +15,8 @@ export const useWithdrawals = () => {
           user:user_id(id, full_name),
           production:production_id(id, title)
         `)
-        .order('withdrawal_date', { ascending: false });
+        .order('withdrawal_date', { ascending: false })
+        .returns<EquipmentWithdrawal[]>();
 
       if (error) throw error;
       return data || [];

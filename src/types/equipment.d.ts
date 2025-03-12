@@ -20,8 +20,11 @@ export interface EquipmentSchedule {
   start_date: string;
   end_date: string;
   notes?: string;
-  created_at?: string;
-  equipment?: Equipment;
+  created_at: string;
+  equipment?: {
+    id: string;
+    name: string;
+  };
   user?: {
     id: string;
     full_name: string;
@@ -43,7 +46,10 @@ export interface EquipmentWithdrawal {
   status: 'withdrawn' | 'overdue' | 'returned' | 'returned_late';
   notes?: string;
   is_personal_use: boolean;
-  equipment?: Equipment;
+  equipment?: {
+    id: string;
+    name: string;
+  };
   user?: {
     id: string;
     full_name: string;
@@ -64,6 +70,8 @@ export interface Receipt {
   returned_date?: string;
   status: string;
   notes?: string;
+  return_notes?: string;
+  created_at: string;
   is_personal_use: boolean;
   equipment_name: string;
   user_name: string;

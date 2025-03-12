@@ -1,246 +1,341 @@
-
-import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useState, useEffect } from 'react';
 import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
-  TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { supabase } from "@/integrations/supabase/client";
-import { format, isAfter } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { Badge } from "@/components/ui/badge";
-import { 
-  FileText, 
-  Check, 
-  Clock, 
-  AlertTriangle,
-  User,
-  CalendarX,
-  Search
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ReceiptModal } from "./ReceiptModal";
+  Paper,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TextField,
+  FormControlLabel,
+  Checkbox,
+} from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
+import { toast } from 'react-hot-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { EquipmentWithdrawal } from '@/types/equipment';
+import dayjs from 'dayjs';
+import 'dayjs/locale/pt-br';
+import { useRouter } from 'next/router';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 
-interface WithdrawalData {
-  id: string;
-  equipment_id: string;
-  user_id: string;
-  production_id: string | null;
-  created_at: string;
-  expected_return_date: string;
-  returned_date: string | null;
-  notes: string | null;
-  status: string;
-  is_personal_use: boolean;
-  equipment: {
-    name: string;
-  };
-  user: {
-    full_name: string;
-  };
-  production: {
-    title: string;
-  } | null;
-}
+dayjs.locale('pt-br');
 
-export const WithdrawalsList: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedReceiptId, setSelectedReceiptId] = useState<string | null>(null);
-  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+const WithdrawalsList = () => {
+  const [withdrawals, setWithdrawals] = useState<EquipmentWithdrawal[]>([]);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [selectedWithdrawal, setSelectedWithdrawal] = useState<EquipmentWithdrawal | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const router = useRouter();
 
-  // Fetch all withdrawals
-  const { data: withdrawals = [], isLoading, refetch } = useQuery({
-    queryKey: ["equipment_withdrawals"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("equipment_withdrawals")
-        .select(`
-          *,
-          equipment:equipment_id(name),
-          user:user_id(full_name),
-          production:production_id(title)
-        `)
-        .order("created_at", { ascending: false });
+  useEffect(() => {
+    const fetchInitialWithdrawals = async () => {
+      const initialWithdrawals = await fetchWithdrawals();
+      setWithdrawals(initialWithdrawals);
+    };
 
-      if (error) throw error;
+    fetchInitialWithdrawals();
+  }, []);
 
-      // Check for any overdue withdrawals and update their status
-      const now = new Date();
-      const overdueWithdrawals = data?.filter(
-        (w) => 
-          w.status === "withdrawn" && 
-          isAfter(now, new Date(w.expected_return_date))
-      ) || [];
+  const fetchWithdrawals = async () => {
+    const { data, error } = await supabase
+      .from('equipment_withdrawals')
+      .select(`
+        *,
+        equipment:equipment_id(id, name),
+        user:user_id(id, full_name),
+        production:production_id(id, title)
+      `)
+      .order('withdrawal_date', { ascending: false });
 
-      if (overdueWithdrawals.length > 0) {
-        await Promise.all(
-          overdueWithdrawals.map(async (withdrawal) => {
-            await supabase
-              .from("equipment_withdrawals")
-              .update({ status: "overdue" })
-              .eq("id", withdrawal.id);
-          })
-        );
-        
-        // Update the status in our local data
-        overdueWithdrawals.forEach(w => {
-          w.status = "overdue";
-        });
-      }
+    if (error) {
+      toast.error('Erro ao carregar retiradas');
+      return [];
+    }
 
-      return data || [];
-    },
-  });
-
-  const filteredWithdrawals = withdrawals.filter((withdrawal) => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      withdrawal.equipment?.name.toLowerCase().includes(searchLower) ||
-      withdrawal.user?.full_name.toLowerCase().includes(searchLower) ||
-      (withdrawal.production?.title?.toLowerCase().includes(searchLower) || false) ||
-      withdrawal.status.toLowerCase().includes(searchLower)
-    );
-  });
-
-  const openReceiptModal = (receiptId: string) => {
-    setSelectedReceiptId(receiptId);
-    setIsReceiptModalOpen(true);
+    return data || [];
   };
 
-  const renderStatusBadge = (status: string, expectedDate: string, returnedDate: string | null) => {
-    switch (status) {
-      case "withdrawn":
-        return (
-          <Badge className="bg-[#ff3335]">
-            <Clock className="h-3 w-3 mr-1" /> Em Uso
-          </Badge>
-        );
-      case "overdue":
-        return (
-          <Badge className="bg-red-600">
-            <AlertTriangle className="h-3 w-3 mr-1" /> Atrasado
-          </Badge>
-        );
-      case "returned":
-        return (
-          <Badge className="bg-green-600">
-            <Check className="h-3 w-3 mr-1" /> Devolvido
-          </Badge>
-        );
-      case "returned_late":
-        return (
-          <Badge className="bg-amber-600">
-            <CalendarX className="h-3 w-3 mr-1" /> Devolvido com Atraso
-          </Badge>
-        );
-      default:
-        return <Badge>Desconhecido</Badge>;
+  const handleOpenDialog = () => {
+    setSelectedWithdrawal(null);
+    setIsEditing(false);
+    setOpenDialog(true);
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setSelectedWithdrawal(null);
+  };
+
+  const handleEditWithdrawal = (withdrawal: EquipmentWithdrawal) => {
+    setSelectedWithdrawal({ ...withdrawal });
+    setIsEditing(true);
+    setOpenDialog(true);
+  };
+
+  const handleDeleteWithdrawal = async (id: string) => {
+    const confirmDelete = window.confirm('Tem certeza que deseja excluir esta retirada?');
+    if (!confirmDelete) return;
+
+    const { error } = await supabase.from('equipment_withdrawals').delete().eq('id', id);
+
+    if (error) {
+      toast.error('Erro ao excluir retirada');
+    } else {
+      toast.success('Retirada excluída com sucesso');
+      const updatedWithdrawals = withdrawals.filter((withdrawal) => withdrawal.id !== id);
+      setWithdrawals(updatedWithdrawals);
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-40">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-red-700" />
-      </div>
-    );
-  }
+  const handleWithdrawalDetails = (id: string) => {
+    router.push(`/withdrawals/${id}`);
+  };
+
+  const handleChange = (event: any) => {
+    const { name, value, type, checked } = event.target;
+    setSelectedWithdrawal((prevWithdrawal) => ({
+      ...prevWithdrawal,
+      [name]: type === 'checkbox' ? checked : value,
+    } as EquipmentWithdrawal));
+  };
+
+  const handleSubmit = async (event: any) => {
+    event.preventDefault();
+
+    if (!selectedWithdrawal) return;
+
+    const {
+      equipment_id,
+      user_id,
+      production_id,
+      withdrawal_date,
+      expected_return_date,
+      returned_date,
+      status,
+      notes,
+      is_personal_use,
+    } = selectedWithdrawal;
+
+    const withdrawalToUpdate = {
+      equipment_id,
+      user_id,
+      production_id,
+      withdrawal_date,
+      expected_return_date,
+      returned_date,
+      status,
+      notes,
+      is_personal_use,
+    };
+
+    if (isEditing) {
+      const { data, error } = await supabase
+        .from('equipment_withdrawals')
+        .update(withdrawalToUpdate)
+        .eq('id', selectedWithdrawal.id)
+        .select()
+        .single();
+
+      if (error) {
+        toast.error('Erro ao atualizar retirada');
+      } else {
+        toast.success('Retirada atualizada com sucesso');
+        setWithdrawals((prevWithdrawals) =>
+          prevWithdrawals.map((withdrawal) => (withdrawal.id === selectedWithdrawal.id ? data : withdrawal))
+        );
+      }
+    } else {
+      const { data, error } = await supabase
+        .from('equipment_withdrawals')
+        .insert(withdrawalToUpdate)
+        .select()
+        .single();
+
+      if (error) {
+        toast.error('Erro ao criar retirada');
+      } else {
+        toast.success('Retirada criada com sucesso');
+        setWithdrawals((prevWithdrawals) => [...prevWithdrawals, data]);
+      }
+    }
+
+    handleCloseDialog();
+  };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center bg-[#141414] rounded-md px-3 py-2 w-full">
-        <Search className="h-5 w-5 text-gray-400 mr-2" />
-        <Input
-          placeholder="Buscar retiradas..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full"
-        />
-      </div>
+    <div>
+      <Button variant="contained" color="primary" onClick={handleOpenDialog} style={{ marginBottom: '20px' }}>
+        <AddIcon /> Nova Retirada
+      </Button>
 
-      <div className="overflow-x-auto rounded-md border border-[#141414]">
-        <Table>
-          <TableHeader>
+      <TableContainer component={Paper}>
+        <Table sx={{ minWidth: 650 }} aria-label="simple table">
+          <TableHead>
             <TableRow>
-              <TableHead>Equipamento</TableHead>
-              <TableHead>Responsável</TableHead>
-              <TableHead>Produção</TableHead>
-              <TableHead>Retirada</TableHead>
-              <TableHead>Devolução Esperada</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Recibo</TableHead>
+              <TableCell>Equipamento</TableCell>
+              <TableCell>Usuário</TableCell>
+              <TableCell>Produção</TableCell>
+              <TableCell>Data de Retirada</TableCell>
+              <TableCell>Data de Retorno Esperada</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Ações</TableCell>
             </TableRow>
-          </TableHeader>
+          </TableHead>
           <TableBody>
-            {filteredWithdrawals.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-10 text-gray-500">
-                  Nenhuma retirada encontrada
+            {withdrawals.map((withdrawal) => (
+              <TableRow key={withdrawal.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                <TableCell component="th" scope="row">
+                  {withdrawal.equipment?.name}
+                </TableCell>
+                <TableCell>{withdrawal.user?.full_name}</TableCell>
+                <TableCell>{withdrawal.production?.title || 'N/A'}</TableCell>
+                <TableCell>{dayjs(withdrawal.withdrawal_date).format('DD/MM/YYYY')}</TableCell>
+                <TableCell>{dayjs(withdrawal.expected_return_date).format('DD/MM/YYYY')}</TableCell>
+                <TableCell>{withdrawal.status}</TableCell>
+                <TableCell>
+                  <IconButton aria-label="details" onClick={() => handleWithdrawalDetails(withdrawal.id)}>
+                    <VisibilityIcon />
+                  </IconButton>
+                  <IconButton aria-label="edit" onClick={() => handleEditWithdrawal(withdrawal)}>
+                    <EditIcon />
+                  </IconButton>
+                  <IconButton aria-label="delete" onClick={() => handleDeleteWithdrawal(withdrawal.id)}>
+                    <DeleteIcon />
+                  </IconButton>
                 </TableCell>
               </TableRow>
-            ) : (
-              filteredWithdrawals.map((withdrawal) => (
-                <TableRow key={withdrawal.id}>
-                  <TableCell className="font-medium">
-                    {withdrawal.equipment?.name || "N/A"}
-                  </TableCell>
-                  <TableCell>{withdrawal.user?.full_name || "N/A"}</TableCell>
-                  <TableCell>
-                    {withdrawal.is_personal_use ? (
-                      <div className="flex items-center">
-                        <User className="h-3 w-3 mr-1" />
-                        <span>Uso Pessoal</span>
-                      </div>
-                    ) : (
-                      withdrawal.production?.title || "N/A"
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {format(new Date(withdrawal.created_at), "dd/MM/yyyy", {
-                      locale: ptBR,
-                    })}
-                  </TableCell>
-                  <TableCell>
-                    {format(new Date(withdrawal.expected_return_date), "dd/MM/yyyy", {
-                      locale: ptBR,
-                    })}
-                  </TableCell>
-                  <TableCell>
-                    {renderStatusBadge(
-                      withdrawal.status,
-                      withdrawal.expected_return_date,
-                      withdrawal.returned_date
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openReceiptModal(withdrawal.id)}
-                      className="h-8 w-8 p-0"
-                    >
-                      <FileText className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
+            ))}
           </TableBody>
         </Table>
-      </div>
+      </TableContainer>
 
-      {selectedReceiptId && (
-        <ReceiptModal
-          isOpen={isReceiptModalOpen}
-          onClose={() => setIsReceiptModalOpen(false)}
-          receiptId={selectedReceiptId}
-        />
-      )}
+      <Dialog open={openDialog} onClose={handleCloseDialog} aria-labelledby="form-dialog-title">
+        <DialogTitle id="form-dialog-title">{isEditing ? 'Editar Retirada' : 'Nova Retirada'}</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            id="equipment_id"
+            name="equipment_id"
+            label="ID do Equipamento"
+            type="text"
+            fullWidth
+            value={selectedWithdrawal?.equipment_id || ''}
+            onChange={handleChange}
+          />
+          <TextField
+            margin="dense"
+            id="user_id"
+            name="user_id"
+            label="ID do Usuário"
+            type="text"
+            fullWidth
+            value={selectedWithdrawal?.user_id || ''}
+            onChange={handleChange}
+          />
+          <TextField
+            margin="dense"
+            id="production_id"
+            name="production_id"
+            label="ID da Produção"
+            type="text"
+            fullWidth
+            value={selectedWithdrawal?.production_id || ''}
+            onChange={handleChange}
+          />
+          <TextField
+            margin="dense"
+            id="withdrawal_date"
+            name="withdrawal_date"
+            label="Data de Retirada"
+            type="date"
+            fullWidth
+            value={selectedWithdrawal?.withdrawal_date || ''}
+            onChange={handleChange}
+            InputLabelProps={{
+              shrink: true,
+            }}
+          />
+          <TextField
+            margin="dense"
+            id="expected_return_date"
+            name="expected_return_date"
+            label="Data de Retorno Esperada"
+            type="date"
+            fullWidth
+            value={selectedWithdrawal?.expected_return_date || ''}
+            onChange={handleChange}
+            InputLabelProps={{
+              shrink: true,
+            }}
+          />
+          <TextField
+            margin="dense"
+            id="returned_date"
+            name="returned_date"
+            label="Data de Retorno"
+            type="date"
+            fullWidth
+            value={selectedWithdrawal?.returned_date || ''}
+            onChange={handleChange}
+            InputLabelProps={{
+              shrink: true,
+            }}
+          />
+          <TextField
+            margin="dense"
+            id="status"
+            name="status"
+            label="Status"
+            type="text"
+            fullWidth
+            value={selectedWithdrawal?.status || ''}
+            onChange={handleChange}
+          />
+          <TextField
+            margin="dense"
+            id="notes"
+            name="notes"
+            label="Notas"
+            type="text"
+            fullWidth
+            multiline
+            rows={4}
+            value={selectedWithdrawal?.notes || ''}
+            onChange={handleChange}
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={selectedWithdrawal?.is_personal_use || false}
+                onChange={handleChange}
+                name="is_personal_use"
+              />
+            }
+            label="Uso pessoal"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog} color="primary">
+            Cancelar
+          </Button>
+          <Button onClick={handleSubmit} color="primary">
+            Salvar
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 };
+
+export default WithdrawalsList;
