@@ -10,7 +10,7 @@ export interface Equipment {
   quantity: number;
   brand?: string;
   model?: string;
-  image_url?: string; // Added image_url property
+  image_url?: string;
 }
 
 export interface EquipmentSchedule {
@@ -30,7 +30,7 @@ export interface EquipmentSchedule {
     id: string;
     title: string;
   };
-  user?: { // Added user property
+  user?: {
     id: string;
     full_name: string;
   };
@@ -113,10 +113,10 @@ export interface EquipmentWithdrawal {
   status: "withdrawn" | "overdue" | "returned" | "returned_late";
   created_at: string;
   is_scheduled: boolean;
-  return_notes?: string; // Added return_notes property
+  return_notes?: string;
+  user_profile_id?: string;
 }
 
-// ReceiptModalProps interface
 export interface ReceiptModalProps {
   isOpen: boolean;
   onClose: () => void;

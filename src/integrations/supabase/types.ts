@@ -152,6 +152,7 @@ export type Database = {
           returned_date: string | null
           status: string
           user_id: string
+          user_profile_id: string | null
           withdrawal_date: string | null
         }
         Insert: {
@@ -164,6 +165,7 @@ export type Database = {
           returned_date?: string | null
           status?: string
           user_id: string
+          user_profile_id?: string | null
           withdrawal_date?: string | null
         }
         Update: {
@@ -176,6 +178,7 @@ export type Database = {
           returned_date?: string | null
           status?: string
           user_id?: string
+          user_profile_id?: string | null
           withdrawal_date?: string | null
         }
         Relationships: [
@@ -191,6 +194,20 @@ export type Database = {
             columns: ["production_id"]
             isOneToOne: false
             referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipment_withdrawals_user_profile_id_fkey"
+            columns: ["user_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_user_profile"
+            columns: ["user_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

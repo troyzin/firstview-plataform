@@ -12,7 +12,6 @@ export const useWithdrawals = (equipmentId?: string) => {
         .select(`
           *,
           equipment:equipment_id(*),
-          user_id,
           production:production_id(*)
         `);
 
@@ -22,14 +21,21 @@ export const useWithdrawals = (equipmentId?: string) => {
       
       const { data, error } = await query.order('withdrawal_date', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching withdrawals:", error);
+        throw error;
+      }
       
-      // Get all user profiles separately to avoid join issues
+      // Get all user profiles separately 
       const userIds = [...new Set((data || []).map(item => item.user_id))];
-      const { data: profilesData } = await supabase
+      const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, full_name')
         .in('id', userIds);
+
+      if (profilesError) {
+        console.error("Error fetching profiles:", profilesError);
+      }
 
       const profilesMap = new Map();
       (profilesData || []).forEach(profile => {
@@ -56,6 +62,7 @@ export const useWithdrawals = (equipmentId?: string) => {
         };
       });
       
+      console.log("Processed withdrawals data:", processedData);
       return processedData as EquipmentWithdrawal[];
     },
   });

@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { PackageCheck, Trash, FileText } from 'lucide-react';
+import { PackageCheck, Trash, ReceiptText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
@@ -11,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { EquipmentWithdrawal } from '@/types/equipment';
 import { useWithdrawals } from '@/hooks/useWithdrawals';
 import { supabase } from '@/integrations/supabase/client';
+import ReceiptModal from '@/components/equipment/ReceiptModal';
 
 interface WithdrawalsListProps {
   equipmentId: string;
@@ -20,6 +21,7 @@ const WithdrawalsList: React.FC<WithdrawalsListProps> = ({ equipmentId }) => {
   const { data: withdrawals = [], isLoading, refetch } = useWithdrawals(equipmentId);
   const [selectedWithdrawal, setSelectedWithdrawal] = useState<EquipmentWithdrawal | null>(null);
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [open, setOpen] = React.useState(false);
   const [withdrawalToDelete, setWithdrawalToDelete] = useState<string | null>(null);
 
@@ -37,12 +39,14 @@ const WithdrawalsList: React.FC<WithdrawalsListProps> = ({ equipmentId }) => {
     if (!withdrawalToDelete) return;
 
     try {
+      console.log("Deleting withdrawal with ID:", withdrawalToDelete);
       const { error } = await supabase
         .from('equipment_withdrawals')
         .delete()
         .eq('id', withdrawalToDelete);
 
       if (error) {
+        console.error("Error deleting withdrawal:", error);
         throw error;
       }
 
@@ -63,6 +67,16 @@ const WithdrawalsList: React.FC<WithdrawalsListProps> = ({ equipmentId }) => {
 
   const closeReturnModal = () => {
     setIsReturnModalOpen(false);
+    setSelectedWithdrawal(null);
+  };
+  
+  const openReceiptModal = (withdrawal: EquipmentWithdrawal) => {
+    setSelectedWithdrawal(withdrawal);
+    setIsReceiptModalOpen(true);
+  };
+  
+  const closeReceiptModal = () => {
+    setIsReceiptModalOpen(false);
     setSelectedWithdrawal(null);
   };
 
@@ -120,6 +134,14 @@ const WithdrawalsList: React.FC<WithdrawalsListProps> = ({ equipmentId }) => {
                     </Button>
                     <Button 
                       variant="ghost" 
+                      size="icon"
+                      onClick={() => openReceiptModal(withdrawal)}
+                      className="hover:bg-[#141414]"
+                    >
+                      <ReceiptText className="h-4 w-4 text-[#ff3335]" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
                       size="icon" 
                       onClick={() => handleOpen(withdrawal.id)}
                       className="hover:bg-[#141414]"
@@ -160,15 +182,23 @@ const WithdrawalsList: React.FC<WithdrawalsListProps> = ({ equipmentId }) => {
       </AlertDialog>
 
       {selectedWithdrawal && (
-        <ReturnModal
-          isOpen={isReturnModalOpen}
-          onClose={closeReturnModal}
-          equipmentWithdrawal={selectedWithdrawal}
-          onSuccess={() => {
-            refetch();
-            closeReturnModal();
-          }}
-        />
+        <>
+          <ReturnModal
+            isOpen={isReturnModalOpen}
+            onClose={closeReturnModal}
+            equipmentWithdrawal={selectedWithdrawal}
+            onSuccess={() => {
+              refetch();
+              closeReturnModal();
+            }}
+          />
+          
+          <ReceiptModal 
+            isOpen={isReceiptModalOpen}
+            onClose={closeReceiptModal}
+            withdrawal={selectedWithdrawal}
+          />
+        </>
       )}
     </div>
   );

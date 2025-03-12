@@ -18,15 +18,15 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, withdrawal
         id: withdrawal?.id || '',
         withdrawal_date: withdrawal?.withdrawal_date || new Date().toISOString(),
         equipment_id: withdrawal?.equipment_id || '',
-        equipment: {
-          name: withdrawal?.equipment?.name || '',
-          id: withdrawal?.equipment?.id || ''
-        },
+        equipment: withdrawal?.equipment ? {
+          name: withdrawal.equipment.name || '',
+          id: withdrawal.equipment.id || ''
+        } : undefined,
         user_id: withdrawal?.user_id || '',
-        user: {
-          full_name: withdrawal?.user?.full_name || 'Usuário não encontrado',
-          id: withdrawal?.user?.id || ''
-        },
+        user: withdrawal?.user ? {
+          full_name: withdrawal.user.full_name || 'Usuário não encontrado',
+          id: withdrawal.user.id || ''
+        } : undefined,
         production_id: withdrawal?.production_id || '',
         production: withdrawal?.production ? {
           title: withdrawal.production.title,
@@ -38,8 +38,7 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({ isOpen, onClose, withdrawal
         notes: withdrawal?.notes || null,
         created_at: withdrawal?.created_at || new Date().toISOString(),
         status: withdrawal?.status || "withdrawn",
-        // Fixed: Use optional chaining for return_notes since it might not exist on EquipmentWithdrawal
-        return_notes: withdrawal?.return_notes || null
+        return_notes: withdrawal?.return_notes
       });
     }
   }, [withdrawal, receivedReceipt]);

@@ -119,6 +119,7 @@ export const ReturnModal: React.FC<ReturnModalProps> = ({
     setIsSubmitting(true);
 
     try {
+      console.log("Updating withdrawal record:", withdrawalId);
       // Update withdrawal record
       const { error: withdrawalError } = await supabase
         .from("equipment_withdrawals")
@@ -129,8 +130,12 @@ export const ReturnModal: React.FC<ReturnModalProps> = ({
         })
         .eq("id", withdrawalId);
 
-      if (withdrawalError) throw withdrawalError;
+      if (withdrawalError) {
+        console.error("Error updating withdrawal:", withdrawalError);
+        throw withdrawalError;
+      }
 
+      console.log("Updating equipment status:", actualEquipmentId);
       // Update equipment status to "disponível"
       const { error: equipmentError } = await supabase
         .from("equipment")
@@ -139,7 +144,10 @@ export const ReturnModal: React.FC<ReturnModalProps> = ({
         })
         .eq("id", actualEquipmentId);
 
-      if (equipmentError) throw equipmentError;
+      if (equipmentError) {
+        console.error("Error updating equipment:", equipmentError);
+        throw equipmentError;
+      }
 
       toast.success(`${actualEquipmentName || "Equipamento"} devolvido com sucesso!`);
       onSuccess();
