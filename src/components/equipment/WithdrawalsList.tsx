@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -111,17 +110,22 @@ const WithdrawalsList: React.FC<WithdrawalsListProps> = ({ equipmentId }) => {
             </TableHeader>
             <TableBody>
               {withdrawals.map((withdrawal) => (
-                <TableRow key={withdrawal.id}>
+                <TableRow key={withdrawal.id} className={withdrawal.is_scheduled ? "opacity-50" : ""}>
                   <TableCell>
-                    {withdrawal.is_scheduled ? '--' : formatWithdrawalId(withdrawal.id)}
+                    {formatWithdrawalId(withdrawal.id)}
+                    {withdrawal.is_scheduled && (
+                      <span className="ml-2 text-xs text-gray-500">(Agendado)</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     {withdrawal.withdrawal_date 
                       ? format(new Date(withdrawal.withdrawal_date), 'dd/MM/yyyy', { locale: ptBR })
-                      : '-'
+                      : 'Agendado'
                     }
                   </TableCell>
-                  <TableCell>{format(new Date(withdrawal.expected_return_date), 'dd/MM/yyyy', { locale: ptBR })}</TableCell>
+                  <TableCell>
+                    {format(new Date(withdrawal.expected_return_date), 'dd/MM/yyyy', { locale: ptBR })}
+                  </TableCell>
                   <TableCell>{withdrawal.user?.full_name || withdrawal.user_id}</TableCell>
                   <TableCell>{withdrawal.notes || '-'}</TableCell>
                   <TableCell className="text-right">
@@ -129,7 +133,8 @@ const WithdrawalsList: React.FC<WithdrawalsListProps> = ({ equipmentId }) => {
                       variant="ghost" 
                       size="icon" 
                       onClick={() => openReturnModal(withdrawal)}
-                      className="hover:bg-[#141414]"
+                      className="hover:bg, [#141414]"
+                      disabled={withdrawal.is_scheduled}
                     >
                       <PackageCheck className="h-4 w-4 text-[#ff3335]" />
                     </Button>

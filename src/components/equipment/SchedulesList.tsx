@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -101,7 +100,7 @@ const SchedulesList: React.FC<SchedulesListProps> = ({ equipmentId }) => {
           production_id: schedule.production_id,
           withdrawal_date: new Date().toISOString(),
           expected_return_date: schedule.end_date,
-          notes: schedule.notes || 'Retirado de um agendamento',
+          notes: schedule.notes || 'Iniciado a partir de um agendamento',
           status: 'withdrawn'
         })
         .select()
@@ -131,7 +130,7 @@ const SchedulesList: React.FC<SchedulesListProps> = ({ equipmentId }) => {
         throw deleteError;
       }
       
-      toast.success(`${schedule.equipment?.name || 'Equipamento'} agora está em uso!`);
+      toast.success(`Agendamento iniciado com sucesso!`);
       
       // Invalidate relevant queries
       queryClient.invalidateQueries({queryKey: ['schedules']});
@@ -186,20 +185,29 @@ const SchedulesList: React.FC<SchedulesListProps> = ({ equipmentId }) => {
                   <TableCell className="text-right space-x-1">
                     {isScheduleActive(schedule) && (
                       <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="text-[#ff3335] hover:text-white hover:bg-[#ff3335]"
+                        variant="default"
+                        className="bg-[#ff3335] hover:bg-[#cc2a2b] text-white"
                         onClick={() => startUsingEquipment(schedule)}
-                        title="Iniciar Uso"
                         disabled={isStartingUse}
                       >
-                        <PlayCircle className="h-4 w-4" />
+                        <PlayCircle className="h-4 w-4 mr-2" />
+                        Iniciar Uso
                       </Button>
                     )}
-                    <Button variant="ghost" size="icon" onClick={() => handleEditSchedule(schedule)}>
-                      <Edit className="h-4 w-4" />
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => handleEditSchedule(schedule)}
+                      className="hover:bg-[#141414]"
+                    >
+                      <Edit className="h-4 w-4 text-[#ff3335]" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleOpen(schedule.id)}>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => handleOpen(schedule.id)}
+                      className="hover:bg-[#141414]"
+                    >
                       <Trash className="h-4 w-4 text-[#ff3335]" />
                     </Button>
                   </TableCell>
