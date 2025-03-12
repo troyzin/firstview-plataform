@@ -64,8 +64,10 @@ const EquipmentPage = () => {
   };
 
   // Handler to schedule equipment
-  const onScheduleEquipment = (equipment: Equipment) => {
-    toast.info(`Agendamento para ${equipment.name} em breve!`);
+  const onScheduleEquipment = async (equipment: Equipment) => {
+    setSelectedEquipment(equipment);
+    // This will be implemented in a future update with proper scheduling functionality
+    toast.info("Função de agendamento em desenvolvimento");
   };
 
   // Handler to checkout equipment (withdraw)
@@ -138,14 +140,14 @@ const EquipmentPage = () => {
 
   if (isLoading) {
     return (
-      <div className="container py-8 flex justify-center items-center min-h-[60vh]">
+      <div className="py-8 flex justify-center items-center min-h-[60vh]">
         <p className="text-lg font-medium text-gray-400">Carregando equipamentos...</p>
       </div>
     );
   }
 
   return (
-    <div className="container py-8">
+    <div className="py-8">
       <EquipmentHeader
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
@@ -168,6 +170,7 @@ const EquipmentPage = () => {
             Status
           </TabsTrigger>
         </TabsList>
+        
         <TabsContent value="inventory" className="outline-none">
           <InventoryTab
             equipments={filteredEquipments || []}
@@ -177,6 +180,7 @@ const EquipmentPage = () => {
             onCheckoutEquipment={onCheckoutEquipment}
           />
         </TabsContent>
+        
         <TabsContent value="status" className="outline-none">
           <StatusTables
             equipments={filteredEquipments || []}
@@ -213,7 +217,8 @@ const EquipmentPage = () => {
       <WithdrawalModal
         isOpen={isWithdrawalModalOpen}
         onClose={closeWithdrawalModal}
-        equipment={equipmentToWithdraw}
+        equipmentId={equipmentToWithdraw?.id || ''}
+        equipmentName={equipmentToWithdraw?.name || ''}
         onSuccess={handleEquipmentSuccess}
       />
     </div>
