@@ -79,7 +79,7 @@ const InventoryTab = ({
         </Select>
       </div>
       
-      <div className="bg-[#141414] rounded-lg p-4">
+      <div className="bg-[#141414] rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
