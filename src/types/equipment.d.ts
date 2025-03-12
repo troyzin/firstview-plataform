@@ -1,3 +1,4 @@
+
 export interface ScheduleModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -33,4 +34,52 @@ export interface Receipt {
   notes: string | null;
   created_at: string;
   return_notes: string | null;
+}
+
+export interface EquipmentSchedule {
+  id: string;
+  equipment_id: string;
+  user_id: string;
+  production_id?: string | null;
+  start_date: string;
+  end_date: string;
+  notes: string | null;
+  created_at: string | null;
+  equipment?: {
+    id: string;
+    name: string;
+  };
+  user?: {
+    id: string;
+    full_name: string;
+  };
+  production?: {
+    id: string;
+    title: string;
+  } | null;
+}
+
+export interface EquipmentWithdrawal {
+  id: string;
+  equipment_id: string;
+  user_id: string;
+  production_id?: string | null;
+  withdrawal_date: string | null;
+  expected_return_date: string;
+  returned_date: string | null;
+  status: "withdrawn" | "overdue" | "returned" | "returned_late";
+  notes: string | null;
+  is_personal_use: boolean | null;
+  equipment?: {
+    id: string;
+    name: string;
+  };
+  user?: {
+    id: string;
+    full_name: string;
+  };
+  production?: {
+    id: string;
+    title: string;
+  } | null;
 }

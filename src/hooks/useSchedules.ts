@@ -3,11 +3,11 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { EquipmentSchedule } from '@/types/equipment';
 
-export const useSchedules = () => {
+export const useSchedules = (equipmentId?: string) => {
   return useQuery({
-    queryKey: ['schedules'],
+    queryKey: ['schedules', equipmentId],
     queryFn: async (): Promise<EquipmentSchedule[]> => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('equipment_schedules')
         .select(`
           *,
@@ -16,14 +16,22 @@ export const useSchedules = () => {
           production:production_id(id, title)
         `);
 
+      if (equipmentId) {
+        query = query.eq('equipment_id', equipmentId);
+      }
+      
+      const { data, error } = await query.order('start_date', { ascending: false });
+
       if (error) throw error;
       
-      // Certifique-se de que user e production estão presentes mesmo que null
+      // Ensure all related data is properly formatted
       const processedData = (data || []).map(item => ({
         ...item,
         user: item.user || { id: item.user_id, full_name: 'Usuário não encontrado' },
         equipment: item.equipment || { id: item.equipment_id, name: 'Equipamento não encontrado' },
-        production: item.production || (item.production_id ? { id: item.production_id, title: 'Produção não encontrada' } : null)
+        production: item.production_id 
+          ? (item.production || { id: item.production_id, title: 'Produção não encontrada' }) 
+          : null
       }));
       
       return processedData as EquipmentSchedule[];

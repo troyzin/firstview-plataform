@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -86,9 +87,14 @@ const WithdrawalsList: React.FC<WithdrawalsListProps> = ({ equipmentId }) => {
             <TableBody>
               {withdrawals.map((withdrawal) => (
                 <TableRow key={withdrawal.id}>
-                  <TableCell>{format(new Date(withdrawal.withdrawal_date || ''), 'dd/MM/yyyy', { locale: ptBR })}</TableCell>
+                  <TableCell>
+                    {withdrawal.withdrawal_date 
+                      ? format(new Date(withdrawal.withdrawal_date), 'dd/MM/yyyy', { locale: ptBR })
+                      : '-'
+                    }
+                  </TableCell>
                   <TableCell>{format(new Date(withdrawal.expected_return_date), 'dd/MM/yyyy', { locale: ptBR })}</TableCell>
-                  <TableCell>{withdrawal.user_id}</TableCell>
+                  <TableCell>{withdrawal.user?.full_name || withdrawal.user_id}</TableCell>
                   <TableCell>{withdrawal.notes || '-'}</TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon" onClick={() => openReturnModal(withdrawal)}>
@@ -133,15 +139,11 @@ const WithdrawalsList: React.FC<WithdrawalsListProps> = ({ equipmentId }) => {
       {/* Return Modal */}
       <ReturnModal
         isOpen={isReturnModalOpen}
-        onClose={() => {
-          setIsReturnModalOpen(false);
-          setSelectedWithdrawal(null);
-        }}
+        onClose={closeReturnModal}
         equipmentWithdrawal={selectedWithdrawal || undefined}
         onSuccess={() => {
           refetch();
-          setIsReturnModalOpen(false);
-          setSelectedWithdrawal(null);
+          closeReturnModal();
         }}
       />
     </div>

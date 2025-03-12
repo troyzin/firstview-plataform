@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -90,7 +91,7 @@ const SchedulesList: React.FC<SchedulesListProps> = ({ equipmentId }) => {
                 <TableRow key={schedule.id}>
                   <TableCell>{format(new Date(schedule.start_date), 'dd/MM/yyyy', { locale: ptBR })}</TableCell>
                   <TableCell>{format(new Date(schedule.end_date), 'dd/MM/yyyy', { locale: ptBR })}</TableCell>
-                  <TableCell>{schedule.user_id}</TableCell>
+                  <TableCell>{schedule.user?.full_name || schedule.user_id}</TableCell>
                   <TableCell>{schedule.notes || '-'}</TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon" onClick={() => handleEditSchedule(schedule)}>
