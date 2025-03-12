@@ -56,7 +56,6 @@ export type Database = {
           model: string | null
           name: string
           notes: string | null
-          quantity: number | null
           serial_number: string | null
           status: string | null
           updated_at: string | null
@@ -71,7 +70,6 @@ export type Database = {
           model?: string | null
           name: string
           notes?: string | null
-          quantity?: number | null
           serial_number?: string | null
           status?: string | null
           updated_at?: string | null
@@ -86,12 +84,136 @@ export type Database = {
           model?: string | null
           name?: string
           notes?: string | null
-          quantity?: number | null
           serial_number?: string | null
           status?: string | null
           updated_at?: string | null
         }
         Relationships: []
+      }
+      equipment_schedules: {
+        Row: {
+          created_at: string | null
+          end_date: string
+          equipment_id: string
+          id: string
+          notes: string | null
+          production_id: string | null
+          start_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          end_date: string
+          equipment_id: string
+          id?: string
+          notes?: string | null
+          production_id?: string | null
+          start_date: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          end_date?: string
+          equipment_id?: string
+          id?: string
+          notes?: string | null
+          production_id?: string | null
+          start_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_schedules_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipment_schedules_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      equipment_withdrawals: {
+        Row: {
+          equipment_id: string
+          expected_return_date: string
+          id: string
+          is_personal_use: boolean | null
+          notes: string | null
+          production_id: string | null
+          return_notes: string | null
+          returned_date: string | null
+          status: string
+          updated_at: string | null
+          user_id: string
+          user_profile_id: string | null
+          withdrawal_date: string | null
+        }
+        Insert: {
+          equipment_id: string
+          expected_return_date: string
+          id?: string
+          is_personal_use?: boolean | null
+          notes?: string | null
+          production_id?: string | null
+          return_notes?: string | null
+          returned_date?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id: string
+          user_profile_id?: string | null
+          withdrawal_date?: string | null
+        }
+        Update: {
+          equipment_id?: string
+          expected_return_date?: string
+          id?: string
+          is_personal_use?: boolean | null
+          notes?: string | null
+          production_id?: string | null
+          return_notes?: string | null
+          returned_date?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+          user_profile_id?: string | null
+          withdrawal_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_withdrawals_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipment_withdrawals_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipment_withdrawals_user_profile_id_fkey"
+            columns: ["user_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_user_profile"
+            columns: ["user_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       productions: {
         Row: {
