@@ -82,7 +82,7 @@ export const ReturnModal: React.FC<ReturnModalProps> = ({
           
           const { data: withdrawalData, error } = await supabase
             .from('equipment_withdrawals')
-            .select('*')
+            .select('*, equipment:equipment_id(*)')
             .eq('equipment_id', actualEquipmentId)
             .eq('status', 'withdrawn')
             .order('withdrawal_date', { ascending: false })
