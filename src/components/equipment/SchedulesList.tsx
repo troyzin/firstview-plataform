@@ -27,15 +27,13 @@ const SchedulesList: React.FC<SchedulesListProps> = ({ equipmentId }) => {
   const queryClient = useQueryClient();
 
   const handleOpen = (id: string) => {
-    toast.error('Agendamentos temporariamente desativados');
+    setOpen(true);
+    setScheduleToDelete(id);
   };
 
-  const handleEditSchedule = (schedule: EquipmentSchedule) => {
-    toast.error('Agendamentos temporariamente desativados');
-  };
-
-  const startUsingEquipment = async (schedule: EquipmentSchedule) => {
-    toast.error('Agendamentos temporariamente desativados');
+  const handleClose = () => {
+    setOpen(false);
+    setScheduleToDelete(null);
   };
 
   const confirmDelete = async () => {
@@ -61,14 +59,91 @@ const SchedulesList: React.FC<SchedulesListProps> = ({ equipmentId }) => {
     }
   };
 
-  const handleClose = () => {
-    setOpen(false);
-    setScheduleToDelete(null);
+  const handleEditSchedule = (schedule: EquipmentSchedule) => {
+    setScheduleToEdit(schedule);
+    setIsEditModalOpen(true);
   };
 
   const handleCloseEditModal = () => {
     setIsEditModalOpen(false);
     setScheduleToEdit(null);
+  };
+
+  // Function to start using scheduled equipment
+  const startUsingEquipment = async (schedule: EquipmentSchedule) => {
+    if (isStartingUse) return;
+    
+    setIsStartingUse(true);
+    try {
+      // First, check if equipment is available
+      const { data: equipmentData, error: equipmentError } = await supabase
+        .from('equipment')
+        .select('status')
+        .eq('id', schedule.equipment_id)
+        .single();
+      
+      if (equipmentError) {
+        throw equipmentError;
+      }
+      
+      if (equipmentData.status !== 'disponível') {
+        toast.error('Este equipamento não está disponível para uso no momento.');
+        return;
+      }
+      
+      // Create a withdrawal record
+      const { data: withdrawalData, error: withdrawalError } = await supabase
+        .from('equipment_withdrawals')
+        .insert({
+          equipment_id: schedule.equipment_id,
+          user_id: schedule.user_id,
+          production_id: schedule.production_id,
+          withdrawal_date: new Date().toISOString(),
+          expected_return_date: schedule.end_date,
+          notes: schedule.notes || 'Iniciado a partir de um agendamento',
+          status: 'withdrawn'
+        })
+        .select()
+        .single();
+        
+      if (withdrawalError) {
+        throw withdrawalError;
+      }
+      
+      // Update equipment status to "em uso"
+      const { error: updateError } = await supabase
+        .from('equipment')
+        .update({ status: 'em uso' })
+        .eq('id', schedule.equipment_id);
+        
+      if (updateError) {
+        throw updateError;
+      }
+      
+      // Delete the schedule since it's now being used
+      const { error: deleteError } = await supabase
+        .from('equipment_schedules')
+        .delete()
+        .eq('id', schedule.id);
+        
+      if (deleteError) {
+        throw deleteError;
+      }
+      
+      toast.success(`Agendamento iniciado com sucesso!`);
+      
+      // Invalidate relevant queries
+      queryClient.invalidateQueries({queryKey: ['schedules']});
+      queryClient.invalidateQueries({queryKey: ['withdrawals']});
+      queryClient.invalidateQueries({queryKey: ['equipments']});
+      queryClient.invalidateQueries({queryKey: ['receipts']});
+      
+    } catch (error) {
+      console.error('Erro ao iniciar uso do equipamento:', error);
+      toast.error('Ocorreu um erro ao iniciar o uso do equipamento');
+    } finally {
+      setIsStartingUse(false);
+    }
   };
 
   const isScheduleActive = (schedule: EquipmentSchedule) => {
@@ -80,7 +155,7 @@ const SchedulesList: React.FC<SchedulesListProps> = ({ equipmentId }) => {
   };
 
   return (
-    <div className="opacity-50">
+    <div>
       <h2 className="text-lg font-medium mb-4">Agendamentos</h2>
       {isLoading ? (
         <div className="flex justify-center items-center h-24">
@@ -113,7 +188,7 @@ const SchedulesList: React.FC<SchedulesListProps> = ({ equipmentId }) => {
                         variant="default"
                         className="bg-[#ff3335] hover:bg-[#cc2a2b] text-white"
                         onClick={() => startUsingEquipment(schedule)}
-                        disabled={true}
+                        disabled={isStartingUse}
                       >
                         <PlayCircle className="h-4 w-4 mr-2" />
                         Iniciar Uso
@@ -124,7 +199,6 @@ const SchedulesList: React.FC<SchedulesListProps> = ({ equipmentId }) => {
                       size="icon" 
                       onClick={() => handleEditSchedule(schedule)}
                       className="hover:bg-[#141414]"
-                      disabled={true}
                     >
                       <Edit className="h-4 w-4 text-[#ff3335]" />
                     </Button>
@@ -133,7 +207,6 @@ const SchedulesList: React.FC<SchedulesListProps> = ({ equipmentId }) => {
                       size="icon" 
                       onClick={() => handleOpen(schedule.id)}
                       className="hover:bg-[#141414]"
-                      disabled={true}
                     >
                       <Trash className="h-4 w-4 text-[#ff3335]" />
                     </Button>
@@ -145,12 +218,11 @@ const SchedulesList: React.FC<SchedulesListProps> = ({ equipmentId }) => {
         </div>
       ) : (
         <div className="text-gray-500 text-center py-4">
-          <Badge variant="outline" className="border-dashed">Agendamentos temporariamente desativados</Badge>
+          <Badge variant="outline" className="border-dashed">Nenhum agendamento encontrado para este equipamento.</Badge>
         </div>
       )}
 
-      {/* Keep modals but ensure they can't be opened */}
-      <AlertDialog open={false} onOpenChange={() => {}}>
+      <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent className="bg-[#000000] border border-[#141414] text-white">
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmação de Exclusão</AlertDialogTitle>
@@ -171,13 +243,17 @@ const SchedulesList: React.FC<SchedulesListProps> = ({ equipmentId }) => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Edit Schedule Modal */}
       {scheduleToEdit && (
         <ScheduleModal
-          isOpen={false}
-          onClose={() => {}}
+          isOpen={isEditModalOpen}
+          onClose={handleCloseEditModal}
           equipmentId={scheduleToEdit.equipment_id}
           scheduleToEdit={scheduleToEdit}
-          onSuccess={() => {}}
+          onSuccess={() => {
+            refetch();
+            handleCloseEditModal();
+          }}
         />
       )}
     </div>
