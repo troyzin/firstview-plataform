@@ -14,7 +14,7 @@ import { EquipmentSchedule } from '@/types/equipment';
 import { useSchedules } from '@/hooks/useSchedules';
 
 interface SchedulesListProps {
-  equipmentId: string;
+  equipmentId: string | null;
 }
 
 const SchedulesList: React.FC<SchedulesListProps> = ({ equipmentId }) => {
@@ -81,6 +81,7 @@ const SchedulesList: React.FC<SchedulesListProps> = ({ equipmentId }) => {
               <TableRow>
                 <TableHead>Data Início</TableHead>
                 <TableHead>Data Fim</TableHead>
+                <TableHead>Equipamento</TableHead>
                 <TableHead>Responsável</TableHead>
                 <TableHead>Observações</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
@@ -91,6 +92,7 @@ const SchedulesList: React.FC<SchedulesListProps> = ({ equipmentId }) => {
                 <TableRow key={schedule.id}>
                   <TableCell>{format(new Date(schedule.start_date), 'dd/MM/yyyy', { locale: ptBR })}</TableCell>
                   <TableCell>{format(new Date(schedule.end_date), 'dd/MM/yyyy', { locale: ptBR })}</TableCell>
+                  <TableCell>{schedule.equipment?.name || schedule.equipment_id}</TableCell>
                   <TableCell>{schedule.user?.full_name || schedule.user_id}</TableCell>
                   <TableCell>{schedule.notes || '-'}</TableCell>
                   <TableCell className="text-right">
@@ -138,7 +140,7 @@ const SchedulesList: React.FC<SchedulesListProps> = ({ equipmentId }) => {
         <ScheduleModal
           isOpen={isEditModalOpen}
           onClose={handleCloseEditModal}
-          equipmentId={equipmentId}
+          equipmentId={scheduleToEdit.equipment_id}
           scheduleToEdit={scheduleToEdit}
           onSuccess={() => {
             refetch();

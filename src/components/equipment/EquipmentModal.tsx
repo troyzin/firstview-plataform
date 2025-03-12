@@ -172,16 +172,14 @@ const EquipmentModal: React.FC<EquipmentModalProps> = ({
             </div>
             
             {equipment?.id && (
-              <AlertDialogTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8 rounded-full hover:bg-red-900/20 hover:text-red-400"
-                  onClick={() => setIsDeleteAlertOpen(true)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </AlertDialogTrigger>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 rounded-full hover:bg-red-900/20 hover:text-red-400"
+                onClick={() => setIsDeleteAlertOpen(true)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             )}
           </DialogHeader>
 
