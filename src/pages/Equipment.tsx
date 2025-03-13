@@ -264,12 +264,27 @@ const Equipment = () => {
 
   const handleDeleteEquipment = async (equipment: EquipmentType) => {
     try {
+      // First check if there are related records in equipment_withdrawals
+      const { data: withdrawals, error: checkError } = await supabase
+        .from('equipment_withdrawals')
+        .select('id')
+        .eq('equipment_id', equipment.id)
+        .limit(1);
+      
+      if (checkError) throw checkError;
+      
+      if (withdrawals && withdrawals.length > 0) {
+        toast.error('Este equipamento não pode ser excluído porque está associado a um ou mais recibos de retirada.');
+        return;
+      }
+
       const { error } = await supabase
         .from('equipment')
         .delete()
         .eq('id', equipment.id);
 
       if (error) {
+        console.error("Erro na exclusão:", error);
         throw error;
       }
 

@@ -105,6 +105,7 @@ const EquipmentModal: React.FC<EquipmentModalProps> = ({
       toast.success('Equipamento excluído com sucesso!');
       onSuccess();
       onClose();
+      setIsDeleteAlertOpen(false);
     } catch (error) {
       console.error('Erro ao excluir equipamento:', error);
       setDeleteError("Ocorreu um erro ao excluir o equipamento. Este equipamento pode estar sendo referenciado em outras partes do sistema.");
