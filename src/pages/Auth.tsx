@@ -31,6 +31,7 @@ const Auth = () => {
 
   const validateAuthCode = async (code) => {
     try {
+      console.log('[AUTH PAGE] Validating auth code:', code);
       const { data, error } = await supabase.rpc('validate_registration_code', { code });
       
       if (error) {
@@ -38,6 +39,7 @@ const Auth = () => {
         return false;
       }
       
+      console.log('[AUTH PAGE] Auth code validation result:', data);
       return data;
     } catch (error) {
       console.error('[AUTH PAGE] Unexpected error validating auth code:', error);
@@ -65,6 +67,7 @@ const Auth = () => {
         
         const isCodeValid = await validateAuthCode(authCode.trim());
         if (!isCodeValid) {
+          console.log('[AUTH PAGE] Invalid auth code provided:', authCode);
           setCodeValidationError("Código de autenticação inválido. Apenas funcionários da empresa podem se registrar.");
           setLoading(false);
           return;
@@ -220,6 +223,9 @@ const Auth = () => {
               {codeValidationError && (
                 <p className="text-sm text-[#ff3335]">{codeValidationError}</p>
               )}
+              <p className="text-xs text-gray-500 mt-1">
+                O código de autenticação padrão é "123456". Se necessário, solicite um novo código ao administrador.
+              </p>
             </div>
           )}
 
