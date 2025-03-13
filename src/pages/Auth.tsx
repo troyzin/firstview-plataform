@@ -11,6 +11,7 @@ import { useAuth } from "../contexts/AuthContext";
 
 const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -135,11 +136,108 @@ const Auth = () => {
     }
   };
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (loading) return;
+    
+    if (!email.trim()) {
+      toast.error("Por favor, informe seu email");
+      return;
+    }
+    
+    setLoading(true);
+    
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + '/auth',
+      });
+      
+      if (error) throw error;
+      
+      toast.success("Enviamos um link para redefinição de senha para o seu email");
+      setIsForgotPassword(false); // Retornar à tela de login
+    } catch (error: any) {
+      console.error('[AUTH PAGE] Password reset error:', error);
+      toast.error("Erro ao solicitar redefinição de senha");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center p-4">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ff3335]"></div>
         <p className="ml-2 text-white">Verificando autenticação...</p>
+      </div>
+    );
+  }
+
+  // Tela de "Esqueceu sua senha?"
+  if (isForgotPassword) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center p-4">
+        <div className="bg-[#141414] p-8 rounded-lg shadow-lg w-full max-w-md border border-gray-800">
+          <div className="mb-8 text-center">
+            <div className="flex justify-center mb-6">
+              <img 
+                src="/logo.png" 
+                alt="Logo da empresa" 
+                className="h-10 w-auto"
+              />
+            </div>
+            <h1 className="text-xl font-bold text-white mb-2">
+              Recuperar sua senha
+            </h1>
+            <p className="text-gray-400">
+              Informe seu email para receber um link de redefinição de senha
+            </p>
+          </div>
+
+          <form onSubmit={handleResetPassword} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="reset-email" className="text-white">Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={18} />
+                <Input
+                  id="reset-email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="pl-10 bg-black border-gray-800 focus-visible:ring-[#ff3335] focus-visible:ring-offset-black text-white"
+                />
+              </div>
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full bg-[#ff3335] hover:bg-[#ff3335]/90 text-white gap-2"
+              disabled={loading}
+            >
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <div className="animate-spin h-4 w-4 border-t-2 border-b-2 border-white rounded-full"></div>
+                  Processando...
+                </span>
+              ) : (
+                "Enviar link de recuperação"
+              )}
+              <ArrowRight size={16} />
+            </Button>
+            
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={() => setIsForgotPassword(false)}
+                className="text-[#ff3335] hover:underline"
+              >
+                Voltar para o login
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     );
   }
@@ -217,9 +315,13 @@ const Auth = () => {
             </div>
             {!isSignUp && (
               <div className="text-right">
-                <a href="#" className="text-sm text-[#ff3335] hover:underline">
+                <button 
+                  type="button"
+                  onClick={() => setIsForgotPassword(true)}
+                  className="text-sm text-[#ff3335] hover:underline"
+                >
                   Esqueceu sua senha?
-                </a>
+                </button>
               </div>
             )}
           </div>
@@ -252,9 +354,6 @@ const Auth = () => {
               {codeValidationSuccess && (
                 <p className="text-sm text-green-500">Código válido!</p>
               )}
-              <p className="text-xs text-gray-500 mt-1">
-                O código de autenticação padrão é "123456". Se necessário, solicite um novo código ao administrador.
-              </p>
             </div>
           )}
 
