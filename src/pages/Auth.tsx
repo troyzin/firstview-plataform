@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "../integrations/supabase/client";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Mail, Lock, User, ArrowRight } from "lucide-react";
+import { Mail, Lock, User, ArrowRight, Key } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -14,6 +15,8 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [authCode, setAuthCode] = useState("");
+  const [codeValidationError, setCodeValidationError] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
   const { user, loading: authLoading } = useAuth();
@@ -26,15 +29,47 @@ const Auth = () => {
     }
   }, [user, authLoading, navigate, location]);
 
+  const validateAuthCode = async (code) => {
+    try {
+      const { data, error } = await supabase.rpc('validate_registration_code', { code });
+      
+      if (error) {
+        console.error('[AUTH PAGE] Error validating auth code:', error);
+        return false;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('[AUTH PAGE] Unexpected error validating auth code:', error);
+      return false;
+    }
+  };
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
     
     setLoading(true);
+    setCodeValidationError("");
 
     try {
       if (isSignUp) {
         console.log('[AUTH PAGE] Attempting signup for:', email);
+        
+        // Validate auth code for registration
+        if (!authCode.trim()) {
+          setCodeValidationError("Código de autenticação é obrigatório");
+          setLoading(false);
+          return;
+        }
+        
+        const isCodeValid = await validateAuthCode(authCode.trim());
+        if (!isCodeValid) {
+          setCodeValidationError("Código de autenticação inválido. Apenas funcionários da empresa podem se registrar.");
+          setLoading(false);
+          return;
+        }
+        
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -164,6 +199,30 @@ const Auth = () => {
             )}
           </div>
 
+          {isSignUp && (
+            <div className="space-y-2">
+              <Label htmlFor="authCode">Código de Autenticação</Label>
+              <div className="relative">
+                <Key className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={18} />
+                <Input
+                  id="authCode"
+                  type="text"
+                  placeholder="Digite o código de autenticação"
+                  value={authCode}
+                  onChange={(e) => {
+                    setAuthCode(e.target.value);
+                    setCodeValidationError("");
+                  }}
+                  required={isSignUp}
+                  className="pl-10 bg-black border-gray-800 focus-visible:ring-[#ff3335] focus-visible:ring-offset-black"
+                />
+              </div>
+              {codeValidationError && (
+                <p className="text-sm text-[#ff3335]">{codeValidationError}</p>
+              )}
+            </div>
+          )}
+
           <Button
             type="submit"
             className="w-full bg-[#ff3335] hover:bg-[#ff3335]/90 text-white gap-2"
@@ -185,7 +244,10 @@ const Auth = () => {
             {isSignUp ? "Já tem uma conta?" : "Ainda não tem uma conta?"}
             <button
               type="button"
-              onClick={() => setIsSignUp(!isSignUp)}
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setCodeValidationError("");
+              }}
               className="ml-2 text-[#ff3335] hover:underline"
             >
               {isSignUp ? "Faça login" : "Cadastre-se"}
