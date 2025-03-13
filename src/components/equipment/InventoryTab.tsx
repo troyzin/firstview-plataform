@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import {
   Select,
   SelectContent,
@@ -20,6 +20,16 @@ import { Button } from "@/components/ui/button";
 import { Edit, Trash2, CheckCircle, ArrowDownToLine } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type InventoryTabProps = {
   statusFilter: string;
@@ -49,6 +59,8 @@ const InventoryTab = ({
   openReturnModal,
 }: InventoryTabProps) => {
   const isMobile = useIsMobile();
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+  const [equipmentToDelete, setEquipmentToDelete] = useState<Equipment | null>(null);
   
   // Function to render status as colored dots on mobile
   const renderStatusIndicator = (status: string) => {
@@ -67,6 +79,21 @@ const InventoryTab = ({
       default:
         return <div className="w-3 h-3 rounded-full bg-gray-500 mx-auto" title="Desconhecido" />;
     }
+  };
+
+  // Function to handle delete confirmation dialog
+  const confirmDelete = (equipment: Equipment) => {
+    setEquipmentToDelete(equipment);
+    setIsDeleteAlertOpen(true);
+  };
+
+  // Function to handle confirmed deletion
+  const handleConfirmDelete = () => {
+    if (equipmentToDelete) {
+      handleDeleteEquipment(equipmentToDelete);
+      setEquipmentToDelete(null);
+    }
+    setIsDeleteAlertOpen(false);
   };
 
   return (
@@ -156,7 +183,7 @@ const InventoryTab = ({
                       <Button
                         variant="outline"
                         size="icon"
-                        onClick={() => handleDeleteEquipment(equipment)}
+                        onClick={() => confirmDelete(equipment)}
                         className="h-8 w-8 rounded-full hover:bg-gray-700 border-gray-700 text-[#ff3335]"
                         title="Excluir equipamento"
                       >
@@ -177,6 +204,30 @@ const InventoryTab = ({
           </Table>
         </div>
       </div>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+        <AlertDialogContent className="bg-[#000000] border border-[#141414] text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              Tem certeza que deseja excluir o equipamento <span className="text-white font-medium">{equipmentToDelete?.name}</span>?
+              <br />Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-gray-800 text-white hover:bg-gray-700 border-gray-700">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-[#ff3335] hover:bg-red-700 text-white"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
