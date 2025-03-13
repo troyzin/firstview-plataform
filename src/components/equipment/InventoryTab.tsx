@@ -184,7 +184,7 @@ const InventoryTab = ({
                         variant="outline"
                         size="icon"
                         onClick={() => confirmDelete(equipment)}
-                        className="h-8 w-8 rounded-full hover:bg-gray-700 border-gray-700 text-[#ff3335]"
+                        className="h-8 w-8 rounded-full hover:bg-red-900/20 hover:text-red-400 border-gray-700"
                         title="Excluir equipamento"
                       >
                         <Trash2 className="h-4 w-4" />
