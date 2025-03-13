@@ -42,21 +42,21 @@ const MobileNavBar = () => {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-[#141414] border-t border-[#222] h-16 px-2 w-full overflow-hidden">
+    <div className="fixed bottom-0 left-0 right-0 bg-[#141414] border-t border-[#222] h-16 px-2 w-full overflow-visible">
       <div className="flex justify-between items-center h-full">
         {navItems.map((item) => (
           <button
             key={item.path}
             onClick={() => navigate(item.path)}
             className={cn(
-              "flex flex-col items-center justify-center w-16 h-16 transition-colors",
+              "flex flex-col items-center justify-center w-16 h-16 transition-colors relative",
               isActiveRoute(item.path) ? "text-[#ff3335]" : "text-gray-400"
             )}
           >
             <div 
               className={cn(
                 "flex items-center justify-center rounded-full mb-1",
-                item.isCenter ? "bg-[#ff3335] p-3 -mt-6" : ""
+                item.isCenter ? "bg-[#ff3335] p-3 absolute -top-6" : ""
               )}
             >
               <item.icon 
@@ -64,7 +64,12 @@ const MobileNavBar = () => {
                 className={item.isCenter ? "text-white" : ""}
               />
             </div>
-            <span className="text-xs truncate">{item.label}</span>
+            <span className={cn(
+              "text-xs truncate",
+              item.isCenter ? "mt-5" : ""
+            )}>
+              {item.label}
+            </span>
           </button>
         ))}
       </div>
