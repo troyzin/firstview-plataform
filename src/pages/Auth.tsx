@@ -17,6 +17,7 @@ const Auth = () => {
   const [fullName, setFullName] = useState("");
   const [authCode, setAuthCode] = useState("");
   const [codeValidationError, setCodeValidationError] = useState("");
+  const [codeValidationSuccess, setCodeValidationSuccess] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, loading: authLoading } = useAuth();
@@ -28,6 +29,25 @@ const Auth = () => {
       navigate(from, { replace: true });
     }
   }, [user, authLoading, navigate, location]);
+
+  // Validate auth code when it changes
+  useEffect(() => {
+    if (isSignUp && authCode.trim().length >= 6) {
+      validateAuthCode(authCode.trim())
+        .then(isValid => {
+          setCodeValidationSuccess(isValid);
+          setCodeValidationError(isValid ? "" : "Código de autenticação inválido");
+        })
+        .catch(error => {
+          console.error('[AUTH PAGE] Error validating auth code:', error);
+          setCodeValidationSuccess(false);
+          setCodeValidationError("Erro ao validar código");
+        });
+    } else {
+      setCodeValidationSuccess(false);
+      setCodeValidationError("");
+    }
+  }, [authCode, isSignUp]);
 
   const validateAuthCode = async (code) => {
     try {
@@ -52,7 +72,6 @@ const Auth = () => {
     if (loading) return;
     
     setLoading(true);
-    setCodeValidationError("");
 
     try {
       if (isSignUp) {
@@ -119,7 +138,7 @@ const Auth = () => {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center p-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ff3335]"></div>
         <p className="ml-2 text-white">Verificando autenticação...</p>
       </div>
     );
@@ -136,6 +155,9 @@ const Auth = () => {
               className="h-10 w-auto"
             />
           </div>
+          <h1 className="text-xl font-bold text-white mb-2">
+            {isSignUp ? "Criar nova conta" : "Bem-vindo de volta"}
+          </h1>
           <p className="text-gray-400">
             {isSignUp
               ? "Crie sua conta para gerenciar seus recursos"
@@ -146,7 +168,7 @@ const Auth = () => {
         <form onSubmit={handleAuth} className="space-y-6">
           {isSignUp && (
             <div className="space-y-2">
-              <Label htmlFor="fullName">Nome Completo</Label>
+              <Label htmlFor="fullName" className="text-white">Nome Completo</Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={18} />
                 <Input
@@ -156,14 +178,14 @@ const Auth = () => {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   required={isSignUp}
-                  className="pl-10 bg-black border-gray-800 focus-visible:ring-[#ff3335] focus-visible:ring-offset-black"
+                  className="pl-10 bg-black border-gray-800 focus-visible:ring-[#ff3335] focus-visible:ring-offset-black text-white"
                 />
               </div>
             </div>
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-white">Email</Label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={18} />
               <Input
@@ -173,13 +195,13 @@ const Auth = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="pl-10 bg-black border-gray-800 focus-visible:ring-[#ff3335] focus-visible:ring-offset-black"
+                className="pl-10 bg-black border-gray-800 focus-visible:ring-[#ff3335] focus-visible:ring-offset-black text-white"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Senha</Label>
+            <Label htmlFor="password" className="text-white">Senha</Label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={18} />
               <Input
@@ -189,7 +211,7 @@ const Auth = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="pl-10 bg-black border-gray-800 focus-visible:ring-[#ff3335] focus-visible:ring-offset-black"
+                className="pl-10 bg-black border-gray-800 focus-visible:ring-[#ff3335] focus-visible:ring-offset-black text-white"
                 minLength={6}
               />
             </div>
@@ -204,7 +226,7 @@ const Auth = () => {
 
           {isSignUp && (
             <div className="space-y-2">
-              <Label htmlFor="authCode">Código de Autenticação</Label>
+              <Label htmlFor="authCode" className="text-white">Código de Autenticação</Label>
               <div className="relative">
                 <Key className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={18} />
                 <Input
@@ -212,16 +234,23 @@ const Auth = () => {
                   type="text"
                   placeholder="Digite o código de autenticação"
                   value={authCode}
-                  onChange={(e) => {
-                    setAuthCode(e.target.value);
-                    setCodeValidationError("");
-                  }}
+                  onChange={(e) => setAuthCode(e.target.value)}
                   required={isSignUp}
-                  className="pl-10 bg-black border-gray-800 focus-visible:ring-[#ff3335] focus-visible:ring-offset-black"
+                  className={`pl-10 bg-black border-gray-800 focus-visible:ring-[#ff3335] focus-visible:ring-offset-black text-white ${
+                    codeValidationSuccess ? "border-green-500" : codeValidationError ? "border-red-500" : ""
+                  }`}
                 />
+                {codeValidationSuccess && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="text-green-500">✓</div>
+                  </div>
+                )}
               </div>
               {codeValidationError && (
                 <p className="text-sm text-[#ff3335]">{codeValidationError}</p>
+              )}
+              {codeValidationSuccess && (
+                <p className="text-sm text-green-500">Código válido!</p>
               )}
               <p className="text-xs text-gray-500 mt-1">
                 O código de autenticação padrão é "123456". Se necessário, solicite um novo código ao administrador.
@@ -232,10 +261,13 @@ const Auth = () => {
           <Button
             type="submit"
             className="w-full bg-[#ff3335] hover:bg-[#ff3335]/90 text-white gap-2"
-            disabled={loading}
+            disabled={loading || (isSignUp && !codeValidationSuccess)}
           >
             {loading ? (
-              "Processando..."
+              <span className="flex items-center gap-2">
+                <div className="animate-spin h-4 w-4 border-t-2 border-b-2 border-white rounded-full"></div>
+                Processando...
+              </span>
             ) : isSignUp ? (
               "Criar Conta"
             ) : (
@@ -253,6 +285,8 @@ const Auth = () => {
               onClick={() => {
                 setIsSignUp(!isSignUp);
                 setCodeValidationError("");
+                setCodeValidationSuccess(false);
+                setAuthCode("");
               }}
               className="ml-2 text-[#ff3335] hover:underline"
             >
