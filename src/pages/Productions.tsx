@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type TeamMember = {
   id: string;
@@ -38,6 +40,7 @@ const Productions = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduction, setEditingProduction] = useState<Production | null>(null);
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   
   const { data: productions = [], isLoading, error } = useQuery({
     queryKey: ['productions'],
@@ -245,13 +248,13 @@ const Productions = () => {
   if (error) {
     return (
       <MainLayout>
-        <div className="text-center py-12 bg-gray-900 rounded-lg">
+        <div className="text-center py-12 bg-[#141414] rounded-lg">
           <ClipboardCheck className="mx-auto h-12 w-12 text-gray-600 mb-4" />
           <h3 className="text-lg font-medium text-gray-400 mb-2">Erro ao carregar produções</h3>
           <p className="text-gray-500 mb-6">Ocorreu um erro ao tentar carregar as produções</p>
           <Button 
             onClick={() => queryClient.invalidateQueries({ queryKey: ['productions'] })}
-            className="bg-red-600 hover:bg-red-700"
+            className="bg-[#ff3335] hover:bg-red-700"
           >
             Tentar novamente
           </Button>
@@ -262,20 +265,19 @@ const Productions = () => {
 
   return (
     <MainLayout>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold">Produções</h2>
+      <div className="flex justify-end items-center mb-6">
         {canAddProduction && (
-          <Button className="bg-red-600 hover:bg-red-700" onClick={() => {
+          <Button className="bg-[#ff3335] hover:bg-red-700" onClick={() => {
             setEditingProduction(null);
             setIsModalOpen(true);
           }}>
             <PlusIcon className="mr-2 h-4 w-4" />
-            Nova Produção
+            {!isMobile && "Nova Produção"}
           </Button>
         )}
       </div>
 
-      <div className="bg-gray-900 p-4 rounded-lg mb-6">
+      <div className="bg-[#141414] p-4 rounded-lg mb-6">
         <div className="relative">
           <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
@@ -289,13 +291,13 @@ const Productions = () => {
 
       <div className="space-y-8">
         {groupedProductions.length === 0 ? (
-          <div className="text-center py-12 bg-gray-900 rounded-lg">
+          <div className="text-center py-12 bg-[#141414] rounded-lg">
             <ClipboardCheck className="mx-auto h-12 w-12 text-gray-600 mb-4" />
             <h3 className="text-lg font-medium text-gray-400 mb-2">Nenhuma produção encontrada</h3>
             <p className="text-gray-500 mb-6">Crie uma nova produção para começar</p>
             {canAddProduction && (
               <Button 
-                className="bg-red-600 hover:bg-red-700"
+                className="bg-[#ff3335] hover:bg-red-700"
                 onClick={() => {
                   setEditingProduction(null);
                   setIsModalOpen(true);
@@ -308,7 +310,7 @@ const Productions = () => {
           </div>
         ) : (
           groupedProductions.map(group => (
-            <div key={group.date.toISOString()} className="bg-gray-900 rounded-lg overflow-hidden">
+            <div key={group.date.toISOString()} className="bg-[#141414] rounded-lg overflow-hidden">
               <div className="px-4 py-3 bg-gray-800 flex items-center">
                 <CalendarIcon className="text-gray-400 mr-2 h-5 w-5" />
                 <h3 className="font-medium capitalize">{formatDateHeader(group.date)}</h3>
