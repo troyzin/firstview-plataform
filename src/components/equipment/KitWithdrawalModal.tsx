@@ -14,7 +14,7 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Equipment } from "@/types/equipment";
 
 interface KitWithdrawalModalProps {
@@ -28,6 +28,7 @@ export const KitWithdrawalModal: React.FC<KitWithdrawalModalProps> = ({
   onClose,
   onSuccess,
 }) => {
+  const queryClient = useQueryClient();
   const [selectedEquipments, setSelectedEquipments] = useState<string[]>([]);
   const [returnDate, setReturnDate] = useState<Date | undefined>(
     new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
@@ -55,31 +56,49 @@ export const KitWithdrawalModal: React.FC<KitWithdrawalModalProps> = ({
       }
     };
 
-    fetchCurrentUser();
-  }, []);
+    if (isOpen) {
+      fetchCurrentUser();
+    }
+  }, [isOpen]);
 
   // Fetch available equipment
-  const { data: availableEquipments = [], isLoading: isLoadingEquipment, refetch: refetchEquipment } = useQuery<Equipment[]>({
+  const { 
+    data: availableEquipments = [], 
+    isLoading: isLoadingEquipment, 
+    refetch: refetchEquipment,
+    isError
+  } = useQuery({
     queryKey: ["available-equipments"],
     queryFn: async () => {
+      console.log("Fetching available equipment");
       const { data, error } = await supabase
         .from("equipment")
         .select("*")
         .eq("status", "disponível")
         .order("name");
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching equipment:", error);
+        throw error;
+      }
+      console.log("Fetched equipment:", data?.length || 0);
       return data || [];
     },
     enabled: isOpen, // Only fetch when modal is open
+    staleTime: 0, // Always fetch fresh data
+    retry: 3,
   });
 
-  // Refetch equipment when modal opens
+  // Reset and refetch data when modal opens
   useEffect(() => {
     if (isOpen) {
+      console.log("Modal is open, refetching equipment");
+      setSelectedEquipments([]);
+      // Force a refetch when modal opens
+      queryClient.invalidateQueries({ queryKey: ["available-equipments"] });
       refetchEquipment();
     }
-  }, [isOpen, refetchEquipment]);
+  }, [isOpen, refetchEquipment, queryClient]);
 
   // Fetch productions
   const { data: productions = [] } = useQuery({
@@ -169,12 +188,13 @@ export const KitWithdrawalModal: React.FC<KitWithdrawalModalProps> = ({
 
   // Debug logs
   console.log("KitWithdrawalModal isOpen:", isOpen);
-  console.log("Available equipments:", availableEquipments?.length);
+  console.log("Available equipments count:", availableEquipments?.length);
   console.log("Equipment loading state:", isLoadingEquipment);
+  console.log("Equipment error state:", isError);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="bg-[#000000] border border-[#141414] text-white sm:max-w-[600px]">
+      <DialogContent className="bg-[#000000] border border-[#141414] text-white sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl">Retirar Kit de Equipamentos</DialogTitle>
           <DialogDescription className="text-gray-400">
@@ -193,6 +213,17 @@ export const KitWithdrawalModal: React.FC<KitWithdrawalModalProps> = ({
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-[#ff3335]" />
                 <span className="ml-2">Carregando equipamentos...</span>
+              </div>
+            ) : isError ? (
+              <div className="text-center py-8 text-gray-400 border border-dashed border-[#141414] rounded-md">
+                <p>Erro ao carregar equipamentos. Tente novamente.</p>
+                <Button 
+                  variant="outline" 
+                  className="mt-2"
+                  onClick={() => refetchEquipment()}
+                >
+                  Tentar novamente
+                </Button>
               </div>
             ) : availableEquipments.length === 0 ? (
               <div className="text-center py-8 text-gray-400 border border-dashed border-[#141414] rounded-md">

@@ -1,9 +1,11 @@
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { EquipmentWithdrawal } from '@/types/equipment';
 
 export const useWithdrawals = (equipmentId?: string) => {
+  const queryClient = useQueryClient();
+
   return useQuery({
     queryKey: ['withdrawals', equipmentId],
     queryFn: async (): Promise<EquipmentWithdrawal[]> => {
@@ -28,12 +30,12 @@ export const useWithdrawals = (equipmentId?: string) => {
           throw error;
         }
         
-        console.log("Raw withdrawals data:", data);
+        console.log("Raw withdrawals data:", data?.length || 0);
         
         // Get all user profiles separately 
         const userIds = [...new Set((data || []).map(item => item.user_id))];
         
-        console.log("User IDs to fetch:", userIds);
+        console.log("User IDs to fetch:", userIds.length);
         
         if (userIds.length === 0) {
           console.log("No user IDs to fetch profiles for");
@@ -49,7 +51,7 @@ export const useWithdrawals = (equipmentId?: string) => {
           console.error("Error fetching profiles:", profilesError);
         }
 
-        console.log("Profiles data:", profilesData);
+        console.log("Profiles data:", profilesData?.length || 0);
         
         const profilesMap = new Map();
         (profilesData || []).forEach(profile => {
@@ -97,7 +99,7 @@ export const useWithdrawals = (equipmentId?: string) => {
           };
         });
         
-        console.log("Processed withdrawals data:", processedData);
+        console.log("Processed withdrawals data:", processedData.length);
         return processedData as EquipmentWithdrawal[];
       } catch (error) {
         console.error("Error in useWithdrawals:", error);

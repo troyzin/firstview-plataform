@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -55,6 +55,7 @@ export const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
   onSuccess,
   isPersonalUse = false,
 }) => {
+  const queryClient = useQueryClient();
   const [returnDate, setReturnDate] = useState<Date | undefined>(
     new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Default to 7 days from now
   );
@@ -80,13 +81,16 @@ export const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
       }
     };
 
-    fetchCurrentUser();
-  }, []);
+    if (isOpen) {
+      fetchCurrentUser();
+    }
+  }, [isOpen]);
 
   // Fetch productions
   const { data: productions = [] } = useQuery<Production[]>({
     queryKey: ["productions"],
     queryFn: async () => {
+      console.log("Fetching productions");
       const { data, error } = await supabase
         .from("productions")
         .select("id, title")
@@ -95,7 +99,18 @@ export const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
       if (error) throw error;
       return data || [];
     },
+    enabled: isOpen && !isPersonalUse,
+    staleTime: 60000, // 1 minute
   });
+
+  // Reset selections when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setReturnDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+      setSelectedProduction("");
+      setNotes("");
+    }
+  }, [isOpen]);
 
   const handleSubmit = async () => {
     if (!returnDate) {
@@ -148,6 +163,13 @@ export const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
       toast.success(
         `${equipmentName} retirado com sucesso! ID: ${withdrawal.id.substring(0, 8)}`
       );
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ["equipments"] });
+      queryClient.invalidateQueries({ queryKey: ["available-equipments"] });
+      queryClient.invalidateQueries({ queryKey: ["withdrawals"] });
+      queryClient.invalidateQueries({ queryKey: ["receipts"] });
+      
       onSuccess();
       onClose();
     } catch (error) {
@@ -160,7 +182,7 @@ export const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-[#000000] border border-[#141414] text-white sm:max-w-[500px]">
+      <DialogContent className="bg-[#000000] border border-[#141414] text-white sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl">
             {isPersonalUse ? "Retirar para Uso Pessoal" : "Retirar Equipamento"}
