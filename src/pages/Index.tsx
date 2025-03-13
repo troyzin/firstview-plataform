@@ -9,6 +9,7 @@ import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import TodayProductions from "@/components/dashboard/TodayProductions";
 import ProductionsRanking from "@/components/dashboard/ProductionsRanking";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Dashboard = () => {
   const [filter, setFilter] = useState("all");
@@ -21,6 +22,7 @@ const Dashboard = () => {
     error 
   } = useDashboardData();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   const stats = [
     {
@@ -95,10 +97,16 @@ const Dashboard = () => {
 
   return (
     <MainLayout>
-      <DashboardHeader 
-        onFilterChange={handleFilterChange}
-        onAddProduction={() => setIsModalOpen(true)}
-      />
+      <div className="flex justify-between items-center mb-6">
+        {/* Filter and Add Button  */}
+        <div className="flex space-x-4 ml-auto">
+          <DashboardHeader 
+            onFilterChange={handleFilterChange}
+            onAddProduction={() => setIsModalOpen(true)}
+            isMobile={isMobile}
+          />
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         {stats.map((stat, index) => (

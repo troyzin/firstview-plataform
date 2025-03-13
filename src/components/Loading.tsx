@@ -1,11 +1,12 @@
 
 import React from "react";
+import { Loader2 } from "lucide-react";
 
 const Loading = () => {
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
-      <p className="ml-2 text-white">Carregando...</p>
+    <div className="min-h-screen bg-[#000000] flex flex-col items-center justify-center p-4 overflow-hidden">
+      <Loader2 className="h-12 w-12 animate-spin text-[#ff3335]" />
+      <p className="mt-4 text-white">Carregando...</p>
     </div>
   );
 };

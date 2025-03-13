@@ -7,10 +7,8 @@ import { Construction, Clock } from "lucide-react";
 const Edits = () => {
   return (
     <MainLayout>
-      <div className="container mx-auto py-6">
-        <h1 className="text-2xl font-bold mb-6">Edições</h1>
-        
-        <Card className="bg-gray-900 border-gray-800">
+      <div className="container mx-auto">
+        <Card className="bg-[#141414] border-gray-800">
           <CardHeader>
             <CardTitle>Página em Desenvolvimento</CardTitle>
             <CardDescription>

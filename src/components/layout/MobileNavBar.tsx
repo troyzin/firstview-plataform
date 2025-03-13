@@ -56,7 +56,7 @@ const MobileNavBar = () => {
             <div 
               className={cn(
                 "flex items-center justify-center rounded-full mb-1",
-                item.isCenter ? "bg-[#ff3335] p-3" : ""
+                item.isCenter ? "bg-[#ff3335] p-3 -mt-6" : ""
               )}
             >
               <item.icon 

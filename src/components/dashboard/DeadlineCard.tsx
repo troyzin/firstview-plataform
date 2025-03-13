@@ -88,7 +88,7 @@ const DeadlineCard = ({ deadlines, onViewDeadline }: DeadlineCardProps) => {
   };
 
   return (
-    <div className="bg-gray-900 rounded-lg p-6">
+    <div className="bg-[#141414] rounded-lg p-6">
       <h3 className="text-lg font-semibold mb-4">Próximos Prazos</h3>
       <div className="space-y-3">
         {deadlines.map((item, index) => {
@@ -99,7 +99,7 @@ const DeadlineCard = ({ deadlines, onViewDeadline }: DeadlineCardProps) => {
           return (
             <div 
               key={index} 
-              className="flex items-center p-2 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer"
+              className="flex items-center p-2 bg-[#0a0a0a] rounded-lg hover:bg-gray-700 transition-colors cursor-pointer"
               onClick={() => item.id && onViewDeadline && onViewDeadline(item.id)}
             >
               <div className={`w-10 h-10 ${priorityColor.bg} rounded-full flex items-center justify-center mr-3`}>
