@@ -143,7 +143,6 @@ const Equipment = () => {
   
   // Estados para modais
   const [isNewEquipmentModalOpen, setIsNewEquipmentModalOpen] = useState(false);
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [selectedEquipment, setSelectedEquipment] = useState<EquipmentType | null>(null);
   const [equipmentToEdit, setEquipmentToEdit] = useState<EquipmentType | null>(null);
   
@@ -261,17 +260,14 @@ const Equipment = () => {
 
   const confirmDeleteEquipment = (equipment: EquipmentType) => {
     setSelectedEquipment(equipment);
-    setIsDeleteConfirmOpen(true);
   };
 
-  const handleDeleteEquipment = async () => {
-    if (!selectedEquipment) return;
-
+  const handleDeleteEquipment = async (equipment: EquipmentType) => {
     try {
       const { error } = await supabase
         .from('equipment')
         .delete()
-        .eq('id', selectedEquipment.id);
+        .eq('id', equipment.id);
 
       if (error) {
         throw error;
@@ -282,9 +278,6 @@ const Equipment = () => {
     } catch (error) {
       console.error('Erro ao excluir equipamento:', error);
       toast.error('Ocorreu um erro ao excluir o equipamento');
-    } finally {
-      setIsDeleteConfirmOpen(false);
-      setSelectedEquipment(null);
     }
   };
   
@@ -563,7 +556,7 @@ const Equipment = () => {
               setTypeFilter={setTypeFilter}
               filteredEquipments={filteredEquipments}
               handleEditEquipment={handleEditEquipment}
-              handleDeleteEquipment={confirmDeleteEquipment}
+              handleDeleteEquipment={handleDeleteEquipment}
               renderStatus={renderStatus}
               renderEquipmentType={renderEquipmentType}
               openCheckoutModal={openCheckoutModal}
