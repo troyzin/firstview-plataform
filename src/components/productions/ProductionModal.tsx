@@ -1,3 +1,4 @@
+
 import React from "react";
 import { X, Calendar, Clock, Users, FileText, MapPin, Trash2 } from "lucide-react";
 import { Button } from "../ui/button";
@@ -206,7 +207,7 @@ const ProductionModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-gray-900 border border-gray-800 text-white max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="bg-[#000000] border border-gray-800 text-white max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl">{editMode ? "Editar Produção" : "Nova Produção"}</DialogTitle>
           <DialogDescription className="text-gray-400">
@@ -227,7 +228,7 @@ const ProductionModal = ({
                 id="productionName"
                 value={productionName}
                 onChange={(e) => setProductionName(e.target.value)}
-                className="bg-gray-800 border-gray-700"
+                className="bg-[#141414] border-gray-700"
                 placeholder="Nome da produção"
                 required
                 disabled={isFormDisabled}
@@ -242,7 +243,7 @@ const ProductionModal = ({
                 id="clientName"
                 value={clientName}
                 onChange={(e) => setClientName(e.target.value)}
-                className="bg-gray-800 border-gray-700"
+                className="bg-[#141414] border-gray-700"
                 placeholder="Nome do cliente"
                 required
                 disabled={isFormDisabled}
@@ -258,7 +259,7 @@ const ProductionModal = ({
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal bg-gray-800 border-gray-700",
+                      "w-full justify-start text-left font-normal bg-[#141414] border-gray-700",
                       !date && "text-muted-foreground"
                     )}
                     disabled={isFormDisabled}
@@ -267,7 +268,7 @@ const ProductionModal = ({
                     {date ? format(date, "dd/MM/yyyy") : <span>Escolha uma data</span>}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 bg-gray-800 border-gray-700">
+                <PopoverContent className="w-auto p-0 bg-[#141414] border-gray-700">
                   <CalendarComponent
                     mode="single"
                     selected={date}
@@ -292,7 +293,7 @@ const ProductionModal = ({
                     type="time"
                     value={startTime}
                     onChange={(e) => setStartTime(e.target.value)}
-                    className="bg-gray-800 border-gray-700 pl-10"
+                    className="bg-[#141414] border-gray-700 pl-10"
                     disabled={isFormDisabled}
                   />
                 </div>
@@ -309,7 +310,7 @@ const ProductionModal = ({
                     type="time"
                     value={endTime}
                     onChange={(e) => setEndTime(e.target.value)}
-                    className="bg-gray-800 border-gray-700 pl-10"
+                    className="bg-[#141414] border-gray-700 pl-10"
                     disabled={isFormDisabled}
                   />
                 </div>
@@ -326,7 +327,7 @@ const ProductionModal = ({
                   id="location"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="bg-gray-800 border-gray-700 pl-10"
+                  className="bg-[#141414] border-gray-700 pl-10"
                   placeholder="Endereço do local"
                   disabled={isFormDisabled}
                 />
@@ -341,7 +342,7 @@ const ProductionModal = ({
                 id="briefing"
                 type="file"
                 onChange={handleFileChange}
-                className="bg-gray-800 border-gray-700"
+                className="bg-[#141414] border-gray-700"
                 disabled={isFormDisabled}
               />
               {(briefingFile || (production && production.briefingFile)) && (
@@ -359,10 +360,10 @@ const ProductionModal = ({
               </label>
               <div className="flex gap-2 mb-2">
                 <Select value={selectedMember} onValueChange={setSelectedMember} disabled={isFormDisabled}>
-                  <SelectTrigger className="bg-gray-800 border-gray-700">
+                  <SelectTrigger className="bg-[#141414] border-gray-700">
                     <SelectValue placeholder="Selecionar membro" />
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-700">
+                  <SelectContent className="bg-[#141414] border-gray-700">
                     {availableTeamMembers.map((member) => (
                       <SelectItem key={member.id} value={member.id}>
                         {member.name}
@@ -371,10 +372,10 @@ const ProductionModal = ({
                   </SelectContent>
                 </Select>
                 <Select value={newMemberRole} onValueChange={setNewMemberRole} disabled={isFormDisabled}>
-                  <SelectTrigger className="w-[180px] bg-gray-800 border-gray-700">
+                  <SelectTrigger className="w-[180px] bg-[#141414] border-gray-700">
                     <SelectValue placeholder="Função" />
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-700">
+                  <SelectContent className="bg-[#141414] border-gray-700">
                     {roleOptions.map((role) => (
                       <SelectItem key={role.value} value={role.value}>
                         {role.label}
@@ -396,7 +397,7 @@ const ProductionModal = ({
                   teamMembers.map((member) => (
                     <div
                       key={member.id}
-                      className="flex items-center justify-between bg-gray-800 p-2 rounded-md"
+                      className="flex items-center justify-between bg-[#141414] p-2 rounded-md"
                     >
                       <div>
                         <p className="text-sm font-medium">{member.name}</p>
@@ -427,7 +428,7 @@ const ProductionModal = ({
                 id="notes"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="bg-gray-800 border-gray-700 min-h-[150px]"
+                className="bg-[#141414] border-gray-700 min-h-[150px]"
                 placeholder="Informações adicionais sobre a produção..."
                 disabled={isFormDisabled}
               />
@@ -450,7 +451,7 @@ const ProductionModal = ({
           </div>
           <div className="flex space-x-2">
             <DialogClose asChild>
-              <Button variant="outline" className="bg-gray-800 border-gray-700">
+              <Button variant="outline" className="bg-[#141414] border-gray-700">
                 Cancelar
               </Button>
             </DialogClose>
