@@ -55,7 +55,7 @@ const DashboardHeader = ({ onFilterChange, onAddProduction, isMobile = false }: 
 
       <Button className="bg-[#ff3335] hover:bg-red-700" onClick={onAddProduction}>
         <PlusIcon className="h-4 w-4" />
-        {!isMobile && <span className="ml-2">Nova Produção</span>}
+        <span className="ml-2">Nova Produção</span>
       </Button>
     </div>
   );

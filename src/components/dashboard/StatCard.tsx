@@ -1,3 +1,4 @@
+
 import React from "react";
 import { cn } from "@/lib/utils";
 import { LucideIcon } from "lucide-react";
@@ -90,7 +91,7 @@ const StatCard = ({
 
   return (
     <div className={cn(
-      "bg-gray-900 p-6 rounded-lg border-l-4 hover:shadow-lg transition-all transform hover:-translate-y-1",
+      "bg-[#141414] p-6 rounded-lg border-l-4 hover:shadow-lg transition-all transform hover:-translate-y-1",
       colorClasses.border
     )}>
       <div className="flex justify-between">

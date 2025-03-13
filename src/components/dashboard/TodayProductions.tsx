@@ -25,12 +25,12 @@ const TodayProductions = ({ productions }: TodayProductionsProps) => {
   };
 
   return (
-    <div className="bg-gray-900 rounded-lg p-6">
+    <div className="bg-[#141414] rounded-lg p-6">
       <h3 className="text-lg font-semibold mb-4">Hoje</h3>
       {productions.length > 0 ? (
         <div className="grid grid-cols-1 gap-4">
           {productions.map((production: Production) => (
-            <div key={production.id} className="bg-gray-800 p-4 rounded-lg">
+            <div key={production.id} className="bg-[#0a0a0a] p-4 rounded-lg">
               <div className="flex justify-between">
                 <div>
                   <h4 className="font-medium">{production.title}</h4>

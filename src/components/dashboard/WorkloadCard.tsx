@@ -36,7 +36,7 @@ const WorkloadCard = ({ workloads, members }: WorkloadCardProps) => {
   };
 
   return (
-    <div className="bg-gray-900 rounded-lg p-6">
+    <div className="bg-[#141414] rounded-lg p-6">
       <h3 className="text-lg font-semibold mb-4 flex justify-between items-center">
         <span>Carga de Trabalho</span>
         <MoreVertical className="w-5 h-5 cursor-pointer hover:text-red-500 transition-colors" />
@@ -57,7 +57,7 @@ const WorkloadCard = ({ workloads, members }: WorkloadCardProps) => {
               </div>
               <Progress 
                 value={(current / max) * 100} 
-                className="h-2 bg-gray-800"
+                className="h-2 bg-[#0a0a0a]"
                 color={getProgressColor(current, max)}
               />
             </div>
