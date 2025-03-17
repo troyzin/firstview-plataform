@@ -258,27 +258,10 @@ const Equipment = () => {
     setIsNewEquipmentModalOpen(true);
   };
 
-  const confirmDeleteEquipment = (equipment: EquipmentType) => {
-    setSelectedEquipment(equipment);
-  };
-
-  const handleDeleteEquipment = async (equipment: EquipmentType) => {
-    try {
-      const { error } = await supabase
-        .from('equipment')
-        .delete()
-        .eq('id', equipment.id);
-
-      if (error) {
-        throw error;
-      }
-
-      toast.success('Equipamento excluído com sucesso!');
-      refetch();
-    } catch (error) {
-      console.error('Erro ao excluir equipamento:', error);
-      toast.error('Ocorreu um erro ao excluir o equipamento');
-    }
+  // Dummy function to pass to InventoryTab
+  // No longer used for direct deletion - now handled entirely in EquipmentModal
+  const handleDeleteEquipment = (equipment: EquipmentType) => {
+    console.log("Delete handled by EquipmentModal");
   };
   
   // Função para renderizar o status com as cores corretas

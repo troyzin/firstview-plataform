@@ -39,6 +39,9 @@ const EquipmentModal: React.FC<EquipmentModalProps> = ({
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [hasAssociatedReceipts, setHasAssociatedReceipts] = useState(false);
+  const [associatedReceiptsCount, setAssociatedReceiptsCount] = useState(0);
 
   const handleSubmit = async (data: EquipmentFormData) => {
     setIsSubmitting(true);
@@ -77,7 +80,19 @@ const EquipmentModal: React.FC<EquipmentModalProps> = ({
     if (!equipment?.id) return;
 
     setIsSubmitting(true);
+    setDeleteError(null);
     try {
+      if (hasAssociatedReceipts) {
+        // First delete associated withdrawals
+        const { error: withdrawalsError } = await supabase
+          .from('equipment_withdrawals')
+          .delete()
+          .eq('equipment_id', equipment.id);
+        
+        if (withdrawalsError) throw withdrawalsError;
+      }
+
+      // Then delete the equipment
       const { error } = await supabase
         .from('equipment')
         .delete()
@@ -88,12 +103,33 @@ const EquipmentModal: React.FC<EquipmentModalProps> = ({
       toast.success('Equipamento excluído com sucesso!');
       onSuccess();
       onClose();
+      setIsDeleteAlertOpen(false);
     } catch (error) {
       console.error('Erro ao excluir equipamento:', error);
-      toast.error('Ocorreu um erro ao excluir o equipamento');
+      setDeleteError("Ocorreu um erro ao excluir o equipamento. Este equipamento pode estar sendo referenciado em outras partes do sistema.");
     } finally {
       setIsSubmitting(false);
-      setIsDeleteAlertOpen(false);
+    }
+  };
+
+  const checkAssociatedReceipts = async () => {
+    if (!equipment?.id) return;
+
+    try {
+      const { data, error, count } = await supabase
+        .from('equipment_withdrawals')
+        .select('id', { count: 'exact' })
+        .eq('equipment_id', equipment.id);
+      
+      if (error) throw error;
+      
+      const hasReceipts = !!data && data.length > 0;
+      setHasAssociatedReceipts(hasReceipts);
+      setAssociatedReceiptsCount(count || 0);
+      setIsDeleteAlertOpen(true);
+    } catch (error) {
+      console.error('Erro ao verificar recibos associados:', error);
+      toast.error('Ocorreu um erro ao verificar recibos associados');
     }
   };
 
@@ -118,7 +154,7 @@ const EquipmentModal: React.FC<EquipmentModalProps> = ({
                 variant="ghost" 
                 size="icon" 
                 className="h-8 w-8 rounded-full hover:bg-red-900/20 hover:text-red-400"
-                onClick={() => setIsDeleteAlertOpen(true)}
+                onClick={checkAssociatedReceipts}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -138,9 +174,25 @@ const EquipmentModal: React.FC<EquipmentModalProps> = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmação de Exclusão</AlertDialogTitle>
             <AlertDialogDescription className="text-gray-400">
-              Tem certeza que deseja excluir o equipamento <span className="text-white font-medium">{equipment?.name}</span>?
-              <br />Esta ação não pode ser desfeita.
+              {hasAssociatedReceipts ? (
+                <>
+                  <p>O equipamento <span className="text-white font-medium">{equipment?.name}</span> está associado a {associatedReceiptsCount} recibo(s) de retirada.</p>
+                  <p className="mt-2 text-[#ff3335] font-medium">Atenção: Se você excluir este equipamento, todos os recibos relacionados a ele também serão excluídos permanentemente.</p>
+                  <p className="mt-2">Esta ação não pode ser desfeita. Deseja continuar?</p>
+                </>
+              ) : (
+                <>
+                  Tem certeza que deseja excluir o equipamento <span className="text-white font-medium">{equipment?.name}</span>?
+                  <br />Esta ação não pode ser desfeita.
+                </>
+              )}
             </AlertDialogDescription>
+            
+            {deleteError && (
+              <div className="mt-4 p-3 bg-red-900/20 border border-red-800 rounded-md text-[#ff3335]">
+                {deleteError}
+              </div>
+            )}
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="bg-gray-800 text-white hover:bg-gray-700 border-gray-700">
@@ -148,9 +200,10 @@ const EquipmentModal: React.FC<EquipmentModalProps> = ({
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteEquipment}
+              disabled={isSubmitting}
               className="bg-[#ff3335] hover:bg-red-700"
             >
-              Excluir
+              {isSubmitting ? "Excluindo..." : hasAssociatedReceipts ? "Excluir Tudo" : "Excluir"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
