@@ -1,11 +1,9 @@
-
 import React, { useState } from "react";
 import {
   Bell,
   Menu,
   Settings,
   User,
-  LogOut,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -17,32 +15,13 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Sidebar } from "@/components/ui/sidebar"; // Updated import path to use the shadcn/ui sidebar
-import { useAuth } from "../../contexts/AuthContext";
 import { useToast } from "../../hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 
 const Header = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { user, signOut } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      toast({
-        title: "Logout realizado com sucesso",
-        description: "Você foi desconectado da sua conta",
-      });
-      navigate("/auth");
-    } catch (error) {
-      toast({
-        title: "Erro ao fazer logout",
-        description: "Ocorreu um erro ao tentar desconectar",
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleCloseSidebar = () => {
     setIsSidebarOpen(false);
@@ -95,7 +74,7 @@ const Header = () => {
               <button className="flex items-center space-x-2 rounded-full overflow-hidden" aria-label="Menu do usuário">
                 <Avatar className="h-8 w-8 border border-gray-700">
                   <AvatarFallback className="bg-gray-800 text-gray-400">
-                    {user?.email?.charAt(0).toUpperCase() || "U"}
+                    U
                   </AvatarFallback>
                 </Avatar>
               </button>
@@ -104,29 +83,24 @@ const Header = () => {
               <div className="flex items-center justify-start p-2">
                 <div className="flex flex-col space-y-1 leading-none">
                   <p className="font-medium text-sm text-gray-300">
-                    {user?.user_metadata?.full_name || "Usuário"}
+                    Usuário Público
                   </p>
                   <p className="text-xs text-gray-400 truncate w-[200px]">
-                    {user?.email || ""}
+                    Acesso sem cadastro
                   </p>
                 </div>
               </div>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer text-gray-400 focus:text-white focus:bg-gray-800">
+              <DropdownMenuItem 
+                className="cursor-pointer text-gray-400 focus:text-white focus:bg-gray-800"
+                onClick={() => navigate("/profile")}
+              >
                 <User className="mr-2 h-4 w-4" />
                 <span>Perfil</span>
               </DropdownMenuItem>
               <DropdownMenuItem className="cursor-pointer text-gray-400 focus:text-white focus:bg-gray-800">
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Configurações</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                className="cursor-pointer text-red-500 focus:text-red-500 focus:bg-gray-800"
-                onClick={handleSignOut}
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Sair</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

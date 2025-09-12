@@ -1,12 +1,10 @@
-
 import React, { ReactNode, useState } from "react";
-import { Menu, Bell, Settings, LogOut } from "lucide-react";
+import { Menu, Bell, Settings } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import NavItem from "../ui/NavItem";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
-import { useAuth } from "../../contexts/AuthContext";
 import { useIsMobile } from "../../hooks/use-mobile";
 import MobileNavBar from "./MobileNavBar";
 import {
@@ -25,7 +23,6 @@ const MainLayout = ({ children }: MainLayoutProps) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, profile, signOut } = useAuth();
   const isMobile = useIsMobile();
   
   const isActiveRoute = (path: string) => {
@@ -57,18 +54,8 @@ const MainLayout = ({ children }: MainLayoutProps) => {
     }
   };
 
-  const handleLogout = async () => {
-    await signOut();
-    navigate("/auth");
-  };
-
   const getInitials = () => {
-    if (!profile?.full_name) return "U";
-    
-    const nameParts = profile.full_name.split(" ");
-    if (nameParts.length === 1) return nameParts[0].charAt(0).toUpperCase();
-    
-    return (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase();
+    return "U";
   };
   
   return (
@@ -192,12 +179,9 @@ const MainLayout = ({ children }: MainLayoutProps) => {
               <DropdownMenuTrigger asChild>
                 <div className="flex items-center space-x-2 cursor-pointer">
                   <Avatar className="w-8 h-8 bg-[#ff3335] hover:bg-[#ff3335]/80 transition-colors">
-                    {profile?.avatar_url ? (
-                      <AvatarImage src={profile.avatar_url} alt="Avatar do usuário" />
-                    ) : null}
                     <AvatarFallback>{getInitials()}</AvatarFallback>
                   </Avatar>
-                  <span className="text-sm font-medium">{profile?.full_name || 'Usuário'}</span>
+                  <span className="text-sm font-medium">Usuário Público</span>
                 </div>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700 text-white">
@@ -206,14 +190,6 @@ const MainLayout = ({ children }: MainLayoutProps) => {
                 </DropdownMenuItem>
                 <DropdownMenuItem className="hover:bg-gray-700 cursor-pointer" onClick={() => navigate('/settings')}>
                   Preferências
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-gray-700" />
-                <DropdownMenuItem 
-                  className="text-red-400 hover:bg-gray-700 hover:text-red-300 cursor-pointer"
-                  onClick={handleLogout}
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Sair
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

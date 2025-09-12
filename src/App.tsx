@@ -1,14 +1,9 @@
-
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   createHashRouter,
   RouterProvider,
-  Navigate,
 } from "react-router-dom";
-import Auth from "./pages/Auth";
-import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
-import { useAuth } from "./contexts/AuthContext";
 import { lazy, Suspense } from "react";
 import Loading from "./components/Loading";
 
@@ -24,131 +19,70 @@ const Reports = lazy(() => import("./pages/Reports"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Edits = lazy(() => import("./pages/Edits"));
 
-const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-  const { user, loading } = useAuth();
-  const isAuthenticated = user !== null;
-
-  // If still loading after 5 seconds, show the content anyway
-  // This prevents getting stuck in an infinite loading state
-  const [loadingTimeout, setLoadingTimeout] = useState(false);
-  
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (loading) {
-        setLoadingTimeout(true);
-        console.log("Auth loading timed out - showing content anyway");
-      }
-    }, 5000);
-    
-    return () => clearTimeout(timer);
-  }, [loading]);
-
-  if (loading && !loadingTimeout) {
-    return <Loading />;
-  }
-
-  // Skip authentication check if we timed out
-  if (!isAuthenticated && !loadingTimeout) {
-    return <Navigate to="/auth" />;
-  }
-
-  return children;
-};
-
 const router = createHashRouter([
   {
     path: "/",
-    element: (
-      <ProtectedRoute>
-        <Dashboard />
-      </ProtectedRoute>
-    ),
+    element: <Dashboard />,
     errorElement: <NotFound />,
   },
   {
-    path: "/auth",
-    element: <Auth />,
-  },
-  {
-    path: "/login",
-    element: <Login />,
-  },
-  {
     path: "/dashboard",
-    element: (
-      <ProtectedRoute>
-        <Dashboard />
-      </ProtectedRoute>
-    ),
+    element: <Dashboard />,
   },
   {
     path: "/productions",
     element: (
-      <ProtectedRoute>
-        <Suspense fallback={<Loading />}>
-          <Productions />
-        </Suspense>
-      </ProtectedRoute>
+      <Suspense fallback={<Loading />}>
+        <Productions />
+      </Suspense>
     ),
   },
   {
     path: "/equipment",
     element: (
-      <ProtectedRoute>
-        <Suspense fallback={<Loading />}>
-          <Equipment />
-        </Suspense>
-      </ProtectedRoute>
+      <Suspense fallback={<Loading />}>
+        <Equipment />
+      </Suspense>
     ),
   },
   {
     path: "/clients",
     element: (
-      <ProtectedRoute>
-        <Suspense fallback={<Loading />}>
-          <Clients />
-        </Suspense>
-      </ProtectedRoute>
+      <Suspense fallback={<Loading />}>
+        <Clients />
+      </Suspense>
     ),
   },
   {
     path: "/team",
     element: (
-      <ProtectedRoute>
-        <Suspense fallback={<Loading />}>
-          <Team />
-        </Suspense>
-      </ProtectedRoute>
+      <Suspense fallback={<Loading />}>
+        <Team />
+      </Suspense>
     ),
   },
   {
     path: "/reports",
     element: (
-      <ProtectedRoute>
-        <Suspense fallback={<Loading />}>
-          <Reports />
-        </Suspense>
-      </ProtectedRoute>
+      <Suspense fallback={<Loading />}>
+        <Reports />
+      </Suspense>
     ),
   },
   {
     path: "/profile",
     element: (
-      <ProtectedRoute>
-        <Suspense fallback={<Loading />}>
-          <Profile />
-        </Suspense>
-      </ProtectedRoute>
+      <Suspense fallback={<Loading />}>
+        <Profile />
+      </Suspense>
     ),
   },
   {
     path: "/edits",
     element: (
-      <ProtectedRoute>
-        <Suspense fallback={<Loading />}>
-          <Edits />
-        </Suspense>
-      </ProtectedRoute>
+      <Suspense fallback={<Loading />}>
+        <Edits />
+      </Suspense>
     ),
   },
 ]);

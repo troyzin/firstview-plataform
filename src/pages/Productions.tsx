@@ -8,7 +8,7 @@ import { ptBR } from "date-fns/locale";
 import { Input } from "@/components/ui/input";
 import ProductionModal from "@/components/productions/ProductionModal";
 import { toast } from "sonner";
-import { useAuth } from "@/contexts/AuthContext";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -34,8 +34,7 @@ type Production = {
 };
 
 const Productions = () => {
-  const { hasAction, user } = useAuth();
-  const canAddProduction = hasAction('add_production');
+  const canAddProduction = true;
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduction, setEditingProduction] = useState<Production | null>(null);

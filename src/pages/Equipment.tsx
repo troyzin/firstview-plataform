@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useAuth } from "@/contexts/AuthContext";
+
 import { Receipt as ReceiptType, Equipment as EquipmentType, HistoryEvent } from "@/types/equipment";
 import WithdrawalsList from "@/components/equipment/WithdrawalsList";
 import EquipmentModal from "@/components/equipment/EquipmentModal";
@@ -114,7 +114,6 @@ const fetchProductions = async () => {
 const Equipment = () => {
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
-  const { user, profile } = useAuth();
   
   // Consulta para buscar equipamentos
   const { data: equipments = [], isLoading, isError, refetch } = useQuery({
@@ -337,13 +336,13 @@ const Equipment = () => {
 
   // Função para confirmar a retirada
   const handleConfirmCheckout = async () => {
-    if (!selectedEquipment || !user) return;
+    if (!selectedEquipment) return;
     
     try {
       // Dados para criar o recibo
       const withdrawalData = {
         equipment_id: selectedEquipment.id,
-        user_id: user.id,
+        user_id: 'public-user',
         production_id: isPersonalUse ? null : checkoutProduction || null,
         expected_return_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 dias a partir de hoje
         notes: checkoutNotes || null,

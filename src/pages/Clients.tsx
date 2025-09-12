@@ -25,7 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { useAuth } from "@/contexts/AuthContext";
+
 
 type Client = {
   id: string;
@@ -72,9 +72,8 @@ const initialClients: Client[] = [
 ];
 
 const ClientsPage = () => {
-  const { hasAction } = useAuth();
-  const canAddClient = hasAction('add_client');
-  const canEditClient = hasAction('edit_client');
+  const canAddClient = true;
+  const canEditClient = true;
   
   const [clients, setClients] = useState<Client[]>([]);
   const [searchTerm, setSearchTerm] = useState("");

@@ -30,7 +30,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Label } from "../ui/label";
 import { toast } from "sonner";
-import { useAuth } from "@/contexts/AuthContext";
+
 
 type TeamMember = {
   id: string;
@@ -69,10 +69,6 @@ const ProductionModal = ({
   editMode = false,
   production
 }: ProductionModalProps) => {
-  const { hasAction } = useAuth();
-  const canEdit = hasAction('edit_production');
-  const canAdd = hasAction('add_production');
-  const canCancel = hasAction('cancel_production');
 
   const [productionName, setProductionName] = React.useState("");
   const [clientName, setClientName] = React.useState("");
@@ -150,12 +146,6 @@ const ProductionModal = ({
   };
 
   const handleSubmit = () => {
-    if ((editMode && !canEdit) || (!editMode && !canAdd)) {
-      toast.error("Você não tem permissão para realizar esta ação");
-      onClose();
-      return;
-    }
-
     const productionData = {
       id: editMode && production ? production.id : Date.now().toString(),
       name: productionName,
@@ -177,11 +167,6 @@ const ProductionModal = ({
   };
 
   const handleDelete = () => {
-    if (!canCancel) {
-      toast.error("Você não tem permissão para cancelar produções");
-      return;
-    }
-
     if (onDelete && production) {
       onDelete(production.id);
       toast.success("Produção cancelada com sucesso!");
@@ -203,7 +188,7 @@ const ProductionModal = ({
     setNewMemberRole("filmmaker");
   };
 
-  const isFormDisabled = (editMode && !canEdit) || (!editMode && !canAdd);
+  const isFormDisabled = false;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -438,7 +423,7 @@ const ProductionModal = ({
         
         <DialogFooter className="flex justify-between">
           <div className="flex space-x-2">
-            {editMode && onDelete && canCancel && (
+            {editMode && onDelete && (
               <Button 
                 variant="destructive" 
                 onClick={handleDelete}
