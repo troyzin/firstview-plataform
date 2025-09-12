@@ -46,16 +46,20 @@ export const useEquipmentHistory = () => {
 
         withdrawals?.forEach(withdrawal => {
           const userName = userNames.get(withdrawal.user_id) || 'Unknown User';
+
+          // Normalize possible array/object relations from Supabase
+          const eq = Array.isArray(withdrawal.equipment) ? withdrawal.equipment[0] : withdrawal.equipment;
+          const prod = Array.isArray(withdrawal.production) ? withdrawal.production[0] : withdrawal.production;
           
           // Add withdrawal event
           events.push({
             id: `${withdrawal.id}-withdrawal`,
-            equipmentId: withdrawal.equipment?.id || '',
-            equipmentName: withdrawal.equipment?.name || 'Unknown Equipment',
+            equipmentId: eq?.id || '',
+            equipmentName: eq?.name || 'Unknown Equipment',
             eventType: "checkout",
             date: new Date(withdrawal.withdrawal_date),
             responsibleName: userName,
-            productionName: withdrawal.is_personal_use ? 'Personal Use' : (withdrawal.production?.title || undefined),
+            productionName: withdrawal.is_personal_use ? 'Personal Use' : (prod?.title || undefined),
             notes: withdrawal.notes || undefined
           });
 
@@ -63,12 +67,12 @@ export const useEquipmentHistory = () => {
           if (withdrawal.returned_date) {
             events.push({
               id: `${withdrawal.id}-return`,
-              equipmentId: withdrawal.equipment?.id || '',
-              equipmentName: withdrawal.equipment?.name || 'Unknown Equipment',
+              equipmentId: eq?.id || '',
+              equipmentName: eq?.name || 'Unknown Equipment',
               eventType: "return",
               date: new Date(withdrawal.returned_date),
               responsibleName: userName,
-              productionName: withdrawal.is_personal_use ? 'Personal Use' : (withdrawal.production?.title || undefined),
+              productionName: withdrawal.is_personal_use ? 'Personal Use' : (prod?.title || undefined),
               notes: withdrawal.return_notes || undefined
             });
           }
